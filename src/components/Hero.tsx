@@ -5,7 +5,7 @@ export const Hero = () => {
       {/* Background Image */}
       <div className="absolute inset-0">
         <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1920&h=1080&fit=crop" alt="Modern office workspace" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-foreground/60" />
+        <div className="absolute inset-0 bg-black/60" />
       </div>
 
       {/* Floating Elements */}
@@ -80,7 +80,7 @@ export const Hero = () => {
       <div className="absolute right-0 bottom-0 w-1/3 h-full hidden xl:block">
         <div className="absolute bottom-0 right-0 w-full h-2/3">
           <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=1000&fit=crop" alt="Team collaboration" className="w-full h-full object-cover rounded-tl-3xl" />
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/50 to-transparent rounded-tl-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-tl-3xl" />
         </div>
       </div>
 
