@@ -17,103 +17,103 @@ export const jobs: Job[] = [
   {
     id: "consultant-geschaeftsoptimierung",
     title: "Consultant Geschäftsoptimierung (w/m/d)",
-    description: "Unterstützung bei der Analyse und Optimierung von Geschäftsprozessen. Beratung unserer Kunden bei der digitalen Transformation und Implementierung effizienter Lösungen.",
+    description: "Unterstützung bei der Analyse und Optimierung von Geschäftsprozessen. Keine Vorkenntnisse erforderlich – wir bilden Sie aus!",
     location: "100% Remote / Homeoffice",
     type: "Festanstellung",
-    workModel: "Vollzeit",
+    workModel: "Teilzeit (25h/Woche)",
     department: "Consulting",
     salary: "25-30 €/Std.",
-    fullDescription: "Als Consultant Geschäftsoptimierung unterstützen Sie unsere Kunden bei der Analyse, Bewertung und Optimierung ihrer Geschäftsprozesse. Sie beraten bei der digitalen Transformation und helfen bei der Implementierung effizienter IT-Lösungen. Sie arbeiten eng mit verschiedenen Stakeholdern zusammen und bringen Ihre Expertise in spannende Projekte ein.",
+    fullDescription: "Als Consultant Geschäftsoptimierung unterstützen Sie unsere Kunden bei der Analyse, Bewertung und Optimierung ihrer Geschäftsprozesse. Keine Vorkenntnisse erforderlich – wir bilden Sie umfassend aus und begleiten Sie auf Ihrem Karriereweg. Quereinsteiger sind herzlich willkommen!",
     requirements: [
-      "Abgeschlossenes Studium in Wirtschaftsinformatik, BWL oder vergleichbare Qualifikation",
-      "Erfahrung in der Prozessanalyse und -optimierung",
-      "Kenntnisse in ERP-Systemen und Digitalisierungsprojekten",
-      "Analytisches Denkvermögen und strukturierte Arbeitsweise",
-      "Sehr gute Deutsch- und Englischkenntnisse",
-      "Kommunikationsstärke und Teamfähigkeit"
+      "Keine formale Qualifikation erforderlich – Quereinsteiger willkommen!",
+      "Interesse an Geschäftsprozessen und digitaler Transformation",
+      "Lernbereitschaft und Motivation sich weiterzuentwickeln",
+      "Gute Deutschkenntnisse in Wort und Schrift",
+      "Kommunikationsfreude und Teamfähigkeit",
+      "Selbstständige und strukturierte Arbeitsweise"
     ],
     benefits: [
       "100% Remote-Arbeit möglich",
-      "Flexible Arbeitszeiten",
-      "Moderne Arbeitsmittel",
+      "Teilzeit 25 Stunden/Woche",
+      "Umfassende Einarbeitung und Schulungen",
+      "Moderne Arbeitsmittel werden gestellt",
       "Weiterbildungsmöglichkeiten",
-      "Flache Hierarchien",
-      "Teamevents (auch remote)"
+      "Flache Hierarchien und offene Kommunikation"
     ],
     tasks: [
       "Analyse und Dokumentation von Geschäftsprozessen",
-      "Entwicklung von Optimierungskonzepten",
-      "Begleitung von Digitalisierungsprojekten",
-      "Beratung und Schulung von Kunden",
+      "Mitarbeit an Optimierungskonzepten",
+      "Unterstützung bei Digitalisierungsprojekten",
+      "Kommunikation mit Kunden",
       "Erstellung von Reports und Präsentationen"
     ]
   },
   {
     id: "assistenz-geschaeftsfuehrung",
     title: "Assistenz der Geschäftsführung / Sekretariat (w/m/d)",
-    description: "Administrative Unterstützung der Geschäftsführung, Terminkoordination, Korrespondenz und Büroorganisation. Erste Anlaufstelle für interne und externe Anfragen.",
+    description: "Administrative Unterstützung der Geschäftsführung, Terminkoordination und Büroorganisation. Quereinsteiger herzlich willkommen!",
     location: "100% Remote / Homeoffice",
     type: "Festanstellung",
-    workModel: "Vollzeit / Teilzeit",
+    workModel: "Teilzeit (25h/Woche)",
     department: "Administration",
     salary: "25-30 €/Std.",
-    fullDescription: "Als Assistenz der Geschäftsführung sind Sie die rechte Hand unseres Managements. Sie übernehmen vielfältige administrative Aufgaben, koordinieren Termine und Meetings, führen Korrespondenz und sind die erste Anlaufstelle für interne und externe Anfragen. Dank unserer modernen Remote-Infrastruktur können Sie diese Position vollständig aus dem Homeoffice ausüben.",
+    fullDescription: "Als Assistenz der Geschäftsführung sind Sie die rechte Hand unseres Managements. Sie übernehmen vielfältige administrative Aufgaben, koordinieren Termine und Meetings, führen Korrespondenz und sind die erste Anlaufstelle für interne und externe Anfragen. Keine Vorkenntnisse nötig – wir arbeiten Sie ein!",
     requirements: [
-      "Abgeschlossene kaufmännische Ausbildung oder vergleichbare Qualifikation",
-      "Berufserfahrung im Assistenz- oder Sekretariatsbereich",
-      "Sehr gute MS-Office-Kenntnisse",
-      "Organisationstalent und Zuverlässigkeit",
-      "Sehr gute Deutschkenntnisse in Wort und Schrift",
-      "Diskretion und Vertrauenswürdigkeit"
+      "Keine formale Qualifikation erforderlich – Quereinsteiger willkommen!",
+      "Interesse an organisatorischen Aufgaben",
+      "Grundlegende PC-Kenntnisse (MS Office lernen Sie bei uns)",
+      "Gute Deutschkenntnisse in Wort und Schrift",
+      "Zuverlässigkeit und Organisationstalent",
+      "Diskretion und freundliches Auftreten"
     ],
     benefits: [
       "100% Remote-Arbeit möglich",
-      "Flexible Arbeitszeiten",
-      "Teilzeit ab 20 Stunden möglich",
-      "Moderne digitale Tools",
+      "Teilzeit 25 Stunden/Woche",
+      "Umfassende Einarbeitung",
+      "Moderne digitale Tools werden bereitgestellt",
       "Familiäres Arbeitsumfeld",
       "Langfristige Perspektive"
     ],
     tasks: [
       "Terminplanung und -koordination",
-      "Korrespondenz und Kommunikation",
-      "Vorbereitung von Meetings und Präsentationen",
-      "Reiseplanung und -organisation",
+      "E-Mail-Korrespondenz und Kommunikation",
+      "Vorbereitung von Meetings und Unterlagen",
       "Allgemeine administrative Tätigkeiten",
-      "Dokumentenmanagement"
+      "Dokumentenmanagement",
+      "Unterstützung des Teams bei verschiedenen Aufgaben"
     ]
   },
   {
     id: "softwareentwickler-webentwicklung",
     title: "Softwareentwickler (w/m/d) - Webentwicklung",
-    description: "Entwicklung von Webapplikationen mit modernen Technologien. Eigenverantwortliches Arbeiten nach DevOps-Prinzipien in einem agilen Team.",
+    description: "Entwicklung von Webapplikationen mit modernen Technologien. Quereinsteiger mit Begeisterung für Programmierung willkommen!",
     location: "100% Remote / Homeoffice",
     type: "Festanstellung",
     workModel: "Vollzeit",
     department: "IT & Entwicklung",
     salary: "25-30 €/Std.",
-    fullDescription: "Als Softwareentwickler mit Fokus auf Webentwicklung gestalten Sie innovative Webapplikationen für unsere Kunden. Sie arbeiten mit modernen Technologien und Frameworks, setzen DevOps-Praktiken um und sind Teil eines agilen, remote-first Teams. Eigenverantwortliches Arbeiten und kontinuierliche Weiterentwicklung stehen bei uns im Mittelpunkt.",
+    fullDescription: "Als Softwareentwickler mit Fokus auf Webentwicklung gestalten Sie innovative Webapplikationen für unsere Kunden. Keine abgeschlossene Ausbildung notwendig – wenn Sie Begeisterung für Programmierung mitbringen und lernbereit sind, bringen wir Ihnen alles bei!",
     requirements: [
-      "Abgeschlossenes Studium in Informatik oder vergleichbare Qualifikation",
-      "Erfahrung in der Webentwicklung (Frontend und/oder Backend)",
-      "Kenntnisse in modernen Frameworks (React, Vue, Angular, Node.js, etc.)",
-      "Erfahrung mit Versionskontrolle (Git)",
-      "Grundkenntnisse in DevOps und CI/CD",
-      "Teamfähigkeit und selbstständige Arbeitsweise"
+      "Keine formale Qualifikation erforderlich – Quereinsteiger willkommen!",
+      "Interesse an Programmierung und Webentwicklung",
+      "Erste Erfahrungen mit HTML/CSS/JavaScript von Vorteil, aber nicht Pflicht",
+      "Lernbereitschaft und Eigeninitiative",
+      "Teamfähigkeit und Kommunikationsfreude",
+      "Selbstständige Arbeitsweise"
     ],
     benefits: [
       "100% Remote-Arbeit möglich",
-      "Neueste Technologien und Tools",
+      "Umfassende Schulung in modernen Technologien",
+      "Neueste Hardware und Software werden gestellt",
       "Weiterbildungsbudget",
       "Flexible Arbeitszeiten",
-      "Agile Arbeitsweise",
-      "Hardware nach Wahl"
+      "Mentoring durch erfahrene Entwickler"
     ],
     tasks: [
-      "Entwicklung von Webapplikationen",
+      "Entwicklung von Webapplikationen unter Anleitung",
+      "Lernen moderner Frameworks und Technologien",
+      "Mitarbeit an spannenden Kundenprojekten",
       "Code Reviews und Qualitätssicherung",
-      "Implementierung von APIs und Schnittstellen",
-      "Wartung und Weiterentwicklung bestehender Systeme",
       "Technische Dokumentation",
       "Zusammenarbeit im agilen Team"
     ]
