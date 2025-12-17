@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getJobById } from "@/data/jobs";
-import { ArrowLeft, MapPin, Briefcase, Clock, Building2, Euro, Send, Upload } from "lucide-react";
+import { ArrowLeft, MapPin, Briefcase, Clock, Building2, Euro, Send, Upload, Calendar, Wallet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -15,6 +15,9 @@ const JobDetail = () => {
     name: "",
     email: "",
     phone: "",
+    startDate: "",
+    salaryExpectation: "",
+    experience: "",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,7 +28,14 @@ const JobDetail = () => {
 
     const subject = encodeURIComponent(`Bewerbung: ${job?.title || "Stelle"}`);
     const body = encodeURIComponent(
-      `Name: ${formData.name}\nE-Mail: ${formData.email}\nTelefon: ${formData.phone}\n\nBewerbung für: ${job?.title}\n\nNachricht:\n${formData.message}`
+      `Name: ${formData.name}\n` +
+      `E-Mail: ${formData.email}\n` +
+      `Telefon: ${formData.phone || "Nicht angegeben"}\n` +
+      `Gewünschter Starttermin: ${formData.startDate}\n` +
+      `Gehaltsvorstellung: ${formData.salaryExpectation || "Keine Angabe"}\n` +
+      `Vorerfahrungen: ${formData.experience || "Keine Angabe"}\n\n` +
+      `Bewerbung für: ${job?.title}\n\n` +
+      `Nachricht:\n${formData.message}`
     );
     
     window.location.href = `mailto:bewerbung@fritze-it.solutions?subject=${subject}&body=${body}`;
@@ -102,6 +112,13 @@ const JobDetail = () => {
                 <p className="text-muted-foreground leading-relaxed">
                   {job.fullDescription}
                 </p>
+
+                {/* Quereinsteiger Banner */}
+                <div className="mt-6 bg-primary/10 rounded-xl p-4 border border-primary/20">
+                  <p className="text-sm font-medium text-primary">
+                    ✨ Quereinsteiger herzlich willkommen! Keine Vorkenntnisse erforderlich – wir bilden Sie aus.
+                  </p>
+                </div>
               </div>
 
               <div className="bg-card rounded-2xl p-6 md:p-8 shadow-soft">
@@ -193,12 +210,54 @@ const JobDetail = () => {
                     </div>
 
                     <div>
+                      <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        Gewünschter Starttermin *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                        className="w-full h-11 px-4 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-muted-foreground" />
+                        Gehaltsvorstellung (optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.salaryExpectation}
+                        onChange={(e) => setFormData({ ...formData, salaryExpectation: e.target.value })}
+                        className="w-full h-11 px-4 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                        placeholder="z.B. 25-30 €/Std."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-muted-foreground" />
+                        Vorerfahrungen (optional)
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formData.experience}
+                        onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                        className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+                        placeholder="Kurze Beschreibung Ihrer bisherigen Erfahrungen..."
+                      />
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Nachricht *
                       </label>
                       <textarea
                         required
-                        rows={4}
+                        rows={3}
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                         className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"

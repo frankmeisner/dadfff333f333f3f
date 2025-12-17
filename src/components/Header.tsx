@@ -11,7 +11,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5 group">
-          <img src={logo} alt="Fritze IT-Systeme Logo" className="h-10 w-auto" />
+          <img src={logo} alt="Fritze IT-Systeme Logo" className="h-12 w-auto" />
         </Link>
         
         {/* Desktop Navigation */}
@@ -25,6 +25,9 @@ export const Header = () => {
           <a href="/#benefits" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Benefits
           </a>
+          <Link to="/ueber-uns" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Über uns
+          </Link>
           <Button asChild size="sm">
             <a href="/#contact">Jetzt bewerben</a>
           </Button>
@@ -49,6 +52,9 @@ export const Header = () => {
             <a href="/#benefits" className="text-sm font-medium text-foreground py-2" onClick={() => setIsMenuOpen(false)}>
               Benefits
             </a>
+            <Link to="/ueber-uns" className="text-sm font-medium text-foreground py-2" onClick={() => setIsMenuOpen(false)}>
+              Über uns
+            </Link>
             <Button asChild className="w-full mt-2">
               <a href="/#contact" onClick={() => setIsMenuOpen(false)}>
                 Jetzt bewerben
