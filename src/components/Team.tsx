@@ -72,10 +72,10 @@ export const Team = () => {
                   alt={member.name}
                   className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">
                   <h3 className="text-xl font-bold text-white">{member.name}</h3>
-                  <p className="text-secondary font-medium">{member.role}</p>
+                  <p className="text-white/90 font-medium">{member.role}</p>
                 </div>
               </div>
               <div className="p-5">
