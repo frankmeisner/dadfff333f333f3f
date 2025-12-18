@@ -13,6 +13,8 @@ import EmployeeDocumentsView from './employee/EmployeeDocumentsView';
 import EmployeeVacationView from './employee/EmployeeVacationView';
 import EmployeeProfileView from './employee/EmployeeProfileView';
 import EmployeeChatView from './employee/EmployeeChatView';
+import { StatusSelector } from './StatusSelector';
+import { InboxButton } from './InboxButton';
 import { cn } from '@/lib/utils';
 
 // Context to share tab navigation
@@ -24,7 +26,7 @@ const menuItems = [
   { id: 'time', label: 'Zeiterfassung', icon: Clock },
   { id: 'documents', label: 'Dokumente', icon: FileText },
   { id: 'vacation', label: 'Urlaub', icon: Calendar },
-  { id: 'chat', label: 'Chat', icon: MessageCircle },
+  { id: 'chat', label: 'Nachrichten', icon: MessageCircle },
   { id: 'profile', label: 'Profil', icon: User },
 ];
 
@@ -32,14 +34,27 @@ export default function EmployeeDashboard() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userStatus, setUserStatus] = useState<'online' | 'away' | 'busy' | 'offline'>('offline');
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (profile?.avatar_url) {
-      // Generate public URL from storage
       const { data } = supabase.storage.from('avatars').getPublicUrl(profile.avatar_url);
       setAvatarUrl(data.publicUrl);
+    }
+    // Fetch current status
+    if (profile?.user_id) {
+      supabase
+        .from('profiles')
+        .select('status')
+        .eq('user_id', profile.user_id)
+        .single()
+        .then(({ data }) => {
+          if (data?.status) {
+            setUserStatus(data.status as typeof userStatus);
+          }
+        });
     }
   }, [profile]);
 
@@ -59,6 +74,9 @@ export default function EmployeeDashboard() {
           const { data } = supabase.storage.from('avatars').getPublicUrl(payload.new.avatar_url as string);
           setAvatarUrl(data.publicUrl);
         }
+        if (payload.new?.status) {
+          setUserStatus(payload.new.status as typeof userStatus);
+        }
       })
       .subscribe();
 
@@ -68,6 +86,13 @@ export default function EmployeeDashboard() {
   }, [profile?.user_id]);
 
   const handleSignOut = async () => {
+    // Set status to offline
+    if (profile?.user_id) {
+      await supabase
+        .from('profiles')
+        .update({ status: 'offline' })
+        .eq('user_id', profile.user_id);
+    }
     await signOut();
     navigate('/panel/login');
   };
@@ -87,6 +112,13 @@ export default function EmployeeDashboard() {
       case 'profile': return <EmployeeProfileView />;
       default: return <EmployeeTasksView />;
     }
+  };
+
+  const statusColors: Record<string, string> = {
+    online: 'bg-green-500',
+    away: 'bg-yellow-500',
+    busy: 'bg-red-500',
+    offline: 'bg-gray-400'
   };
 
   return (
@@ -140,14 +172,17 @@ export default function EmployeeDashboard() {
           {sidebarOpen && (
             <div className="p-4 border-t border-border">
               <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                  {avatarUrl ? (
-                    <AvatarImage src={avatarUrl} alt={`${profile?.first_name} ${profile?.last_name}`} />
-                  ) : null}
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
-                    {profile?.first_name?.[0]}{profile?.last_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                    {avatarUrl ? (
+                      <AvatarImage src={avatarUrl} alt={`${profile?.first_name} ${profile?.last_name}`} />
+                    ) : null}
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
+                      {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className={`absolute -bottom-0.5 -left-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${statusColors[userStatus]}`} />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{profile?.first_name} {profile?.last_name}</p>
                   <p className="text-xs text-muted-foreground truncate">{profile?.email}</p>
@@ -174,16 +209,21 @@ export default function EmployeeDashboard() {
                 {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <StatusSelector />
+                <InboxButton onClick={() => setActiveTab('chat')} />
                 <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 bg-muted/50 rounded-full">
-                  <Avatar className="h-8 w-8 ring-2 ring-primary/20">
-                    {avatarUrl ? (
-                      <AvatarImage src={avatarUrl} alt={`${profile?.first_name} ${profile?.last_name}`} />
-                    ) : null}
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                      {profile?.first_name?.[0]}{profile?.last_name?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-8 w-8 ring-2 ring-primary/20">
+                      {avatarUrl ? (
+                        <AvatarImage src={avatarUrl} alt={`${profile?.first_name} ${profile?.last_name}`} />
+                      ) : null}
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                        {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className={`absolute -bottom-0.5 -left-0.5 h-2.5 w-2.5 rounded-full border-2 border-muted/50 ${statusColors[userStatus]}`} />
+                  </div>
                   <span className="text-sm font-medium">{profile?.first_name}</span>
                 </div>
                 <ThemeToggle />

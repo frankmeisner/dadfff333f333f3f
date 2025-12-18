@@ -96,6 +96,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          status: string | null
           updated_at: string
           user_id: string
         }
@@ -106,6 +107,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -116,6 +118,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          status?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -359,6 +362,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_user_status: { Args: { new_status: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "employee"
