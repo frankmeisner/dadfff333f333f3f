@@ -13,9 +13,26 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, User, Mail, Shield, Trash2, Eye } from 'lucide-react';
 import AdminEmployeeDetailView from './AdminEmployeeDetailView';
 
+type UserStatus = 'online' | 'away' | 'busy' | 'offline';
+
 interface UserWithRole extends Profile {
   role: AppRole;
+  status?: UserStatus;
 }
+
+const statusColors: Record<UserStatus, string> = {
+  online: 'bg-green-500',
+  away: 'bg-yellow-500',
+  busy: 'bg-red-500',
+  offline: 'bg-gray-400'
+};
+
+const statusLabels: Record<UserStatus, string> = {
+  online: 'Online',
+  away: 'Abwesend',
+  busy: 'Beschäftigt',
+  offline: 'Offline'
+};
 
 export default function AdminUsersView() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -189,17 +206,23 @@ export default function AdminUsersView() {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12">
-                      {user.avatar_url ? (
-                        <AvatarImage 
-                          src={supabase.storage.from('avatars').getPublicUrl(user.avatar_url).data.publicUrl} 
-                          alt={`${user.first_name} ${user.last_name}`} 
-                        />
-                      ) : null}
-                      <AvatarFallback className="bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                        {user.first_name?.[0]}{user.last_name?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-12 w-12">
+                        {user.avatar_url ? (
+                          <AvatarImage 
+                            src={supabase.storage.from('avatars').getPublicUrl(user.avatar_url).data.publicUrl} 
+                            alt={`${user.first_name} ${user.last_name}`} 
+                          />
+                        ) : null}
+                        <AvatarFallback className="bg-blue-500/20 text-blue-700 dark:text-blue-400">
+                          {user.first_name?.[0]}{user.last_name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span 
+                        className={`absolute -bottom-0.5 -left-0.5 h-3.5 w-3.5 rounded-full border-2 border-card ${statusColors[user.status || 'offline']}`}
+                        title={statusLabels[user.status || 'offline']}
+                      />
+                    </div>
                     <div>
                       <CardTitle className="text-lg">{user.first_name} {user.last_name}</CardTitle>
                       <p className="text-xs text-muted-foreground flex items-center gap-1">

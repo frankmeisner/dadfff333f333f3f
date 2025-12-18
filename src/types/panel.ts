@@ -8,6 +8,8 @@ export type TimeEntryType = 'check_in' | 'check_out' | 'pause_start' | 'pause_en
 
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
 
+export type UserStatus = 'online' | 'away' | 'busy' | 'offline';
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -15,6 +17,7 @@ export interface Profile {
   first_name: string;
   last_name: string;
   avatar_url?: string | null;
+  status?: UserStatus;
   created_at: string;
   updated_at: string;
 }

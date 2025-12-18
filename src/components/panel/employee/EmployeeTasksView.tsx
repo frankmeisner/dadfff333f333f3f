@@ -76,7 +76,7 @@ export default function EmployeeTasksView() {
       if (tasksRes.data) {
         const enrichedTasks = tasksRes.data.map(task => {
           const assignment = assignments.find(a => a.task_id === task.id);
-          const assignedBy = profilesRes.data?.find((p: Profile) => p.user_id === task.created_by);
+          const assignedBy = profilesRes.data?.find((p: any) => p.user_id === task.created_by);
           const smsRequest = smsRes.data?.find(s => s.task_id === task.id);
           return {
             ...task as Task,

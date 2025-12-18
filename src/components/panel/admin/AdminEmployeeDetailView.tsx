@@ -12,7 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   ArrowLeft, User, Mail, Clock, FileText, ClipboardList, 
-  Calendar, Download, CheckCircle, AlertCircle, Trash2, MessageCircle, Send
+  Calendar, Download, CheckCircle, AlertCircle, Trash2, MessageCircle, Send,
+  Check, CheckCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -227,17 +228,32 @@ export default function AdminEmployeeDetailView({ employee, onBack }: AdminEmplo
       <Card className="shadow-lg">
         <CardContent className="pt-6">
           <div className="flex items-center gap-6">
-            <Avatar className="h-24 w-24">
-              {employee.avatar_url ? (
-                <AvatarImage 
-                  src={supabase.storage.from('avatars').getPublicUrl(employee.avatar_url).data.publicUrl} 
-                  alt={`${employee.first_name} ${employee.last_name}`} 
-                />
-              ) : null}
-              <AvatarFallback className="bg-primary/10 text-primary text-2xl">
-                {employee.first_name?.[0]}{employee.last_name?.[0]}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-24 w-24">
+                {employee.avatar_url ? (
+                  <AvatarImage 
+                    src={supabase.storage.from('avatars').getPublicUrl(employee.avatar_url).data.publicUrl} 
+                    alt={`${employee.first_name} ${employee.last_name}`} 
+                  />
+                ) : null}
+                <AvatarFallback className="bg-primary/10 text-primary text-2xl">
+                  {employee.first_name?.[0]}{employee.last_name?.[0]}
+                </AvatarFallback>
+              </Avatar>
+              {/* Status indicator */}
+              <span 
+                className={`absolute bottom-1 left-1 h-5 w-5 rounded-full border-3 border-card ${
+                  (employee as any).status === 'online' ? 'bg-green-500' :
+                  (employee as any).status === 'away' ? 'bg-yellow-500' :
+                  (employee as any).status === 'busy' ? 'bg-red-500' : 'bg-gray-400'
+                }`}
+                title={
+                  (employee as any).status === 'online' ? 'Online' :
+                  (employee as any).status === 'away' ? 'Abwesend' :
+                  (employee as any).status === 'busy' ? 'Beschäftigt' : 'Offline'
+                }
+              />
+            </div>
             <div className="flex-1">
               <h2 className="text-2xl font-bold">{employee.first_name} {employee.last_name}</h2>
               <p className="text-muted-foreground flex items-center gap-2 mt-1">
@@ -371,7 +387,7 @@ export default function AdminEmployeeDetailView({ employee, onBack }: AdminEmplo
                           key={msg.id}
                           className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
                         >
-                          <Avatar className="h-8 w-8 shrink-0">
+                          <Avatar className="h-10 w-10 shrink-0">
                             {isOwn ? (
                               adminProfile?.avatar_url ? (
                                 <AvatarImage src={supabase.storage.from('avatars').getPublicUrl(adminProfile.avatar_url).data.publicUrl} />
@@ -391,7 +407,7 @@ export default function AdminEmployeeDetailView({ employee, onBack }: AdminEmplo
                           <div className={`max-w-[70%] ${isOwn ? 'items-end' : 'items-start'}`}>
                             <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'flex-row-reverse' : ''}`}>
                               <span className="text-xs font-medium">
-                                {isOwn ? 'Du' : employee.first_name}
+                                {isOwn ? 'Du' : `${employee.first_name} ${employee.last_name}`}
                               </span>
                               <span className="text-xs text-muted-foreground">
                                 {format(new Date(msg.created_at), 'HH:mm', { locale: de })}
@@ -406,6 +422,16 @@ export default function AdminEmployeeDetailView({ employee, onBack }: AdminEmplo
                             >
                               <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
                             </div>
+                            {/* Read receipt */}
+                            {isOwn && (
+                              <div className="flex justify-end mt-1" title={msg.read_at ? 'Gelesen' : 'Gesendet'}>
+                                {msg.read_at ? (
+                                  <CheckCheck className="h-4 w-4 text-primary" />
+                                ) : (
+                                  <Check className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
