@@ -8,9 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { FileText, Upload, Trash2, Download, AlertCircle } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, AlertCircle
+
+ } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { useTabContext } from '../EmployeeDashboard';
 
 const documentTypes = [
   { value: 'documentation', label: 'Dokumentation' },
@@ -30,8 +33,10 @@ export default function EmployeeDocumentsView() {
   const [documentType, setDocumentType] = useState('documentation');
   const [selectedTask, setSelectedTask] = useState<string>('none');
   const [uploading, setUploading] = useState(false);
+  const [lockedTaskId, setLockedTaskId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const tabContext = useTabContext();
 
   useEffect(() => {
     if (user) {
@@ -39,6 +44,16 @@ export default function EmployeeDocumentsView() {
       fetchTasks();
     }
   }, [user]);
+
+  // Handle pending task from navigation
+  useEffect(() => {
+    if (tabContext?.pendingTaskId) {
+      setSelectedTask(tabContext.pendingTaskId);
+      setLockedTaskId(tabContext.pendingTaskId);
+      // Clear the pending task after using it
+      tabContext.setPendingTaskId(null);
+    }
+  }, [tabContext?.pendingTaskId]);
 
   const fetchDocuments = async () => {
     if (!user) return;
@@ -209,18 +224,34 @@ export default function EmployeeDocumentsView() {
               </div>
 
               <div className="space-y-2">
-                <Label>Zu Auftrag zuordnen (optional)</Label>
-                <Select value={selectedTask} onValueChange={setSelectedTask}>
+                <Label>Zu Auftrag zuordnen {lockedTaskId ? '' : '(optional)'}</Label>
+                <Select 
+                  value={selectedTask} 
+                  onValueChange={setSelectedTask}
+                  disabled={!!lockedTaskId}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Kein Auftrag" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Kein Auftrag</SelectItem>
-                    {tasks.map((task) => (
-                      <SelectItem key={task.id} value={task.id}>
-                        {task.title}
-                      </SelectItem>
-                    ))}
+                    {lockedTaskId ? (
+                      // Only show the locked task
+                      tasks.filter(t => t.id === lockedTaskId).map((task) => (
+                        <SelectItem key={task.id} value={task.id}>
+                          {task.title}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      // Show all options when not locked
+                      <>
+                        <SelectItem value="none">Kein Auftrag</SelectItem>
+                        {tasks.map((task) => (
+                          <SelectItem key={task.id} value={task.id}>
+                            {task.title}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>

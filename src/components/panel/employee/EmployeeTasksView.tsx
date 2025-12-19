@@ -310,8 +310,9 @@ export default function EmployeeTasksView() {
     toast({ title: 'Gespeichert', description: 'Notizen aktualisiert.' });
   };
 
-  const handleGoToDocuments = () => {
+  const handleGoToDocuments = (taskId: string) => {
     if (tabContext) {
+      tabContext.setPendingTaskId(taskId);
       tabContext.setActiveTab('documents');
     }
   };
@@ -516,7 +517,7 @@ export default function EmployeeTasksView() {
                               </Badge>
                             )}
                             <Button 
-                              onClick={handleGoToDocuments} 
+                              onClick={() => handleGoToDocuments(task.id)} 
                               variant="neon"
                               className="gap-2"
                             >

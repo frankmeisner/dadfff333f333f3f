@@ -19,8 +19,13 @@ import { InboxButton } from './InboxButton';
 import { TelegramToast } from './TelegramToast';
 import { cn } from '@/lib/utils';
 
-// Context to share tab navigation
-export const TabContext = createContext<{ setActiveTab: (tab: string) => void } | null>(null);
+// Context to share tab navigation with optional pending task
+interface TabContextValue {
+  setActiveTab: (tab: string) => void;
+  pendingTaskId: string | null;
+  setPendingTaskId: (taskId: string | null) => void;
+}
+export const TabContext = createContext<TabContextValue | null>(null);
 export const useTabContext = () => useContext(TabContext);
 
 interface NotificationData {
@@ -43,6 +48,7 @@ const menuItems = [
 
 export default function EmployeeDashboard() {
   const [activeTab, setActiveTab] = useState('tasks');
+  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userStatus, setUserStatus] = useState<'online' | 'away' | 'busy' | 'offline'>('offline');
@@ -207,7 +213,7 @@ export default function EmployeeDashboard() {
   };
 
   return (
-    <TabContext.Provider value={{ setActiveTab }}>
+    <TabContext.Provider value={{ setActiveTab, pendingTaskId, setPendingTaskId }}>
       <div className="min-h-screen bg-background flex">
         {/* Sidebar */}
         <aside className={cn(
