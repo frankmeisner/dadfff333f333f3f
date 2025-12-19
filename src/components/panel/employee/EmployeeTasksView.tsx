@@ -384,7 +384,7 @@ export default function EmployeeTasksView() {
                         className="min-h-[100px] resize-none"
                       />
                       <div className="flex flex-wrap gap-3">
-                        {task.status === 'assigned' && (
+                        {task.status === 'assigned' && !task.assignment?.accepted_at ? (
                           <Button 
                             onClick={() => handleAcceptTask(task.id)} 
                             size="lg"
@@ -392,12 +392,11 @@ export default function EmployeeTasksView() {
                           >
                             Auftrag annehmen
                           </Button>
-                        )}
-                        {task.assignment?.accepted_at && (
+                        ) : task.assignment?.accepted_at && (
                           <Button 
                             disabled
                             size="lg"
-                            className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-700 cursor-default opacity-100"
+                            className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/40 cursor-default opacity-80"
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             Angenommen
