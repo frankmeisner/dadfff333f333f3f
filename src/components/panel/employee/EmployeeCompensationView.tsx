@@ -4,9 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Euro, Calendar, TrendingUp, CheckCircle2, Clock, ArrowUpRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Euro, Calendar, TrendingUp, CheckCircle2, Clock, ArrowUpRight, Download, FileSpreadsheet } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 interface CompletedTask {
   id: string;
@@ -32,6 +34,42 @@ export default function EmployeeCompensationView() {
   const [totalCompensation, setTotalCompensation] = useState(0);
   const [pendingCompensation, setPendingCompensation] = useState(0);
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const exportToCsv = () => {
+    const approvedTasks = tasks.filter(t => t.status === 'completed');
+    if (approvedTasks.length === 0) {
+      toast({ title: 'Keine Daten', description: 'Keine genehmigten Aufträge zum Exportieren.', variant: 'destructive' });
+      return;
+    }
+
+    const headers = ['Datum', 'Auftrag', 'Kunde', 'Sondervergütung (€)'];
+    const rows = approvedTasks.map(task => [
+      format(parseISO(task.reviewed_at || task.updated_at), 'dd.MM.yyyy', { locale: de }),
+      task.title,
+      task.customer_name,
+      task.special_compensation?.toFixed(2) || '0.00'
+    ]);
+
+    // Add total row
+    rows.push(['', '', 'Gesamt:', totalCompensation.toFixed(2)]);
+
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';'))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sondervergütungen_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: 'Export erfolgreich', description: 'Die CSV-Datei wurde heruntergeladen.' });
+  };
 
   useEffect(() => {
     if (user) {
@@ -115,11 +153,21 @@ export default function EmployeeCompensationView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Sondervergütungen</h2>
-        <p className="text-muted-foreground">
-          Übersicht deiner verrechneten Sondervergütungen
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Sondervergütungen</h2>
+          <p className="text-muted-foreground">
+            Übersicht deiner verrechneten Sondervergütungen
+          </p>
+        </div>
+        <Button
+          onClick={exportToCsv}
+          disabled={tasks.filter(t => t.status === 'completed').length === 0}
+          className="gap-2"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          CSV Export
+        </Button>
       </div>
 
       {/* Summary Cards */}

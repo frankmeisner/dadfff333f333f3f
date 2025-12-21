@@ -32,6 +32,7 @@ import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { TypingIndicator } from '../TypingIndicator';
 import { EmojiPicker } from '../EmojiPicker';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useUserPresence } from '@/hooks/useUserPresence';
 
 type UserStatus = 'online' | 'away' | 'busy' | 'offline';
 
@@ -77,6 +78,13 @@ export default function EmployeeChatView() {
   });
 
   const { playNotificationSound } = useNotificationSound();
+
+  // Use presence-based status tracking
+  const { getUserStatus } = useUserPresence({
+    userId: user?.id,
+    userName: myProfile ? `${myProfile.first_name} ${myProfile.last_name}`.trim() : 'Mitarbeiter',
+    initialStatus: 'online',
+  });
 
   useEffect(() => {
     if (user) {
@@ -373,7 +381,13 @@ export default function EmployeeChatView() {
     return data.publicUrl;
   };
 
+  // Get status using presence hook for accurate real-time status
   const getStatus = (userId: string): UserStatus => {
+    // First check presence (more accurate), then fallback to profile status
+    const presenceStatus = getUserStatus(userId);
+    if (presenceStatus !== 'offline') {
+      return presenceStatus;
+    }
     return profiles[userId]?.status || 'offline';
   };
 
