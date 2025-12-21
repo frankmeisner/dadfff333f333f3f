@@ -236,7 +236,7 @@ export default function PanelSidebar({
               >
                 <Avatar className="h-10 w-10 ring-2 ring-sidebar-border shrink-0">
                   <AvatarImage src={getAvatarUrl() || ''} alt={`${profile?.first_name} ${profile?.last_name}`} />
-                  <AvatarFallback className="bg-sidebar-accent text-sidebar-accent-foreground text-sm font-semibold">
+                  <AvatarFallback className="bg-muted text-muted-foreground text-sm font-semibold">
                     {profile?.first_name?.[0]}{profile?.last_name?.[0]}
                   </AvatarFallback>
                 </Avatar>
