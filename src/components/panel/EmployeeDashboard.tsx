@@ -37,6 +37,7 @@ export default function EmployeeDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pendingEvaluations, setPendingEvaluations] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const [searchValue, setSearchValue] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -76,7 +77,7 @@ export default function EmployeeDashboard() {
     };
   }, []);
 
-  // Fetch unread notifications count and pending evaluations
+  // Fetch unread notifications count, pending evaluations, and unread messages
   useEffect(() => {
     if (!user) return;
 
@@ -88,6 +89,25 @@ export default function EmployeeDashboard() {
         .is('read_at', null);
       
       setUnreadNotifications(count || 0);
+    };
+
+    const fetchUnreadMessages = async () => {
+      // Count messages where user is recipient (direct or group) and not read
+      const { count: directCount } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+
+      const { count: groupCount } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_group_message', true)
+        .neq('sender_id', user.id)
+        .is('read_at', null);
+
+      setUnreadMessages((directCount || 0) + (groupCount || 0));
     };
 
     const fetchPendingEvaluations = async () => {
@@ -124,14 +144,16 @@ export default function EmployeeDashboard() {
     };
 
     fetchUnreadCount();
+    fetchUnreadMessages();
     fetchPendingEvaluations();
 
     const channel = supabase
       .channel('notification-count')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, fetchUnreadCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, fetchUnreadMessages)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_evaluations' }, fetchPendingEvaluations)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignments' }, fetchPendingEvaluations)
-      .on('postgres_changes', { 
+      .on('postgres_changes', {
         event: 'INSERT', 
         schema: 'public', 
         table: 'notifications'
@@ -163,7 +185,7 @@ export default function EmployeeDashboard() {
         { id: 'tasks', label: 'Meine Aufträge', icon: ClipboardList },
         { id: 'evaluations', label: 'Bewertungsbögen', icon: ClipboardCheck, badge: pendingEvaluations > 0 ? pendingEvaluations : undefined },
         { id: 'compensation', label: 'Sondervergütungen', icon: Euro },
-        { id: 'chat', label: 'Nachrichten', icon: MessageCircle },
+        { id: 'chat', label: 'Nachrichten', icon: MessageCircle, badge: unreadMessages > 0 ? unreadMessages : undefined },
         { id: 'documents', label: 'Meine Verträge', icon: FileText },
       ],
     },
