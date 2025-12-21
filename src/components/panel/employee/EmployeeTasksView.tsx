@@ -99,12 +99,12 @@ const priorityConfig: Record<TaskPriority, { color: string; label: string; icon:
 };
 
 const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
-  pending: { color: 'bg-amber-500/20 text-amber-700 dark:text-amber-400', label: 'Ausstehend' },
-  assigned: { color: 'bg-amber-500/20 text-amber-700 dark:text-amber-400', label: 'Ausstehend' },
-  in_progress: { color: 'bg-blue-500/20 text-blue-700 dark:text-blue-400', label: 'In Bearbeitung' },
-  sms_requested: { color: 'bg-purple-500/20 text-purple-700 dark:text-purple-400', label: 'SMS angefordert' },
-  completed: { color: 'bg-green-500/20 text-green-700 dark:text-green-400', label: 'Abgeschlossen' },
-  cancelled: { color: 'bg-destructive/20 text-destructive', label: 'Storniert' }
+  pending: { color: 'bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30', label: 'Ausstehend' },
+  assigned: { color: 'bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-500/30', label: 'Ausstehend' },
+  in_progress: { color: 'bg-primary/20 text-primary border border-primary/30', label: 'In Bearbeitung' },
+  sms_requested: { color: 'bg-rose-600/20 text-rose-700 dark:text-rose-400 border border-rose-600/30', label: 'SMS angefordert' },
+  completed: { color: 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30', label: 'Abgeschlossen' },
+  cancelled: { color: 'bg-destructive/20 text-destructive border border-destructive/30', label: 'Storniert' }
 };
 
 interface StatusRequest {
@@ -729,14 +729,14 @@ export default function EmployeeTasksView() {
             const hasVideoChat = task.assignment?.accepted_at;
             
             return (
-              <Card key={task.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <CardContent className="p-0">
+              <Card key={task.id} className="overflow-hidden hover:shadow-lg transition-all border-rose-500/10 hover:border-rose-500/20">
+                <CardContent className="p-0 bg-gradient-to-br from-background to-rose-50/30 dark:to-rose-950/10">
                   {/* Card Header */}
                   <div className="p-4 pb-3">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Clock className="h-4 w-4 text-primary" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-500 to-primary flex items-center justify-center">
+                          <Clock className="h-4 w-4 text-white" />
                         </div>
                         <Badge variant="outline" className={statusConfig[task.status].color}>
                           {statusConfig[task.status].label}
@@ -769,13 +769,13 @@ export default function EmployeeTasksView() {
                   
                   {/* Progress bar */}
                   <div className="px-4 py-3">
-                    <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                    <div className="flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
                       <Clock className="h-4 w-4" />
                       <span>Geschätzt: 5h</span>
                     </div>
-                    <div className="mt-2 h-2 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                    <div className="mt-2 h-2 bg-rose-100 dark:bg-rose-900/30 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-amber-500 rounded-full transition-all"
+                        className="h-full bg-gradient-to-r from-rose-500 to-primary rounded-full transition-all"
                         style={{ width: task.assignment?.accepted_at ? '50%' : '10%' }}
                       />
                     </div>
