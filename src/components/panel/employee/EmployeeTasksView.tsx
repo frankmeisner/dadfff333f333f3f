@@ -125,6 +125,7 @@ export default function EmployeeTasksView() {
   const [taskDocuments, setTaskDocuments] = useState<Record<string, number>>({});
   const [taskEvaluations, setTaskEvaluations] = useState<Record<string, boolean>>({});
   const [progressNotes, setProgressNotes] = useState<Record<string, string>>({});
+  const [stepNotes, setStepNotes] = useState<Record<string, Record<string, string>>>({});
   const [statusRequests, setStatusRequests] = useState<StatusRequest[]>([]);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,6 +140,7 @@ export default function EmployeeTasksView() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [webIdentDialog, setWebIdentDialog] = useState<{ open: boolean; url: string; taskTitle: string; taskId: string }>({ open: false, url: '', taskTitle: '', taskId: '' });
   const [videoChatDialog, setVideoChatDialog] = useState<{ open: boolean; task: TaskWithDetails | null }>({ open: false, task: null });
+  const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const tabContext = useTabContext();
@@ -515,6 +517,66 @@ export default function EmployeeTasksView() {
     }
 
     toast({ title: 'Gespeichert', description: 'Notizen aktualisiert.' });
+  };
+
+  const handleSaveStepNote = async (taskId: string, stepNumber: number) => {
+    if (!user) return;
+    
+    setSavingStepNote(`${taskId}-${stepNumber}`);
+    
+    const currentStepNotes = stepNotes[taskId] || {};
+    const noteForStep = currentStepNotes[stepNumber.toString()] || '';
+    
+    // Get existing step_notes from database
+    const { data: assignment } = await supabase
+      .from('task_assignments')
+      .select('step_notes')
+      .eq('task_id', taskId)
+      .eq('user_id', user.id)
+      .single();
+    
+    const existingNotes = (assignment?.step_notes as Record<string, string>) || {};
+    const updatedNotes = { ...existingNotes, [stepNumber.toString()]: noteForStep };
+    
+    const { error } = await supabase
+      .from('task_assignments')
+      .update({ step_notes: updatedNotes })
+      .eq('task_id', taskId)
+      .eq('user_id', user.id);
+
+    setSavingStepNote(null);
+
+    if (error) {
+      toast({
+        title: 'Fehler',
+        description: 'Schritt-Notiz konnte nicht gespeichert werden.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({ title: 'Gespeichert', description: `Notiz für Schritt ${stepNumber} gespeichert.` });
+  };
+
+  const getStepNote = (taskId: string, stepNumber: number): string => {
+    // First check local state
+    if (stepNotes[taskId]?.[stepNumber.toString()]) {
+      return stepNotes[taskId][stepNumber.toString()];
+    }
+    // Then check task assignment
+    const task = tasks.find(t => t.id === taskId);
+    const assignmentNotes = (task?.assignment as any)?.step_notes as Record<string, string> | undefined;
+    return assignmentNotes?.[stepNumber.toString()] || '';
+  };
+
+  const setStepNote = (taskId: string, stepNumber: number, note: string) => {
+    setStepNotes(prev => ({
+      ...prev,
+      [taskId]: {
+        ...(prev[taskId] || {}),
+        [stepNumber.toString()]: note
+      }
+    }));
   };
 
   const handleGoToDocuments = (taskId: string) => {
@@ -1292,15 +1354,53 @@ export default function EmployeeTasksView() {
                         />
                       )}
 
-
-                      {/* Progress notes */}
-                      <div className="space-y-3">
+                      {/* Step Notes - separate note for each step */}
+                      <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            Notiz für Schritt {currentStep}
+                          </h4>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1"
+                            disabled={savingStepNote === `${selectedTask.id}-${currentStep}`}
+                            onClick={() => handleSaveStepNote(selectedTask.id, currentStep)}
+                          >
+                            {savingStepNote === `${selectedTask.id}-${currentStep}` ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-3 w-3" />
+                            )}
+                            Speichern
+                          </Button>
+                        </div>
                         <Textarea
-                          placeholder="Fortschritt und Notizen hier eingeben..."
-                          value={progressNotes[selectedTask.id] || selectedTask.assignment?.progress_notes || ''}
-                          onChange={(e) => setProgressNotes({ ...progressNotes, [selectedTask.id]: e.target.value })}
-                          className="min-h-[100px]"
+                          placeholder={`Was hast du in Schritt ${currentStep} gemacht? Notizen hier eingeben...`}
+                          value={getStepNote(selectedTask.id, currentStep)}
+                          onChange={(e) => setStepNote(selectedTask.id, currentStep, e.target.value)}
+                          className="min-h-[80px] bg-background"
                         />
+                        
+                        {/* Show previous step notes */}
+                        {currentStep > 1 && (
+                          <div className="mt-4 pt-4 border-t border-border/50">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Vorherige Schritt-Notizen:</p>
+                            <div className="space-y-2 max-h-32 overflow-y-auto">
+                              {Array.from({ length: currentStep - 1 }, (_, i) => i + 1).map(step => {
+                                const note = getStepNote(selectedTask.id, step);
+                                if (!note) return null;
+                                return (
+                                  <div key={step} className="text-xs p-2 bg-background rounded border">
+                                    <span className="font-medium text-primary">Schritt {step}:</span>
+                                    <span className="ml-2 text-muted-foreground">{note}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Action buttons */}

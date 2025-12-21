@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PanelSidebar from './PanelSidebar';
 import PanelHeader from './PanelHeader';
 import { NotificationBell } from './NotificationBell';
-import { ClipboardList, Clock, FileText, Calendar, User, Bell, LayoutDashboard, ClipboardCheck } from 'lucide-react';
+import { ClipboardList, Clock, FileText, Calendar, User, Bell, LayoutDashboard, ClipboardCheck, Euro } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import EmployeeDashboardView from './employee/EmployeeDashboardView';
@@ -15,6 +15,7 @@ import EmployeeVacationView from './employee/EmployeeVacationView';
 import EmployeeProfileView from './employee/EmployeeProfileView';
 import EmployeeNotificationsView from './employee/EmployeeNotificationsView';
 import EmployeeEvaluationsView from './employee/EmployeeEvaluationsView';
+import EmployeeCompensationView from './employee/EmployeeCompensationView';
 import { NotificationSettings } from './employee/NotificationSettings';
 import { cn } from '@/lib/utils';
 
@@ -34,6 +35,7 @@ export default function EmployeeDashboard() {
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [pendingEvaluations, setPendingEvaluations] = useState(0);
   const [searchValue, setSearchValue] = useState('');
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -73,7 +75,7 @@ export default function EmployeeDashboard() {
     };
   }, []);
 
-  // Fetch unread notifications count and listen for new status requests
+  // Fetch unread notifications count and pending evaluations
   useEffect(() => {
     if (!user) return;
 
@@ -87,11 +89,47 @@ export default function EmployeeDashboard() {
       setUnreadNotifications(count || 0);
     };
 
+    const fetchPendingEvaluations = async () => {
+      // Get assigned tasks
+      const { data: assignments } = await supabase
+        .from('task_assignments')
+        .select('task_id')
+        .eq('user_id', user.id);
+
+      if (!assignments || assignments.length === 0) {
+        setPendingEvaluations(0);
+        return;
+      }
+
+      const taskIds = assignments.map(a => a.task_id);
+
+      // Get existing evaluations
+      const { data: existingEvals } = await supabase
+        .from('task_evaluations')
+        .select('task_id')
+        .eq('user_id', user.id);
+
+      const evaluatedTaskIds = existingEvals?.map(e => e.task_id) || [];
+      
+      // Get tasks that need evaluation (in_progress or sms_requested, not yet evaluated)
+      const { data: tasksNeedingEval } = await supabase
+        .from('tasks')
+        .select('id')
+        .in('id', taskIds)
+        .in('status', ['in_progress', 'sms_requested', 'pending_review']);
+
+      const pendingCount = tasksNeedingEval?.filter(t => !evaluatedTaskIds.includes(t.id)).length || 0;
+      setPendingEvaluations(pendingCount);
+    };
+
     fetchUnreadCount();
+    fetchPendingEvaluations();
 
     const channel = supabase
       .channel('notification-count')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, fetchUnreadCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_evaluations' }, fetchPendingEvaluations)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignments' }, fetchPendingEvaluations)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
@@ -122,7 +160,8 @@ export default function EmployeeDashboard() {
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'tasks', label: 'Meine Aufträge', icon: ClipboardList },
-        { id: 'evaluations', label: 'Bewertungsbögen', icon: ClipboardCheck },
+        { id: 'evaluations', label: 'Bewertungsbögen', icon: ClipboardCheck, badge: pendingEvaluations > 0 ? pendingEvaluations : undefined },
+        { id: 'compensation', label: 'Sondervergütungen', icon: Euro },
         { id: 'documents', label: 'Meine Verträge', icon: FileText },
       ],
     },
@@ -145,6 +184,8 @@ export default function EmployeeDashboard() {
         return <EmployeeTasksView />;
       case 'evaluations':
         return <EmployeeEvaluationsView />;
+      case 'compensation':
+        return <EmployeeCompensationView />;
       case 'time':
         return <EmployeeTimeView />;
       case 'documents':

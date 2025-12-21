@@ -239,10 +239,12 @@ export type Database = {
       task_assignments: {
         Row: {
           accepted_at: string | null
+          admin_notes: string | null
           assigned_at: string
           id: string
           progress_notes: string | null
           status: string | null
+          step_notes: Json | null
           task_id: string
           user_id: string
           workflow_digital: boolean | null
@@ -251,10 +253,12 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          admin_notes?: string | null
           assigned_at?: string
           id?: string
           progress_notes?: string | null
           status?: string | null
+          step_notes?: Json | null
           task_id: string
           user_id: string
           workflow_digital?: boolean | null
@@ -263,10 +267,12 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          admin_notes?: string | null
           assigned_at?: string
           id?: string
           progress_notes?: string | null
           status?: string | null
+          step_notes?: Json | null
           task_id?: string
           user_id?: string
           workflow_digital?: boolean | null
