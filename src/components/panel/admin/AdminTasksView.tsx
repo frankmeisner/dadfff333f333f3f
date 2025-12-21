@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -45,11 +45,12 @@ const statusLabels: Record<TaskStatus, string> = {
 
 export default function AdminTasksView() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [assignments, setAssignments] = useState<(TaskAssignment & { progress_notes?: string })[]>([]);
+  const [assignments, setAssignments] = useState<(TaskAssignment & { progress_notes?: string; workflow_step?: number; workflow_digital?: boolean | null })[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'in_progress' | 'completed'>('all');
   const { toast } = useToast();
@@ -401,6 +402,14 @@ export default function AdminTasksView() {
                     
                     {/* Actions */}
                     <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setDetailTask(task)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       {!assignee && task.status === 'pending' && (
                         <Button
                           variant="outline"
@@ -570,6 +579,202 @@ export default function AdminTasksView() {
             </div>
             <Button onClick={handleAssignTask} className="w-full">Zuweisen</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Task Detail Dialog */}
+      <Dialog open={!!detailTask} onOpenChange={(open) => !open && setDetailTask(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {detailTask && (() => {
+            const assignee = getTaskAssignee(detailTask.id);
+            const assignment = getTaskAssignment(detailTask.id);
+            const workflowStep = assignment?.workflow_step ?? 1;
+            const workflowDigital = assignment?.workflow_digital;
+
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-primary" />
+                    {detailTask.title}
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-6">
+                  {/* Status & Priority */}
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className={priorityColors[detailTask.priority]}>
+                      {detailTask.priority === 'low' ? 'Niedrig' : detailTask.priority === 'medium' ? 'Mittel' : detailTask.priority === 'high' ? 'Hoch' : 'Dringend'}
+                    </Badge>
+                    <Badge className={statusColors[detailTask.status]}>
+                      {statusLabels[detailTask.status]}
+                    </Badge>
+                    {detailTask.special_compensation && (
+                      <Badge className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+                        <Euro className="h-3 w-3 mr-1" />
+                        {detailTask.special_compensation.toFixed(2)} €
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  {detailTask.description && (
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm whitespace-pre-wrap">{detailTask.description}</p>
+                    </div>
+                  )}
+
+                  {/* Customer Info */}
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Kundenname</Label>
+                      <p className="font-medium flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        {detailTask.customer_name}
+                      </p>
+                    </div>
+                    {detailTask.customer_phone && (
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Telefon</Label>
+                        <p className="font-medium flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          {detailTask.customer_phone}
+                        </p>
+                      </div>
+                    )}
+                    {detailTask.deadline && (
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Deadline</Label>
+                        <p className="font-medium flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                          <Clock className="h-4 w-4" />
+                          {format(new Date(detailTask.deadline), 'dd.MM.yyyy HH:mm', { locale: de })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Test Credentials */}
+                  {(detailTask.test_email || detailTask.test_password) && (
+                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <p className="text-xs font-semibold mb-3 text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-2">
+                        <Key className="h-4 w-4" />
+                        Test-Zugangsdaten
+                      </p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {detailTask.test_email && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-4 w-4 text-blue-600" />
+                            <span className="font-mono">{detailTask.test_email}</span>
+                          </div>
+                        )}
+                        {detailTask.test_password && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Key className="h-4 w-4 text-blue-600" />
+                            <span className="font-mono">{detailTask.test_password}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Web-Ident URL */}
+                  {detailTask.web_ident_url && (
+                    <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+                      <p className="text-xs font-semibold mb-2 text-cyan-700 dark:text-cyan-400 uppercase tracking-wide flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        Web-Ident Link
+                      </p>
+                      <a 
+                        href={detailTask.web_ident_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-cyan-600 dark:text-cyan-400 hover:underline"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        {detailTask.web_ident_url}
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Assignee & Workflow Status */}
+                  {assignee && (
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                          <User className="h-5 w-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-emerald-700 dark:text-emerald-400">
+                            {assignee.first_name} {assignee.last_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{assignee.email}</p>
+                        </div>
+                      </div>
+
+                      {/* Workflow Progress */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Workflow-Fortschritt</span>
+                          <span className="font-medium">Schritt {workflowStep} / 8</span>
+                        </div>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
+                            <div
+                              key={step}
+                              className={`flex-1 h-2 rounded-full ${
+                                step < workflowStep ? 'bg-emerald-500' : step === workflowStep ? 'bg-emerald-500/60' : 'bg-muted'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Video Chat Decision */}
+                      <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                        <Video className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Video-Chat</p>
+                          <p className="text-xs text-muted-foreground">
+                            {workflowDigital === true
+                              ? '✅ Akzeptiert'
+                              : workflowDigital === false
+                                ? '❌ Abgelehnt'
+                                : '⏳ Noch nicht entschieden'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Progress Notes */}
+                      {assignment?.progress_notes && (
+                        <div className="p-3 bg-background/50 rounded-lg">
+                          <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                            <Activity className="h-3 w-3" />
+                            Mitarbeiter-Notizen
+                          </p>
+                          <p className="text-sm">{assignment.progress_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setDetailTask(null)}>
+                    Schließen
+                  </Button>
+                  {!assignee && detailTask.status === 'pending' && (
+                    <Button onClick={() => {
+                      setSelectedTask(detailTask);
+                      setDetailTask(null);
+                      setIsAssignDialogOpen(true);
+                    }}>
+                      Zuweisen
+                    </Button>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
