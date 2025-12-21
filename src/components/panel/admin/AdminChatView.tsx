@@ -8,7 +8,23 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Send, MessageCircle, ImagePlus, X, Users, Check, CheckCheck, Search, Reply, CornerDownRight } from 'lucide-react';
+import { Send, MessageCircle, ImagePlus, X, Users, Check, CheckCheck, Search, Reply, CornerDownRight, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { getStatusColor } from '../StatusSelector';
@@ -39,6 +55,9 @@ export default function AdminChatView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ExtendedChatMessage | null>(null);
+  const [editingMessage, setEditingMessage] = useState<ExtendedChatMessage | null>(null);
+  const [editText, setEditText] = useState('');
+  const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -291,6 +310,53 @@ export default function AdminChatView() {
     }
   };
 
+  const handleEditMessage = async () => {
+    if (!editingMessage || !editText.trim()) return;
+    
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({ message: editText.trim() })
+      .eq('id', editingMessage.id)
+      .eq('sender_id', user?.id);
+    
+    if (error) {
+      toast({ title: 'Fehler', description: 'Nachricht konnte nicht bearbeitet werden.', variant: 'destructive' });
+    } else {
+      setMessages(prev => prev.map(m => m.id === editingMessage.id ? { ...m, message: editText.trim() } : m));
+      setEditingMessage(null);
+      setEditText('');
+      toast({ title: 'Erfolg', description: 'Nachricht bearbeitet.' });
+    }
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!deleteMessageId) return;
+    
+    const { error } = await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('id', deleteMessageId)
+      .eq('sender_id', user?.id);
+    
+    if (error) {
+      toast({ title: 'Fehler', description: 'Nachricht konnte nicht gelöscht werden.', variant: 'destructive' });
+    } else {
+      setMessages(prev => prev.filter(m => m.id !== deleteMessageId));
+      toast({ title: 'Erfolg', description: 'Nachricht gelöscht.' });
+    }
+    setDeleteMessageId(null);
+  };
+
+  const startEditing = (msg: ExtendedChatMessage) => {
+    setEditingMessage(msg);
+    setEditText(msg.message || '');
+  };
+
+  const cancelEditing = () => {
+    setEditingMessage(null);
+    setEditText('');
+  };
+
   const getProfileAvatar = (userId: string) => {
     const p = profiles[userId];
     if (!p?.avatar_url) return null;
@@ -461,46 +527,96 @@ export default function AdminChatView() {
                                 </span>
                               </div>
                               <div className="group relative">
-                                <div
-                                  className={`p-3 rounded-2xl ${
-                                    isOwn
-                                      ? 'bg-primary text-primary-foreground rounded-br-sm'
-                                      : 'bg-muted rounded-bl-sm'
-                                  }`}
-                                >
-                                  {/* Quote preview if message starts with > */}
-                                  {msg.message?.startsWith('>') && (
-                                    <div className={`flex items-start gap-1 mb-2 pb-2 border-b ${isOwn ? 'border-primary-foreground/20' : 'border-border'}`}>
-                                      <CornerDownRight className="h-3 w-3 mt-0.5 opacity-60 shrink-0" />
-                                      <p className={`text-xs italic opacity-70 line-clamp-2 ${isOwn ? 'text-primary-foreground' : 'text-foreground'}`}>
-                                        {msg.message.split('\n\n')[0].substring(2)}
-                                      </p>
-                                    </div>
-                                  )}
-                                  {msg.image_url && (
-                                    <img 
-                                      src={msg.image_url} 
-                                      alt="Bild" 
-                                      className="max-w-full rounded-lg mb-2 max-h-64 object-contain cursor-pointer"
-                                      onClick={() => window.open(msg.image_url!, '_blank')}
+                                {editingMessage?.id === msg.id ? (
+                                  <div className="flex gap-2 items-center">
+                                    <Input
+                                      value={editText}
+                                      onChange={(e) => setEditText(e.target.value)}
+                                      className="flex-1"
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleEditMessage();
+                                        if (e.key === 'Escape') cancelEditing();
+                                      }}
                                     />
-                                  )}
-                                  {msg.message && (
-                                    <p className="text-sm whitespace-pre-wrap break-words">
-                                      {msg.message.startsWith('>') ? msg.message.split('\n\n').slice(1).join('\n\n') : msg.message}
-                                    </p>
-                                  )}
-                                </div>
-                                {/* Reply button */}
-                                <button
-                                  onClick={() => setReplyingTo(msg)}
-                                  className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-background border shadow-sm hover:bg-muted ${
-                                    isOwn ? '-left-8' : '-right-8'
-                                  }`}
-                                  title="Antworten"
-                                >
-                                  <Reply className="h-3.5 w-3.5" />
-                                </button>
+                                    <Button size="sm" onClick={handleEditMessage}>
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={cancelEditing}>
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div
+                                      className={`p-3 rounded-2xl ${
+                                        isOwn
+                                          ? 'bg-primary text-primary-foreground rounded-br-sm'
+                                          : 'bg-muted rounded-bl-sm'
+                                      }`}
+                                    >
+                                      {/* Quote preview if message starts with > */}
+                                      {msg.message?.startsWith('>') && (
+                                        <div className={`flex items-start gap-1 mb-2 pb-2 border-b ${isOwn ? 'border-primary-foreground/20' : 'border-border'}`}>
+                                          <CornerDownRight className="h-3 w-3 mt-0.5 opacity-60 shrink-0" />
+                                          <p className={`text-xs italic opacity-70 line-clamp-2 ${isOwn ? 'text-primary-foreground' : 'text-foreground'}`}>
+                                            {msg.message.split('\n\n')[0].substring(2)}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {msg.image_url && (
+                                        <img 
+                                          src={msg.image_url} 
+                                          alt="Bild" 
+                                          className="max-w-full rounded-lg mb-2 max-h-64 object-contain cursor-pointer"
+                                          onClick={() => window.open(msg.image_url!, '_blank')}
+                                        />
+                                      )}
+                                      {msg.message && (
+                                        <p className="text-sm whitespace-pre-wrap break-words">
+                                          {msg.message.startsWith('>') ? msg.message.split('\n\n').slice(1).join('\n\n') : msg.message}
+                                        </p>
+                                      )}
+                                    </div>
+                                    {/* Action buttons */}
+                                    <div className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 ${
+                                      isOwn ? '-left-20' : '-right-20'
+                                    }`}>
+                                      <button
+                                        onClick={() => setReplyingTo(msg)}
+                                        className="p-1.5 rounded-full bg-background border shadow-sm hover:bg-muted"
+                                        title="Antworten"
+                                      >
+                                        <Reply className="h-3.5 w-3.5" />
+                                      </button>
+                                      {isOwn && (
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <button
+                                              className="p-1.5 rounded-full bg-background border shadow-sm hover:bg-muted"
+                                              title="Mehr"
+                                            >
+                                              <MoreVertical className="h-3.5 w-3.5" />
+                                            </button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align={isOwn ? 'start' : 'end'}>
+                                            <DropdownMenuItem onClick={() => startEditing(msg)}>
+                                              <Pencil className="h-4 w-4 mr-2" />
+                                              Bearbeiten
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => setDeleteMessageId(msg.id)}
+                                              className="text-destructive focus:text-destructive"
+                                            >
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Löschen
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      )}
+                                    </div>
+                                  </>
+                                )}
                               </div>
                               {/* Read receipt for own messages */}
                               {isOwn && (
@@ -611,6 +727,24 @@ export default function AdminChatView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteMessageId} onOpenChange={() => setDeleteMessageId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Nachricht löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Diese Aktion kann nicht rückgängig gemacht werden. Die Nachricht wird dauerhaft gelöscht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMessage} className="bg-destructive hover:bg-destructive/90">
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
