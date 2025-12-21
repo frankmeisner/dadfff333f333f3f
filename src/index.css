@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     
-    /* Primary - Professional blue accent */
-    --primary: 217 91% 60%;
+    /* Primary - Logo red accent */
+    --primary: 0 80% 45%;
     --primary-foreground: 0 0% 100%;
     
     /* Secondary */
@@ -36,23 +36,23 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Accent Red - subtle red touches for warnings & priorities */
-    --accent-red: 0 72% 51%;
+    /* Accent Red - logo-matched red touches */
+    --accent-red: 0 80% 45%;
     --accent-red-light: 0 60% 96%;
-    --accent-red-dark: 0 72% 45%;
-    --accent-red-muted: 0 50% 60%;
+    --accent-red-dark: 0 80% 35%;
+    --accent-red-muted: 0 50% 55%;
     
     /* Border & Input & Ring */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --ring: 0 80% 45%;
     
     /* Sidebar - Dark theme for sidebar */
     --sidebar: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-accent: 0 80% 45%;
+    --sidebar-accent-foreground: 0 0% 100%;
     
     /* Status colors */
     --success: 142 76% 36%;
@@ -62,22 +62,22 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
     
-    /* Employee panel accent - professional blue tones */
-    --employee-accent: 217 91% 60%;
-    --employee-accent-light: 217 91% 95%;
+    /* Employee panel accent - logo red tones */
+    --employee-accent: 0 80% 45%;
+    --employee-accent-light: 0 60% 96%;
     --employee-accent-foreground: 0 0% 100%;
     
     /* Custom gradient tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(230, 80%, 55%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(0, 80%, 45%) 0%, hsl(0, 70%, 35%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 11%) 0%, hsl(217, 33%, 17%) 100%);
-    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(217, 30%, 98%) 100%);
-    --gradient-employee: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(230, 80%, 55%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(0, 30%, 98%) 100%);
+    --gradient-employee: linear-gradient(135deg, hsl(0, 80%, 45%) 0%, hsl(0, 70%, 35%) 100%);
     
     /* Shadow tokens */
     --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
     --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
-    --shadow-blue: 0 0 20px rgba(59, 130, 246, 0.25);
+    --shadow-glow: 0 0 20px rgba(185, 28, 28, 0.3);
+    --shadow-red: 0 0 20px rgba(185, 28, 28, 0.25);
 
     --radius: 0.75rem;
   }
@@ -93,8 +93,8 @@
     --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
     
-    /* Primary - Professional blue accent */
-    --primary: 217 91% 60%;
+    /* Primary - Logo red accent */
+    --primary: 0 80% 50%;
     --primary-foreground: 0 0% 100%;
     
     /* Secondary */
@@ -113,23 +113,23 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Accent Red - subtle red touches for warnings & priorities */
-    --accent-red: 0 72% 55%;
+    /* Accent Red - logo-matched red touches */
+    --accent-red: 0 80% 55%;
     --accent-red-light: 0 50% 20%;
-    --accent-red-dark: 0 72% 45%;
-    --accent-red-muted: 0 40% 55%;
+    --accent-red-dark: 0 80% 40%;
+    --accent-red-muted: 0 60% 60%;
     
     /* Border & Input & Ring */
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 217 91% 60%;
+    --ring: 0 80% 50%;
     
     /* Sidebar - Dark theme for sidebar */
     --sidebar: 222 47% 8%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-accent: 0 80% 45%;
+    --sidebar-accent-foreground: 0 0% 100%;
     
     /* Status colors */
     --success: 142 76% 36%;
@@ -139,22 +139,22 @@
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
     
-    /* Employee panel accent - professional blue tones */
-    --employee-accent: 217 91% 65%;
-    --employee-accent-light: 217 50% 20%;
+    /* Employee panel accent - logo red tones */
+    --employee-accent: 0 80% 55%;
+    --employee-accent-light: 0 50% 20%;
     --employee-accent-foreground: 0 0% 100%;
     
     /* Custom gradient tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(230, 80%, 55%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(0, 80%, 50%) 0%, hsl(0, 70%, 40%) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(222, 47%, 11%) 0%, hsl(217, 33%, 17%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(222, 47%, 11%) 0%, hsl(217, 33%, 17%) 100%);
-    --gradient-employee: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(230, 80%, 55%) 100%);
+    --gradient-employee: linear-gradient(135deg, hsl(0, 80%, 50%) 0%, hsl(0, 70%, 40%) 100%);
     
     /* Shadow tokens */
     --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.3), 0 10px 20px -2px rgba(0, 0, 0, 0.2);
     --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.4);
-    --shadow-blue: 0 0 20px rgba(59, 130, 246, 0.35);
+    --shadow-glow: 0 0 20px rgba(185, 28, 28, 0.4);
+    --shadow-red: 0 0 20px rgba(185, 28, 28, 0.35);
   }
 }
 
