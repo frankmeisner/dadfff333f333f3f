@@ -73,6 +73,10 @@ export interface TaskAssignment {
   workflow_step?: number;
   /** Whether employee opted into the digital flow (video chat). */
   workflow_digital?: boolean | null;
+  /** Notes per workflow step as JSON object { "1": "...", "2": "...", etc } */
+  step_notes?: Record<string, string>;
+  /** Admin notes from status request */
+  admin_notes?: string | null;
   task?: Task;
   profile?: Profile;
 }
