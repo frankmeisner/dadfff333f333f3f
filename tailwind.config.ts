@@ -80,6 +80,12 @@ export default {
           away: "hsl(var(--status-away))",
           busy: "hsl(var(--status-busy))",
           offline: "hsl(var(--status-offline))",
+          pending: "hsl(var(--status-pending))",
+          assigned: "hsl(var(--status-assigned))",
+          "in-progress": "hsl(var(--status-in-progress))",
+          "sms-requested": "hsl(var(--status-sms-requested))",
+          completed: "hsl(var(--status-completed))",
+          cancelled: "hsl(var(--status-cancelled))",
         },
       },
       borderRadius: {

@@ -99,12 +99,12 @@ const priorityConfig: Record<TaskPriority, { color: string; label: string; icon:
 };
 
 const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
-  pending: { color: 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30', label: 'Ausstehend' },
-  assigned: { color: 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30', label: 'Ausstehend' },
-  in_progress: { color: 'bg-primary/20 text-primary border border-primary/30', label: 'In Bearbeitung' },
-  sms_requested: { color: 'bg-sky-600/20 text-sky-700 dark:text-sky-400 border border-sky-600/30', label: 'SMS angefordert' },
-  completed: { color: 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30', label: 'Abgeschlossen' },
-  cancelled: { color: 'bg-destructive/20 text-destructive border border-destructive/30', label: 'Storniert' }
+  pending: { color: 'bg-status-pending/20 text-amber-700 dark:text-amber-400 border border-status-pending/30', label: 'Ausstehend' },
+  assigned: { color: 'bg-status-assigned/20 text-sky-700 dark:text-sky-400 border border-status-assigned/30', label: 'Zugewiesen' },
+  in_progress: { color: 'bg-status-in-progress/20 text-violet-700 dark:text-violet-400 border border-status-in-progress/30', label: 'In Bearbeitung' },
+  sms_requested: { color: 'bg-status-sms-requested/20 text-purple-700 dark:text-purple-400 border border-status-sms-requested/30', label: 'SMS angefordert' },
+  completed: { color: 'bg-status-completed/20 text-green-700 dark:text-green-400 border border-status-completed/30', label: 'Abgeschlossen' },
+  cancelled: { color: 'bg-status-cancelled/20 text-muted-foreground border border-status-cancelled/30', label: 'Storniert' }
 };
 
 interface StatusRequest {

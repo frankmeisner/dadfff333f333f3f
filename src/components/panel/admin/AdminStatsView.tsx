@@ -18,12 +18,12 @@ interface TaskWithAssignee extends Task {
 }
 
 const statusColors: Record<TaskStatus, string> = {
-  pending: 'bg-muted text-muted-foreground',
-  assigned: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400',
-  in_progress: 'bg-blue-500/20 text-blue-700 dark:text-blue-400',
-  sms_requested: 'bg-purple-500/20 text-purple-700 dark:text-purple-400',
-  completed: 'bg-green-500/20 text-green-700 dark:text-green-400',
-  cancelled: 'bg-destructive/20 text-destructive'
+  pending: 'bg-status-pending/20 text-amber-700 dark:text-amber-400',
+  assigned: 'bg-status-assigned/20 text-sky-700 dark:text-sky-400',
+  in_progress: 'bg-status-in-progress/20 text-violet-700 dark:text-violet-400',
+  sms_requested: 'bg-status-sms-requested/20 text-purple-700 dark:text-purple-400',
+  completed: 'bg-status-completed/20 text-green-700 dark:text-green-400',
+  cancelled: 'bg-status-cancelled/20 text-muted-foreground'
 };
 
 const statusLabels: Record<TaskStatus, string> = {
