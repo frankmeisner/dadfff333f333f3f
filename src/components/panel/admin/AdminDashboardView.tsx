@@ -12,7 +12,9 @@ import {
   Calendar,
   MessageSquare,
   ArrowRight,
-  Activity
+  Activity,
+  ShieldAlert,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -25,6 +27,7 @@ interface DashboardStats {
   totalEmployees: number;
   pendingVacations: number;
   pendingSmsRequests: number;
+  pendingKycDocs: number;
 }
 
 interface RecentActivity {
@@ -32,6 +35,14 @@ interface RecentActivity {
   type: string;
   message: string;
   time: string;
+}
+
+interface PendingKycDoc {
+  id: string;
+  fileName: string;
+  employeeName: string;
+  uploadedAt: string;
+  documentType: string;
 }
 
 interface AdminDashboardViewProps {
@@ -46,8 +57,10 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
     totalEmployees: 0,
     pendingVacations: 0,
     pendingSmsRequests: 0,
+    pendingKycDocs: 0,
   });
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [pendingKycDocs, setPendingKycDocs] = useState<PendingKycDoc[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,6 +93,44 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
+      // Fetch pending KYC documents with employee info
+      const { data: kycDocs } = await supabase
+        .from('documents')
+        .select('id, file_name, uploaded_at, document_type, user_id')
+        .in('document_type', ['id_card', 'passport'])
+        .eq('status', 'pending')
+        .order('uploaded_at', { ascending: false })
+        .limit(5);
+
+      // Fetch employee names for KYC docs
+      let kycDocsWithNames: PendingKycDoc[] = [];
+      if (kycDocs && kycDocs.length > 0) {
+        const userIds = [...new Set(kycDocs.map(d => d.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, first_name, last_name')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(
+          (profiles || []).map(p => [p.user_id, `${p.first_name} ${p.last_name}`])
+        );
+
+        kycDocsWithNames = kycDocs.map(doc => ({
+          id: doc.id,
+          fileName: doc.file_name,
+          employeeName: profileMap.get(doc.user_id) || 'Unbekannt',
+          uploadedAt: format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm', { locale: de }),
+          documentType: doc.document_type === 'id_card' ? 'Personalausweis' : 'Reisepass'
+        }));
+      }
+
+      // Get total pending KYC count
+      const { count: kycCount } = await supabase
+        .from('documents')
+        .select('*', { count: 'exact', head: true })
+        .in('document_type', ['id_card', 'passport'])
+        .eq('status', 'pending');
+
       // Fetch recent activity logs
       const { data: activities } = await supabase
         .from('activity_logs')
@@ -94,7 +145,10 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
         totalEmployees: employeesCount || 0,
         pendingVacations: vacationsCount || 0,
         pendingSmsRequests: smsCount || 0,
+        pendingKycDocs: kycCount || 0,
       });
+
+      setPendingKycDocs(kycDocsWithNames);
 
       setRecentActivities(
         (activities || []).map(a => ({
@@ -132,9 +186,9 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
 
   const quickActions = [
     { label: 'Neuer Auftrag', icon: ClipboardList, tab: 'tasks', color: 'bg-primary' },
+    { label: 'KYC-Prüfung', icon: ShieldAlert, tab: 'kyc', badge: stats.pendingKycDocs, color: 'bg-purple-500' },
     { label: 'SMS-Codes', icon: MessageSquare, tab: 'sms', badge: stats.pendingSmsRequests, color: 'bg-orange-500' },
     { label: 'Urlaubsanträge', icon: Calendar, tab: 'vacation', badge: stats.pendingVacations, color: 'bg-blue-500' },
-    { label: 'Mitarbeiter', icon: Users, tab: 'users', color: 'bg-green-500' },
   ];
 
   if (loading) {
@@ -289,6 +343,46 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
             )}
           </CardContent>
         </Card>
+
+        {/* Pending KYC Documents */}
+        {pendingKycDocs.length > 0 && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-purple-500" />
+                  Ausstehende KYC-Prüfungen
+                  <Badge variant="secondary" className="ml-2">{stats.pendingKycDocs}</Badge>
+                </CardTitle>
+                <CardDescription>Neue Ausweisdokumente zur Prüfung</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => onNavigate('kyc')}>
+                Alle prüfen
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {pendingKycDocs.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                    onClick={() => onNavigate('kyc')}
+                  >
+                    <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-purple-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{doc.employeeName}</p>
+                      <p className="text-xs text-muted-foreground">{doc.documentType} • {doc.uploadedAt}</p>
+                    </div>
+                    <Badge variant="outline" className="shrink-0">Prüfen</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Pending Requests Alert */}
