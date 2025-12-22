@@ -4,13 +4,14 @@ export const Hero = () => {
   return <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img src="https://images.unsplash.com/photo-1553877522-43269d4ea984?w=1920&h=1080&fit=crop" alt="Modern office workspace" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/60" />
+        <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?w=1920&h=1080&fit=crop" alt="Modern office workspace" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-primary/30" />
       </div>
 
       {/* Floating Elements */}
-      <div className="absolute top-20 right-20 w-32 h-32 bg-secondary/20 rounded-full blur-3xl animate-pulse hidden lg:block" />
-      <div className="absolute bottom-40 right-40 w-24 h-24 bg-primary/20 rounded-full blur-2xl animate-pulse hidden lg:block" />
+      <div className="absolute top-20 right-20 w-40 h-40 bg-primary/30 rounded-full blur-3xl animate-pulse hidden lg:block" />
+      <div className="absolute bottom-40 right-40 w-32 h-32 bg-primary/20 rounded-full blur-2xl animate-pulse hidden lg:block" />
+      <div className="absolute top-1/2 left-10 w-24 h-24 bg-primary/15 rounded-full blur-2xl animate-pulse hidden lg:block" />
 
       <div className="container relative z-10 py-20">
         <div className="max-w-3xl space-y-8 animate-fade-up">
@@ -21,7 +22,7 @@ export const Hero = () => {
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary-foreground leading-tight">
             Arbeite von überall.{" "}
-            <span className="text-secondary">Wachse mit uns.</span>
+            <span className="text-primary bg-primary/10 px-2 rounded-lg">Wachse mit uns.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl leading-relaxed">
@@ -46,8 +47,8 @@ export const Hero = () => {
           {/* Stats */}
           <div className="flex flex-wrap gap-8 pt-8">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-                <Wifi className="w-6 h-6 text-secondary" />
+              <div className="w-12 h-12 rounded-xl bg-primary/20 backdrop-blur-sm flex items-center justify-center border border-primary/30">
+                <Wifi className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-primary-foreground">100%</p>
@@ -55,8 +56,8 @@ export const Hero = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-                <Users className="w-6 h-6 text-secondary" />
+              <div className="w-12 h-12 rounded-xl bg-primary/20 backdrop-blur-sm flex items-center justify-center border border-primary/30">
+                <Users className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-primary-foreground">50+</p>
@@ -64,8 +65,8 @@ export const Hero = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary-foreground/10 backdrop-blur-sm flex items-center justify-center">
-                <Rocket className="w-6 h-6 text-secondary" />
+              <div className="w-12 h-12 rounded-xl bg-primary/20 backdrop-blur-sm flex items-center justify-center border border-primary/30">
+                <Rocket className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-primary-foreground">15+</p>
@@ -79,8 +80,9 @@ export const Hero = () => {
       {/* Right Side Image Overlay */}
       <div className="absolute right-0 bottom-0 w-1/3 h-full hidden xl:block">
         <div className="absolute bottom-0 right-0 w-full h-2/3">
-          <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=1000&fit=crop" alt="Team collaboration" className="w-full h-full object-cover rounded-tl-3xl" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-tl-3xl" />
+          <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=1000&fit=crop" alt="Team collaboration" className="w-full h-full object-cover rounded-tl-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-primary/20 rounded-tl-3xl" />
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
         </div>
       </div>
 
