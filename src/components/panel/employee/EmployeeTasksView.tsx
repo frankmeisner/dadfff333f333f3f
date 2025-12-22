@@ -14,10 +14,11 @@ import { useTabContext } from '@/components/panel/EmployeeDashboard';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { cn } from '@/lib/utils';
+import WorkflowStepCard from './WorkflowStepCard';
 
 import { 
   Calendar, User, Euro, AlertCircle, MessageSquare, CheckCircle2, 
-  FileUp, Mail, Key, UserCheck, Clock, Trophy, PartyPopper, Eye, EyeOff, RefreshCw, Globe, ExternalLink, X, Maximize2, Search, RefreshCcw, FileText, ArrowRight, ChevronDown, Video, Phone
+  FileUp, Mail, Key, UserCheck, Clock, Trophy, PartyPopper, Eye, EyeOff, RefreshCw, Globe, ExternalLink, X, Maximize2, Search, RefreshCcw, FileText, ArrowRight, ChevronDown, Video, Phone, Sparkles
 } from 'lucide-react';
 import { format, formatDistanceStrict } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -1202,43 +1203,21 @@ export default function EmployeeTasksView() {
                         })}
                       </div>
 
-                      {/* Workflow steps */}
+                      {/* Workflow steps with images */}
                       <div className="space-y-4">
-                        <h3 className="font-semibold text-lg">Aufgabenverlauf</h3>
-                        <div className="space-y-2">
-                          {steps.map((step) => {
-                            const isDone = step.number < currentStep;
-                            const isActive = step.number === currentStep;
-
-                            return (
-                              <div
-                                key={step.number}
-                                className={cn(
-                                  'flex gap-4 p-4 rounded-lg border transition-colors',
-                                  isActive
-                                    ? 'bg-primary/5 border-primary/20'
-                                    : 'bg-muted/50 border-border/50'
-                                )}
-                              >
-                                <div
-                                  className={cn(
-                                    'w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-semibold',
-                                    isDone
-                                      ? 'bg-primary text-primary-foreground'
-                                      : isActive
-                                        ? 'bg-primary/15 text-primary'
-                                        : 'bg-muted-foreground/15 text-muted-foreground'
-                                  )}
-                                >
-                                  {step.number}
-                                </div>
-                                <div className="flex-1">
-                                  <h4 className={cn('font-medium mb-1', isActive && 'text-primary')}>{step.title}</h4>
-                                  <p className="text-sm text-muted-foreground">{step.description}</p>
-                                </div>
-                              </div>
-                            );
-                          })}
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                          <h3 className="font-semibold text-lg">Aufgabenverlauf</h3>
+                        </div>
+                        <div className="space-y-3">
+                          {steps.map((step) => (
+                            <WorkflowStepCard
+                              key={step.number}
+                              step={step}
+                              currentStep={currentStep}
+                              isExpanded={step.number === currentStep}
+                            />
+                          ))}
                         </div>
                       </div>
 
