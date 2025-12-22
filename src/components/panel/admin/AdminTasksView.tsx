@@ -90,7 +90,8 @@ export default function AdminTasksView() {
     special_compensation: '',
     test_email: '',
     test_password: '',
-    web_ident_url: ''
+    web_ident_url: '',
+    skip_kyc_sms: false
   });
 
   useEffect(() => {
@@ -193,6 +194,7 @@ export default function AdminTasksView() {
       test_email: validation.data.test_email,
       test_password: validation.data.test_password,
       web_ident_url: webIdentUrl,
+      skip_kyc_sms: newTask.skip_kyc_sms,
       created_by: user?.id
     });
 
@@ -215,7 +217,7 @@ export default function AdminTasksView() {
       }
       toast({ title: 'Erfolg', description: 'Auftrag wurde erstellt.' });
       setIsDialogOpen(false);
-      setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '' });
+      setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '', skip_kyc_sms: false });
       setSaveAsTemplate(false);
       fetchTasks();
     }
@@ -232,7 +234,8 @@ export default function AdminTasksView() {
       special_compensation: template.special_compensation?.toString() || '',
       test_email: template.test_email || '',
       test_password: template.test_password || '',
-      web_ident_url: ''
+      web_ident_url: '',
+      skip_kyc_sms: false
     });
     setIsTemplateDialogOpen(false);
     toast({ title: 'Vorlage geladen', description: `"${template.title}" wurde geladen.` });
@@ -556,6 +559,21 @@ export default function AdminTasksView() {
                   />
                   <p className="text-xs text-muted-foreground">Link zur Web-Ident-Verifizierung, falls erforderlich</p>
                 </div>
+              </div>
+
+              {/* Skip KYC/SMS Checkbox */}
+              <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                <input
+                  type="checkbox"
+                  id="skipKycSms"
+                  checked={newTask.skip_kyc_sms}
+                  onChange={(e) => setNewTask({ ...newTask, skip_kyc_sms: e.target.checked })}
+                  className="h-4 w-4 rounded border-muted-foreground"
+                />
+                <Label htmlFor="skipKycSms" className="text-sm cursor-pointer flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                  <FileText className="h-4 w-4" />
+                  Ohne KYC / SMS-Code (vereinfachter Ablauf)
+                </Label>
               </div>
 
               {/* Save as Template Checkbox */}

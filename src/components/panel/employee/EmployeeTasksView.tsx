@@ -830,8 +830,14 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     }
   };
 
+  // Check if task has KYC documents uploaded (ID front/back - need at least 2)
+  const hasKycDocuments = (taskId: string) => {
+    return (taskDocuments[taskId] || 0) >= 2;
+  };
+
   const handlePrimaryStepAction = async (task: TaskWithDetails) => {
     const step = getWorkflowStep(task);
+    const skipKycSms = (task as any).skip_kyc_sms === true;
 
     if (step === 1) {
       await setWorkflowStep(task, 2);
@@ -851,6 +857,15 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
         }
         return;
       }
+      // If skip_kyc_sms, go directly to step 7 (Unterlagen abwarten)
+      if (skipKycSms) {
+        await setWorkflowStep(task, 7);
+        toast({
+          title: 'Vereinfachter Ablauf',
+          description: 'Dieser Auftrag erfordert kein KYC/SMS. Du kannst direkt fortfahren.',
+        });
+        return;
+      }
       await setWorkflowStep(task, 3);
       return;
     }
@@ -862,11 +877,19 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     }
 
     if (step === 4) {
-      // Step 4: KYC - Redirect to documents for ID upload
-      handleGoToDocuments(task.id);
+      // Step 4: KYC - Check if at least 2 documents (front + back ID) are uploaded
+      if (!hasKycDocuments(task.id)) {
+        handleGoToDocuments(task.id);
+        toast({
+          title: 'KYC-Dokumente fehlen',
+          description: 'Bitte lade Vorder- und Rückseite deines Ausweises hoch (mindestens 2 Dokumente).',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
-        title: 'KYC-Dokumente',
-        description: 'Bitte lade deine Ausweisdokumente (Vorder- und Rückseite) hoch.',
+        title: 'KYC-Dokumente vorhanden',
+        description: 'Deine Ausweisdokumente wurden erfolgreich hochgeladen.',
       });
       await setWorkflowStep(task, 5);
       return;
@@ -1060,6 +1083,11 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                         {task.special_compensation && task.special_compensation > 0 && (
                           <Badge variant="outline" className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
                             {task.special_compensation.toFixed(2)} €
+                          </Badge>
+                        )}
+                        {(task as any).skip_kyc_sms && (
+                          <Badge variant="outline" className="bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                            Ohne KYC/SMS
                           </Badge>
                         )}
                       </div>
@@ -1550,9 +1578,14 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             <UserCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                             <div>
                               <p className="font-medium mb-1 text-amber-800 dark:text-amber-300">KYC-Prüfung: Ausweis hochladen</p>
-                              <p className="text-sm text-amber-700 dark:text-amber-400">
+                              <p className="text-sm text-amber-700 dark:text-amber-400 mb-2">
                                 Lade ein Foto der Vorder- und Rückseite deines Ausweises unter "Dokumente" hoch. Die Dokumente werden vom Admin geprüft.
                               </p>
+                              <div className="flex items-center gap-2 text-xs">
+                                <span className={`px-2 py-1 rounded-full ${hasKycDocuments(selectedTask.id) ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                  {taskDocuments[selectedTask.id] || 0} / 2 Dokumente hochgeladen
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>

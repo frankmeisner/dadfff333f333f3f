@@ -437,6 +437,7 @@ export type Database = {
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          skip_kyc_sms: boolean | null
           special_compensation: number | null
           status: Database["public"]["Enums"]["task_status"]
           test_email: string | null
@@ -458,6 +459,7 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          skip_kyc_sms?: boolean | null
           special_compensation?: number | null
           status?: Database["public"]["Enums"]["task_status"]
           test_email?: string | null
@@ -479,6 +481,7 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          skip_kyc_sms?: boolean | null
           special_compensation?: number | null
           status?: Database["public"]["Enums"]["task_status"]
           test_email?: string | null

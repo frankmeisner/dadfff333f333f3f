@@ -53,6 +53,7 @@ export interface Task {
   test_email: string | null;
   test_password: string | null;
   web_ident_url: string | null;
+  skip_kyc_sms: boolean | null;
   created_by: string;
   created_at: string;
   updated_at: string;
