@@ -68,7 +68,7 @@ interface TaskDocStatus {
 
 export default function AdminTasksView() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [assignments, setAssignments] = useState<(TaskAssignment & { progress_notes?: string; workflow_step?: number; workflow_digital?: boolean | null; step_notes?: Record<string, string> })[]>([]);
+  const [assignments, setAssignments] = useState<(TaskAssignment & { progress_notes?: string; workflow_step?: number; workflow_digital?: boolean | null; step_notes?: Record<string, string>; demo_viewed_at?: string | null })[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [taskDocStatuses, setTaskDocStatuses] = useState<TaskDocStatus[]>([]);
@@ -151,11 +151,11 @@ export default function AdminTasksView() {
       setAssignments(assignmentsData as TaskAssignment[]);
     }
 
-    // Fetch document statuses for tasks (ID cards/passports)
+    // Fetch document statuses for tasks (ID cards/passports/address proofs)
     const { data: docsData } = await supabase
       .from('documents')
       .select('task_id, status')
-      .in('document_type', ['id_card', 'passport'])
+      .in('document_type', ['id_card', 'passport', 'address_proof'])
       .not('task_id', 'is', null);
 
     if (docsData) {
@@ -1198,6 +1198,19 @@ export default function AdminTasksView() {
                               : workflowDigital === false
                                 ? '❌ Abgelehnt'
                                 : '⏳ Noch nicht entschieden'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Demo Viewed Status */}
+                      <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
+                        <Eye className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Demo-Zugang</p>
+                          <p className="text-xs text-muted-foreground">
+                            {assignment?.demo_viewed_at
+                              ? `✅ Angesehen am ${format(new Date(assignment.demo_viewed_at), 'dd.MM.yyyy HH:mm', { locale: de })}`
+                              : '⏳ Noch nicht angesehen'}
                           </p>
                         </div>
                       </div>

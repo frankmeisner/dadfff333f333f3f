@@ -192,6 +192,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   const [smsCountdown, setSmsCountdown] = useState(30);
   const [showSmsReceivedAnimation, setShowSmsReceivedAnimation] = useState<string | null>(null);
   const [requestingSmsId, setRequestingSmsId] = useState<string | null>(null);
+  const [demoLoadingTaskId, setDemoLoadingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const tabContext = useTabContext();
@@ -536,7 +537,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
         supabase.from('sms_code_requests').select('*').in('task_id', taskIds).eq('user_id', user.id).order('requested_at', { ascending: false }),
         supabase.from('documents').select('id, task_id').eq('user_id', user.id).in('task_id', taskIds),
         supabase.from('task_evaluations').select('task_id').eq('user_id', user.id).in('task_id', taskIds),
-        supabase.from('documents').select('id, task_id, status, document_type, review_notes').eq('user_id', user.id).in('task_id', taskIds).in('document_type', ['id_card', 'passport'])
+        supabase.from('documents').select('id, task_id, status, document_type, review_notes').eq('user_id', user.id).in('task_id', taskIds).in('document_type', ['id_card', 'passport', 'address_proof'])
       ]);
 
       const docCounts: Record<string, number> = {};
@@ -953,7 +954,21 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
           title: 'Ausweisfotos vorhanden',
           description: 'Super! Deine Ausweisfotos wurden erfolgreich hochgeladen.',
         });
+        // Show loading animation for demo credentials
+        setDemoLoadingTaskId(task.id);
         await setWorkflowStep(task, 5);
+        // Simulate loading and then record demo viewed
+        setTimeout(async () => {
+          // Mark demo as viewed in database
+          if (user) {
+            await supabase
+              .from('task_assignments')
+              .update({ demo_viewed_at: new Date().toISOString() })
+              .eq('task_id', task.id)
+              .eq('user_id', user.id);
+          }
+          setDemoLoadingTaskId(null);
+        }, 1500);
         return;
       }
 
@@ -1697,32 +1712,45 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           <div className="p-5 space-y-4">
                             <div className="text-center">
                               <p className="text-sm text-muted-foreground mb-4">
-                                Fotografiere deinen Ausweis (Vorder- und Rückseite) und lade die Bilder hoch. Die Qualität muss gut sein, damit alles lesbar ist.
+                                Fotografiere deinen Ausweis (Vorder- und Rückseite) sowie einen Adressnachweis und lade die Bilder hoch. Die Qualität muss gut sein, damit alles lesbar ist.
                               </p>
                             </div>
                             
-                            {/* Example Images */}
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Example Images - ID Front/Back + Address Proof */}
+                            <div className="grid grid-cols-3 gap-3">
                               <div className="p-3 rounded-xl border bg-muted/30 text-center">
-                                <div className="w-full h-24 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600">
+                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600">
                                   <div className="text-center">
-                                    <FileText className="h-8 w-8 text-slate-500 mx-auto mb-1" />
-                                    <span className="text-xs text-slate-500">Vorderseite</span>
+                                    <FileText className="h-6 w-6 text-slate-500 mx-auto mb-1" />
+                                    <span className="text-[10px] text-slate-500">Vorderseite</span>
                                   </div>
                                 </div>
-                                <p className="text-xs font-medium text-muted-foreground">Personalausweis / Reisepass</p>
-                                <p className="text-[10px] text-muted-foreground mt-1">Foto, Name, Geburtsdatum sichtbar</p>
+                                <p className="text-[10px] font-medium text-muted-foreground">Ausweis Vorne</p>
                               </div>
                               <div className="p-3 rounded-xl border bg-muted/30 text-center">
-                                <div className="w-full h-24 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600">
+                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600">
                                   <div className="text-center">
-                                    <FileText className="h-8 w-8 text-slate-500 mx-auto mb-1" />
-                                    <span className="text-xs text-slate-500">Rückseite</span>
+                                    <FileText className="h-6 w-6 text-slate-500 mx-auto mb-1" />
+                                    <span className="text-[10px] text-slate-500">Rückseite</span>
                                   </div>
                                 </div>
-                                <p className="text-xs font-medium text-muted-foreground">Rückseite des Ausweises</p>
-                                <p className="text-[10px] text-muted-foreground mt-1">Alle Daten lesbar</p>
+                                <p className="text-[10px] font-medium text-muted-foreground">Ausweis Hinten</p>
                               </div>
+                              <div className="p-3 rounded-xl border bg-muted/30 text-center">
+                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 flex items-center justify-center mb-2 border-2 border-dashed border-amber-400 dark:border-amber-600">
+                                  <div className="text-center">
+                                    <FileText className="h-6 w-6 text-amber-600 dark:text-amber-400 mx-auto mb-1" />
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400">Adresse</span>
+                                  </div>
+                                </div>
+                                <p className="text-[10px] font-medium text-muted-foreground">Adressnachweis</p>
+                              </div>
+                            </div>
+                            
+                            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
+                              <p className="text-xs text-amber-700 dark:text-amber-400">
+                                <strong>Adressnachweis:</strong> Kontoauszug, Rechnung oder offizielles Schreiben mit deinem Namen und Adresse (max. 3 Monate alt)
+                              </p>
                             </div>
                             
                             {/* Document Status Display */}
@@ -1831,15 +1859,90 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           <div className="p-5 space-y-4">
                             <div className="flex items-start gap-3">
                               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20 shrink-0">
-                                <Info className="h-5 w-5 text-white" />
+                                <Key className="h-5 w-5 text-white" />
                               </div>
                               <div>
-                                <p className="font-semibold text-lg mb-1">Demo-Daten erhalten</p>
+                                <p className="font-semibold text-lg mb-1">Demo-Zugang</p>
                                 <p className="text-sm text-muted-foreground">
-                                  Fahre mit dem nächsten Schritt fort, um den Videochat zu starten.
+                                  Hier sind deine Zugangsdaten für die Demo-Anmeldung.
                                 </p>
                               </div>
                             </div>
+                            
+                            {/* Demo Credentials with Loading Animation */}
+                            {(selectedTask.test_email || selectedTask.test_password) ? (
+                              <>
+                                {demoLoadingTaskId === selectedTask.id ? (
+                                  <div className="p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                                    <div className="flex flex-col items-center gap-4">
+                                      <div className="relative">
+                                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                                          <Loader2 className="h-7 w-7 text-primary animate-spin" />
+                                        </div>
+                                        <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-primary/20 animate-ping" />
+                                      </div>
+                                      <div className="text-center">
+                                        <p className="font-medium text-primary">Demo-Zugang wird generiert...</p>
+                                        <p className="text-sm text-muted-foreground mt-1">Einen Moment bitte</p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 space-y-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">Demo-Zugangsdaten</span>
+                                    </div>
+                                    
+                                    {selectedTask.test_email && (
+                                      <div 
+                                        className="flex items-center gap-3 p-3 bg-background/80 rounded-lg cursor-pointer hover:bg-background transition-colors group"
+                                        onClick={async () => {
+                                          await navigator.clipboard.writeText(selectedTask.test_email!);
+                                          toast({ title: 'Kopiert!', description: 'E-Mail in Zwischenablage kopiert.' });
+                                        }}
+                                      >
+                                        <Mail className="h-4 w-4 text-primary" />
+                                        <span className="font-mono text-sm flex-1">{selectedTask.test_email}</span>
+                                        <Copy className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                      </div>
+                                    )}
+                                    
+                                    {selectedTask.test_password && (
+                                      <div 
+                                        className="flex items-center gap-3 p-3 bg-background/80 rounded-lg cursor-pointer hover:bg-background transition-colors group"
+                                        onClick={async () => {
+                                          await navigator.clipboard.writeText(selectedTask.test_password!);
+                                          toast({ title: 'Kopiert!', description: 'Passwort in Zwischenablage kopiert.' });
+                                        }}
+                                      >
+                                        <Key className="h-4 w-4 text-primary" />
+                                        <span className="font-mono text-sm flex-1">{selectedTask.test_password}</span>
+                                        <Copy className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                      </div>
+                                    )}
+                                    
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full gap-2 mt-2"
+                                      onClick={async () => {
+                                        const text = `E-Mail: ${selectedTask.test_email}\nPasswort: ${selectedTask.test_password}`;
+                                        await navigator.clipboard.writeText(text);
+                                        toast({ title: 'Kopiert!', description: 'Alle Zugangsdaten kopiert.' });
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                      Alle Zugangsdaten kopieren
+                                    </Button>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="p-4 bg-muted/50 rounded-xl border text-center text-muted-foreground">
+                                <p className="text-sm">Keine Demo-Zugangsdaten für diesen Auftrag hinterlegt.</p>
+                              </div>
+                            )}
                             
                             {/* SMS Info Box */}
                             <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
