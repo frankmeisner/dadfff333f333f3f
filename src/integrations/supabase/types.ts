@@ -289,6 +289,7 @@ export type Database = {
           accepted_at: string | null
           admin_notes: string | null
           assigned_at: string
+          demo_viewed_at: string | null
           id: string
           progress_notes: string | null
           status: string | null
@@ -303,6 +304,7 @@ export type Database = {
           accepted_at?: string | null
           admin_notes?: string | null
           assigned_at?: string
+          demo_viewed_at?: string | null
           id?: string
           progress_notes?: string | null
           status?: string | null
@@ -317,6 +319,7 @@ export type Database = {
           accepted_at?: string | null
           admin_notes?: string | null
           assigned_at?: string
+          demo_viewed_at?: string | null
           id?: string
           progress_notes?: string | null
           status?: string | null

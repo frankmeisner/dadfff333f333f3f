@@ -19,6 +19,7 @@ const documentTypes = [
   { value: 'documentation', label: 'Dokumentation' },
   { value: 'id_card', label: 'Personalausweis' },
   { value: 'passport', label: 'Reisepass' },
+  { value: 'address_proof', label: 'Adressnachweis' },
   { value: 'contract', label: 'Vertrag' },
   { value: 'certificate', label: 'Zertifikat' },
   { value: 'task_document', label: 'Auftragsdokument' },

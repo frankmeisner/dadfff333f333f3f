@@ -46,6 +46,7 @@ const documentTypeLabels: Record<string, string> = {
   'documentation': 'Dokumentation',
   'id_card': 'Personalausweis',
   'passport': 'Reisepass',
+  'address_proof': 'Adressnachweis',
   'contract': 'Vertrag',
   'certificate': 'Zertifikat',
   'task_document': 'Auftragsdokument',
