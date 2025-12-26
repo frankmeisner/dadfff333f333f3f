@@ -87,17 +87,28 @@ export const Hero = () => {
       </div>
 
       {/* Scroll Indicator */}
-      <button
+      <div
         onClick={() => {
           const jobsSection = document.getElementById('jobs');
           if (jobsSection) {
             jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
         }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer flex flex-col items-center gap-2 text-primary-foreground/70 hover:text-primary-foreground transition-colors bg-transparent border-none"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            const jobsSection = document.getElementById('jobs');
+            if (jobsSection) {
+              jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+        }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer flex flex-col items-center gap-2 text-primary-foreground/70 hover:text-primary-foreground transition-colors select-none z-20"
+        style={{ pointerEvents: 'auto' }}
       >
-        <span className="text-sm font-medium">Weiter scrollen</span>
-        <ArrowDown className="w-5 h-5" />
-      </button>
+        <span className="text-sm font-medium pointer-events-auto">Weiter scrollen</span>
+        <ArrowDown className="w-5 h-5 pointer-events-auto" />
+      </div>
     </section>;
 };
