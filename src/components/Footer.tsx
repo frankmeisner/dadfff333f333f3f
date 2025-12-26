@@ -1,5 +1,5 @@
-import { Mail, Phone, MapPin, Clock, Briefcase, Shield, Cloud, Code, Headphones, Users, Twitter, Linkedin, Server, Lock, Cog, Globe } from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Mail, Phone, MapPin, Clock, Twitter, Linkedin } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
 export const Footer = () => {
@@ -20,24 +20,6 @@ export const Footer = () => {
     }
   };
 
-  const handleSectionClick = (e: React.MouseEvent, sectionId: string) => {
-    e.preventDefault();
-    if (location.pathname !== '/') {
-      navigate('/');
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    } else {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  };
-
   const handlePageClick = (e: React.MouseEvent, path: string) => {
     e.preventDefault();
     navigate(path);
@@ -46,135 +28,96 @@ export const Footer = () => {
 
   return (
     <footer className="bg-slate-900 dark:bg-slate-950 text-white">
-      {/* Main Footer Content */}
+      {/* Main Footer Content - 3 Sections */}
       <div className="container py-16">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
-          {/* Logo & Description */}
-          <div className="lg:col-span-1">
-            <a href="/" onClick={handleLogoClick} className="flex items-center gap-2.5 mb-6 cursor-pointer">
-              <img src={logo} alt="Fritze IT-Systeme Logo" className="h-20 w-auto dark:brightness-0 dark:invert" />
+        <div className="grid gap-12 md:grid-cols-3">
+          
+          {/* Section 1: Logo (Large) */}
+          <div className="flex flex-col items-start">
+            <a href="/" onClick={handleLogoClick} className="cursor-pointer mb-4">
+              <img 
+                src={logo} 
+                alt="Fritze IT-Systeme Logo" 
+                className="h-24 w-auto dark:brightness-0 dark:invert" 
+              />
             </a>
-            {/* Social & Contact Icons under Logo */}
-            <div className="flex gap-3 mb-6">
-              <span 
-                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center cursor-default"
-                title="Twitter"
-              >
-                <Twitter className="w-5 h-5" />
-              </span>
-              <span 
-                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center cursor-default"
-                title="LinkedIn"
-              >
-                <Linkedin className="w-5 h-5" />
-              </span>
-              <span 
-                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center cursor-default"
-                title="Website"
-              >
-                <Globe className="w-5 h-5" />
-              </span>
-            </div>
-            <div className="space-y-2 text-sm text-white/60">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-white/40" />
+            <p className="text-sm text-white/50 max-w-xs">
+              Innovative IT-Lösungen für die digitale Transformation Ihres Unternehmens.
+            </p>
+          </div>
+
+          {/* Section 2: Kontakt (Address, Email, Phone, Hours, Application) */}
+          <div>
+            <h4 className="font-semibold mb-5 text-primary text-lg">Kontakt</h4>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3 text-white/70">
+                <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <span>Willi-Eichler-Straße 26, 37079 Göttingen</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-3 text-white/70">
+                <Mail className="w-4 h-4 text-primary shrink-0" />
                 <span>info@fritze-it.solutions</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-white/40" />
+              <div className="flex items-center gap-3 text-white/70">
+                <Phone className="w-4 h-4 text-primary shrink-0" />
                 <span>Telefon auf Anfrage</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-white/40" />
+              <div className="flex items-start gap-3 text-white/70">
+                <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p>Mo-Fr: 8:00 - 17:00 Uhr</p>
                   <p>Sa: 9:00 - 12:00 Uhr</p>
                 </div>
               </div>
+              
+              {/* Application Email Block */}
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+                  <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">Bewerbungen an:</p>
+                  <p className="text-sm text-white font-medium">bewerbung@fritze-it.solutions</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Schnellzugriff */}
+          {/* Section 3: Links & Socials (Discreet) */}
           <div>
-            <h4 className="font-semibold mb-5 text-primary">Schnellzugriff</h4>
-            <ul className="space-y-3 text-sm text-white/70">
+            <h4 className="font-semibold mb-5 text-primary text-lg">Links</h4>
+            <ul className="space-y-2 text-sm text-white/70 mb-6">
               <li>
-                <a href="/#jobs" onClick={(e) => handleSectionClick(e, 'jobs')} className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
-                  <Briefcase className="w-4 h-4" />
-                  Stellenangebote
-                </a>
-              </li>
-              <li>
-                <a href="/#team" onClick={(e) => handleSectionClick(e, 'team')} className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
-                  <Users className="w-4 h-4" />
-                  Unser Team
-                </a>
-              </li>
-              <li>
-                <a href="/#benefits" onClick={(e) => handleSectionClick(e, 'benefits')} className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
-                  <Shield className="w-4 h-4" />
-                  Benefits
-                </a>
-              </li>
-              <li>
-                <a href="/#contact" onClick={(e) => handleSectionClick(e, 'contact')} className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
-                  <Mail className="w-4 h-4" />
-                  Kontakt
-                </a>
-              </li>
-              <li>
-                <a href="/ueber-uns" onClick={(e) => handlePageClick(e, '/ueber-uns')} className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer">
-                  <Users className="w-4 h-4" />
+                <a href="/ueber-uns" onClick={(e) => handlePageClick(e, '/ueber-uns')} className="hover:text-white transition-colors cursor-pointer">
                   Über uns
                 </a>
               </li>
-            </ul>
-          </div>
-
-          {/* Leistungen */}
-          <div>
-            <h4 className="font-semibold mb-5 text-primary">Leistungen</h4>
-            <ul className="space-y-3 text-sm text-white/70">
-              <li className="flex items-center gap-2">
-                <Server className="w-4 h-4" />
-                IT-Infrastruktur
+              <li>
+                <a href="/impressum" onClick={(e) => handlePageClick(e, '/impressum')} className="hover:text-white transition-colors cursor-pointer">
+                  Impressum
+                </a>
               </li>
-              <li className="flex items-center gap-2">
-                <Lock className="w-4 h-4" />
-                IT-Sicherheit
-              </li>
-              <li className="flex items-center gap-2">
-                <Cloud className="w-4 h-4" />
-                Cloud-Lösungen
-              </li>
-              <li className="flex items-center gap-2">
-                <Code className="w-4 h-4" />
-                Software-Entwicklung
-              </li>
-              <li className="flex items-center gap-2">
-                <Headphones className="w-4 h-4" />
-                24/7 Support
-              </li>
-              <li className="flex items-center gap-2">
-                <Cog className="w-4 h-4" />
-                Consulting
+              <li>
+                <a href="/datenschutz" onClick={(e) => handlePageClick(e, '/datenschutz')} className="hover:text-white transition-colors cursor-pointer">
+                  Datenschutz
+                </a>
               </li>
             </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h4 className="font-semibold mb-5 text-primary">Kontakt</h4>
-            <p className="text-sm text-white/70 mb-4">
-              Folgen Sie uns und bleiben Sie informiert.
-            </p>
-            <div className="bg-white/5 rounded-lg p-4">
-              <p className="text-sm font-medium text-white mb-1">Bewerbungen an:</p>
-              <p className="text-sm text-white/70">bewerbung@fritze-it.solutions</p>
+            
+            {/* Discreet Socials */}
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-xs text-white/40 mb-3 uppercase tracking-wide">Folgen Sie uns</p>
+              <div className="flex gap-2">
+                <span 
+                  className="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center text-white/40 hover:text-white/60 hover:bg-white/10 transition-all cursor-default"
+                  title="Twitter"
+                >
+                  <Twitter className="w-4 h-4" />
+                </span>
+                <span 
+                  className="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center text-white/40 hover:text-white/60 hover:bg-white/10 transition-all cursor-default"
+                  title="LinkedIn"
+                >
+                  <Linkedin className="w-4 h-4" />
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -184,25 +127,17 @@ export const Footer = () => {
       <div className="border-t border-white/10" />
 
       {/* Bottom Bar */}
-      <div className="container py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-4">
-            <a href="/" onClick={handleLogoClick} className="cursor-pointer">
-              <img src={logo} alt="Fritze IT-Systeme Logo" className="h-8 w-auto dark:brightness-0 dark:invert opacity-60" />
-            </a>
-            <p className="text-sm text-white/50">
-              © {new Date().getFullYear()} Fritze IT GmbH. Alle Rechte vorbehalten.
-            </p>
-          </div>
-          <div className="flex gap-6 text-sm">
-            <a href="/impressum" onClick={(e) => handlePageClick(e, '/impressum')} className="text-white/50 hover:text-white transition-colors cursor-pointer">
+      <div className="container py-5">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+          <p className="text-xs text-white/40">
+            © {new Date().getFullYear()} Fritze IT GmbH. Alle Rechte vorbehalten.
+          </p>
+          <div className="flex gap-4 text-xs text-white/40">
+            <a href="/impressum" onClick={(e) => handlePageClick(e, '/impressum')} className="hover:text-white/60 transition-colors cursor-pointer">
               Impressum
             </a>
-            <a href="/datenschutz" onClick={(e) => handlePageClick(e, '/datenschutz')} className="text-white/50 hover:text-white transition-colors cursor-pointer">
+            <a href="/datenschutz" onClick={(e) => handlePageClick(e, '/datenschutz')} className="hover:text-white/60 transition-colors cursor-pointer">
               Datenschutz
-            </a>
-            <a href="/ueber-uns" onClick={(e) => handlePageClick(e, '/ueber-uns')} className="text-white/50 hover:text-white transition-colors cursor-pointer">
-              Über uns
             </a>
           </div>
         </div>
