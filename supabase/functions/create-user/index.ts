@@ -96,19 +96,19 @@ serve(async (req) => {
     }
     
     const token = authHeader.replace("Bearer ", "");
+    console.log("Validating token...");
     
-    const { data: { user: requestingUser }, error: authError } = await createClient(
-      supabaseUrl,
-      Deno.env.get("SUPABASE_ANON_KEY")!
-    ).auth.getUser(token);
+    // Use service role client to verify the user token for more reliable auth
+    const { data: { user: requestingUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
     if (authError || !requestingUser) {
-      console.error("Auth error:", authError?.message);
-      return new Response(JSON.stringify({ error: "Nicht autorisiert" }), {
+      console.error("Auth error:", authError?.message || "No user found");
+      return new Response(JSON.stringify({ error: "Nicht autorisiert: " + (authError?.message || "Token ungültig") }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("User authenticated:", requestingUser.id);
 
     // Check if requesting user is admin
     const { data: roleData } = await supabaseAdmin
