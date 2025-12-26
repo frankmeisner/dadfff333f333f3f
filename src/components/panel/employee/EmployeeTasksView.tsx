@@ -1284,10 +1284,21 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           </Button>
                         ) : (
                           <Button 
-                            className="flex-1 gap-2" 
-                            disabled
+                            className="flex-1 gap-2 bg-green-600 hover:bg-green-700" 
+                            onClick={async () => {
+                              // Clock in first, then start task
+                              await supabase.from('time_entries').insert({
+                                user_id: user?.id,
+                                entry_type: 'check_in'
+                              });
+                              toast({ title: 'Eingestempelt!', description: 'Du wurdest eingestempelt.' });
+                              setIsCheckedIn(true);
+                              // Then accept the task
+                              handleAcceptTask(task.id);
+                            }}
                           >
-                            Einstempeln zum Starten
+                            <Clock className="h-4 w-4" />
+                            Einstempeln & Starten
                           </Button>
                         )
                       ) : task.assignment?.accepted_at && task.status !== 'completed' ? (
@@ -1744,34 +1755,43 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               </p>
                             </div>
                             
-                            {/* Example Images - ID Front/Back + Address Proof */}
+                            {/* Example Images - ID Front/Back + Address Proof - Clickable for Upload */}
                             <div className="grid grid-cols-3 gap-3">
-                              <div className="p-3 rounded-xl border bg-muted/30 text-center">
-                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600">
+                              <div 
+                                className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
+                                onClick={() => handleGoToDocuments(selectedTask.id)}
+                              >
+                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
                                   <div className="text-center">
-                                    <FileText className="h-6 w-6 text-slate-500 mx-auto mb-1" />
-                                    <span className="text-[10px] text-slate-500">Vorderseite</span>
+                                    <FileUp className="h-6 w-6 text-slate-500 group-hover:text-primary mx-auto mb-1 transition-colors" />
+                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">Hochladen</span>
                                   </div>
                                 </div>
-                                <p className="text-[10px] font-medium text-muted-foreground">Ausweis Vorne</p>
+                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">Ausweis Vorne</p>
                               </div>
-                              <div className="p-3 rounded-xl border bg-muted/30 text-center">
-                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600">
+                              <div 
+                                className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
+                                onClick={() => handleGoToDocuments(selectedTask.id)}
+                              >
+                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
                                   <div className="text-center">
-                                    <FileText className="h-6 w-6 text-slate-500 mx-auto mb-1" />
-                                    <span className="text-[10px] text-slate-500">Rückseite</span>
+                                    <FileUp className="h-6 w-6 text-slate-500 group-hover:text-primary mx-auto mb-1 transition-colors" />
+                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">Hochladen</span>
                                   </div>
                                 </div>
-                                <p className="text-[10px] font-medium text-muted-foreground">Ausweis Hinten</p>
+                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">Ausweis Hinten</p>
                               </div>
-                              <div className="p-3 rounded-xl border bg-muted/30 text-center">
-                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 flex items-center justify-center mb-2 border-2 border-dashed border-amber-400 dark:border-amber-600">
+                              <div 
+                                className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-amber-500/50 transition-all group"
+                                onClick={() => handleGoToDocuments(selectedTask.id)}
+                              >
+                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 flex items-center justify-center mb-2 border-2 border-dashed border-amber-400 dark:border-amber-600 group-hover:border-amber-500 transition-colors">
                                   <div className="text-center">
-                                    <FileText className="h-6 w-6 text-amber-600 dark:text-amber-400 mx-auto mb-1" />
-                                    <span className="text-[10px] text-amber-600 dark:text-amber-400">Adresse</span>
+                                    <FileUp className="h-6 w-6 text-amber-600 dark:text-amber-400 mx-auto mb-1" />
+                                    <span className="text-[10px] text-amber-600 dark:text-amber-400">Hochladen</span>
                                   </div>
                                 </div>
-                                <p className="text-[10px] font-medium text-muted-foreground">Adressnachweis</p>
+                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Adressnachweis</p>
                               </div>
                             </div>
                             
@@ -1988,7 +2008,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                         </div>
                       )}
 
-                      {/* Step 6: Videochat Tab - Elegant Visual with External Link & SMS Request */}
+                      {/* Step 6: Videochat Tab - Professional Visual with External Link & SMS Request */}
                       {currentStep === 6 && (
                         <div className="rounded-xl border overflow-hidden bg-gradient-to-br from-cyan-500/5 via-blue-500/5 to-violet-500/5">
                           {/* Hero Banner with Visual */}
@@ -2006,7 +2026,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               </div>
                               <div className="text-center">
                                 <h3 className="text-lg font-bold text-white">Video-Verifizierung</h3>
-                                <p className="text-xs text-white/80">Öffne die externe Seite für den Videochat</p>
+                                <p className="text-xs text-white/80">Externe Plattform für den Identifikationsprozess</p>
                               </div>
                             </div>
                           </div>
@@ -2018,15 +2038,15 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30 animate-fade-in">
                                 <div className="flex items-center gap-3">
                                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
-                                    <CheckCircle2 className="h-6 w-6 text-white" />
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-emerald-600 dark:text-emerald-400">SMS-Code erhalten!</p>
-                                    <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80">Du kannst jetzt fortfahren</p>
-                                  </div>
+                                  <CheckCircle2 className="h-6 w-6 text-white" />
+                                </div>
+                                <div>
+                                  <p className="font-bold text-emerald-600 dark:text-emerald-400">SMS-Code eingegangen</p>
+                                  <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80">Der Verifizierungscode steht bereit.</p>
                                 </div>
                               </div>
-                            )}
+                            </div>
+                          )}
                             
                             {/* SMS Code Display - Elegant Animated Card */}
                             {selectedTask.smsRequest?.sms_code ? (
@@ -2056,7 +2076,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                 </div>
                               </div>
                             ) : selectedTask.smsRequest ? (
-                              /* Waiting for SMS Code - Elegant Loading State */
+                              /* Waiting for SMS Code - Professional Loading State */
                               <div className="p-5 rounded-xl border bg-gradient-to-br from-muted/50 to-muted/20">
                                 <div className="flex flex-col items-center text-center">
                                   <div className="relative mb-4">
@@ -2065,9 +2085,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                     </div>
                                     <div className="absolute inset-0 w-14 h-14 rounded-full border-2 border-primary/20 animate-ping" />
                                   </div>
-                                  <p className="font-semibold mb-1">Warte auf SMS-Code</p>
+                                  <p className="font-semibold mb-1">SMS-Code wird bereitgestellt</p>
                                   <p className="text-sm text-muted-foreground max-w-xs mb-3">
-                                    Der Admin wurde benachrichtigt und wird den Code bereitstellen.
+                                    Der zuständige Administrator wurde benachrichtigt und stellt den Verifizierungscode bereit.
                                   </p>
                                   
                                   <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
@@ -2116,9 +2136,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                                     <MessageSquare className="h-6 w-6 text-primary" />
                                   </div>
-                                  <p className="font-medium mb-1">SMS-Code erforderlich</p>
+                                  <p className="font-medium mb-1">Verifizierungscode erforderlich</p>
                                   <p className="text-sm text-muted-foreground mb-4">
-                                    Für den Videochat benötigst du einen SMS-Code vom Admin.
+                                    Für die Identifikation im Videochat wird ein SMS-Verifizierungscode benötigt.
                                   </p>
                                   <Button
                                     className="gap-2 bg-gradient-to-r from-primary to-primary/80"
@@ -2147,9 +2167,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                 <div className="flex items-start gap-3 mb-3">
                                   <ExternalLink className="h-5 w-5 text-cyan-600 dark:text-cyan-400 mt-0.5 shrink-0" />
                                   <div>
-                                    <p className="font-medium text-cyan-800 dark:text-cyan-300 mb-1">Externe Seite</p>
+                                    <p className="font-medium text-cyan-800 dark:text-cyan-300 mb-1">Externe Verifizierungsplattform</p>
                                     <p className="text-sm text-cyan-700 dark:text-cyan-400">
-                                      Öffne die Plattform in einem neuen Tab. Du bleibst hier eingeloggt.
+                                      Die Identifikation erfolgt auf einer externen Plattform. Ihre Sitzung in diesem System bleibt aktiv.
                                     </p>
                                   </div>
                                 </div>
@@ -2163,7 +2183,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   }}
                                 >
                                   <ExternalLink className="h-5 w-5" />
-                                  Extern öffnen
+                                  Plattform öffnen
                                 </Button>
                               </div>
                             )}
@@ -2178,7 +2198,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   className="mt-0.5"
                                 />
                                 <label htmlFor="videochat-confirm-step6" className="text-sm cursor-pointer leading-relaxed">
-                                  Ich bestätige, dass ich den Videochat <strong>erfolgreich abgeschlossen</strong> habe.
+                                  Hiermit bestätige ich, dass der Video-Identifikationsprozess <strong>erfolgreich abgeschlossen</strong> wurde.
                                 </label>
                               </div>
                             </div>
@@ -2330,18 +2350,17 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             >
                               {(() => {
                                 const step = getWorkflowStep(selectedTask);
-                                if (step === 3) return 'Weiter (Entscheidung)';
+                                if (step === 3) return 'Speichern & Weiter';
                                 if (step === 4) return 'Ausweisfotos hochladen';
-                                if (step === 5) return 'Weiter zum Videochat';
+                                if (step === 5) return 'Speichern & Weiter';
                                 if (step === 6) {
-                                  if (selectedTask.web_ident_url) return 'Extern Öffnen';
-                                  if (videoChatConfirmed) return 'Videochat erledigt → weiter';
+                                  if (videoChatConfirmed) return 'Weiter';
                                   return 'Bitte Checkbox bestätigen';
                                 }
-                                if (step === 7) return 'Weiter';
-                                if (step === 8) return (taskDocuments[selectedTask.id] || 0) > 0 ? 'Weiter zu Abschluss' : 'Nachweis hochladen';
+                                if (step === 7) return 'Speichern & Weiter';
+                                if (step === 8) return (taskDocuments[selectedTask.id] || 0) > 0 ? 'Speichern & Weiter' : 'Nachweis hochladen';
                                 if (step === 9) return 'Auftrag abschließen';
-                                return 'Weiter';
+                                return 'Speichern & Weiter';
                               })()}
                               <ArrowRight className="h-4 w-4" />
                             </Button>
@@ -2476,7 +2495,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
           <div className="space-y-6 py-4">
             <div className="text-center">
               <div className="mx-auto w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-green-500/30">
-                <Trophy className="h-10 w-10 text-white" />
+                <Check className="h-10 w-10 text-white" />
               </div>
               <h3 className="text-xl font-bold">{completionDialog.task?.title}</h3>
               <p className="text-muted-foreground">{completionDialog.task?.customer_name}</p>
