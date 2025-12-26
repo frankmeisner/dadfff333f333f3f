@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Twitter, Linkedin, Send } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 export const Footer = () => {
@@ -36,16 +37,39 @@ export const Footer = () => {
     if (!email.trim()) return;
     
     setIsLoading(true);
-    // Simulate newsletter signup
-    await new Promise(resolve => setTimeout(resolve, 800));
     
-    toast({
-      title: "Erfolgreich angemeldet!",
-      description: "Sie erhalten bald Updates zu Jobs & IT-Trends.",
-    });
-    
-    setEmail("");
-    setIsLoading(false);
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscriptions')
+        .insert({ email: email.trim().toLowerCase() });
+      
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Bereits angemeldet",
+            description: "Diese E-Mail ist bereits für den Newsletter registriert.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Erfolgreich angemeldet!",
+          description: "Sie erhalten bald Updates zu Jobs & IT-Trends.",
+        });
+        setEmail("");
+      }
+    } catch (error) {
+      console.error('Newsletter signup error:', error);
+      toast({
+        title: "Fehler",
+        description: "Die Anmeldung konnte nicht abgeschlossen werden. Bitte versuchen Sie es später erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
