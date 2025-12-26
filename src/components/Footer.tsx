@@ -75,26 +75,26 @@ export const Footer = () => {
   return (
     <footer className="bg-slate-900 dark:bg-slate-950 text-white">
       {/* Main Footer Content - 4 Sections */}
-      <div className="container py-16">
-        <div className="grid gap-10 md:gap-8 md:grid-cols-2 lg:grid-cols-4">
+      <div className="container py-12 lg:py-14">
+        <div className="grid gap-8 md:gap-10 md:grid-cols-2 lg:grid-cols-4">
           
           {/* Section 1: Logo & Newsletter */}
-          <div className="flex flex-col items-start">
-            <a href="/" onClick={handleLogoClick} className="cursor-pointer mb-4">
+          <div className="flex flex-col items-start lg:pr-4">
+            <a href="/" onClick={handleLogoClick} className="cursor-pointer mb-3">
               <img 
                 src={logo} 
                 alt="Fritze IT-Systeme Logo" 
-                className="h-36 w-auto brightness-0 invert" 
+                className="h-20 w-auto brightness-0 invert" 
               />
             </a>
-            <p className="text-sm text-white/60 leading-relaxed mb-6">
-              Fritze IT GmbH - Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
+            <p className="text-sm text-white/60 leading-relaxed mb-5">
+              Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
             </p>
             
             {/* Newsletter Signup */}
             <div className="w-full">
-              <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Newsletter</p>
-              <p className="text-xs text-white/50 mb-3">Updates zu Jobs & IT-Trends</p>
+              <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1.5">Newsletter</p>
+              <p className="text-xs text-white/50 mb-2.5">Updates zu Jobs & IT-Trends</p>
               <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
                 <input
                   type="email"
@@ -117,26 +117,26 @@ export const Footer = () => {
 
           {/* Section 2: Leistungen */}
           <div>
-            <h4 className="font-semibold mb-5 text-primary text-lg">Leistungen</h4>
-            <ul className="space-y-3 text-sm text-white/70">
+            <h4 className="font-semibold mb-4 text-primary text-base">Leistungen</h4>
+            <ul className="space-y-2.5 text-sm text-white/70">
               <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                <span className="w-1 h-1 bg-primary rounded-full"></span>
                 Prozessoptimierung
               </li>
               <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                <span className="w-1 h-1 bg-primary rounded-full"></span>
                 Digitale Transformation
               </li>
               <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                <span className="w-1 h-1 bg-primary rounded-full"></span>
                 IT-Beratung
               </li>
               <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                <span className="w-1 h-1 bg-primary rounded-full"></span>
                 Workflow-Automatisierung
               </li>
               <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                <span className="w-1 h-1 bg-primary rounded-full"></span>
                 Software-Entwicklung
               </li>
             </ul>
@@ -144,22 +144,22 @@ export const Footer = () => {
 
           {/* Section 3: Kontakt */}
           <div>
-            <h4 className="font-semibold mb-5 text-primary text-lg">Kontakt</h4>
-            <div className="space-y-4 text-sm">
-              <div className="flex items-start gap-3 text-white/70">
-                <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+            <h4 className="font-semibold mb-4 text-primary text-base">Kontakt</h4>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-2.5 text-white/70">
+                <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <span>Willi-Eichler-Straße 26<br />37079 Göttingen</span>
               </div>
-              <div className="flex items-center gap-3 text-white/70">
-                <Mail className="w-5 h-5 text-primary shrink-0" />
+              <div className="flex items-center gap-2.5 text-white/70">
+                <Mail className="w-4 h-4 text-primary shrink-0" />
                 <span>info@fritze-it.solutions</span>
               </div>
-              <div className="flex items-center gap-3 text-white/70">
-                <Phone className="w-5 h-5 text-primary shrink-0" />
+              <div className="flex items-center gap-2.5 text-white/70">
+                <Phone className="w-4 h-4 text-primary shrink-0" />
                 <span>Telefon auf Anfrage</span>
               </div>
-              <div className="flex items-start gap-3 text-white/70">
-                <Clock className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2.5 text-white/70">
+                <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p>Mo-Fr: 8:00 - 17:00 Uhr</p>
                   <p>Sa: 9:00 - 12:00 Uhr</p>
@@ -167,9 +167,9 @@ export const Footer = () => {
               </div>
               
               {/* Application Email Block */}
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-1">Bewerbungen an:</p>
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <div className="bg-primary/10 rounded-md p-2.5 border border-primary/20">
+                  <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-0.5">Bewerbungen an:</p>
                   <p className="text-sm text-white font-medium">bewerbung@fritze-it.solutions</p>
                 </div>
               </div>
@@ -178,23 +178,23 @@ export const Footer = () => {
 
           {/* Section 4: Links & Socials */}
           <div>
-            <h4 className="font-semibold mb-5 text-primary text-lg">Links</h4>
-            <ul className="space-y-3 text-sm text-white/70 mb-8">
+            <h4 className="font-semibold mb-4 text-primary text-base">Links</h4>
+            <ul className="space-y-2.5 text-sm text-white/70 mb-6">
               <li>
                 <a href="/ueber-uns" onClick={(e) => handlePageClick(e, '/ueber-uns')} className="hover:text-white transition-colors cursor-pointer flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-white/30 rounded-full"></span>
+                  <span className="w-1 h-1 bg-white/30 rounded-full"></span>
                   Über uns
                 </a>
               </li>
               <li>
                 <a href="/impressum" onClick={(e) => handlePageClick(e, '/impressum')} className="hover:text-white transition-colors cursor-pointer flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-white/30 rounded-full"></span>
+                  <span className="w-1 h-1 bg-white/30 rounded-full"></span>
                   Impressum
                 </a>
               </li>
               <li>
                 <a href="/datenschutz" onClick={(e) => handlePageClick(e, '/datenschutz')} className="hover:text-white transition-colors cursor-pointer flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 bg-white/30 rounded-full"></span>
+                  <span className="w-1 h-1 bg-white/30 rounded-full"></span>
                   Datenschutz
                 </a>
               </li>
@@ -202,19 +202,19 @@ export const Footer = () => {
             
             {/* Socials */}
             <div>
-              <p className="text-xs text-white/40 mb-3 uppercase tracking-wide font-medium">Folgen Sie uns</p>
-              <div className="flex gap-3">
+              <p className="text-xs text-white/40 mb-2 uppercase tracking-wide font-medium">Folgen Sie uns</p>
+              <div className="flex gap-2">
                 <span 
-                  className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-primary/20 transition-all cursor-default border border-white/10"
+                  className="w-9 h-9 rounded-md bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-primary/20 transition-all cursor-default border border-white/10"
                   title="Twitter"
                 >
-                  <Twitter className="w-5 h-5" />
+                  <Twitter className="w-4 h-4" />
                 </span>
                 <span 
-                  className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-primary/20 transition-all cursor-default border border-white/10"
+                  className="w-9 h-9 rounded-md bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-primary/20 transition-all cursor-default border border-white/10"
                   title="LinkedIn"
                 >
-                  <Linkedin className="w-5 h-5" />
+                  <Linkedin className="w-4 h-4" />
                 </span>
               </div>
             </div>
@@ -226,8 +226,8 @@ export const Footer = () => {
       <div className="border-t border-white/10" />
 
       {/* Bottom Bar */}
-      <div className="container py-5">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-3">
+      <div className="container py-4">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-2">
           <p className="text-xs text-white/40">
             © {new Date().getFullYear()} Fritze IT GmbH. Alle Rechte vorbehalten.
           </p>
