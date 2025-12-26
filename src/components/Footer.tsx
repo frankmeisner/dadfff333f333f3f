@@ -3,7 +3,7 @@ import { Mail, Phone, MapPin, Clock, Twitter, Linkedin, Send } from "lucide-reac
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo-cropped.png";
 
 export const Footer = () => {
   const navigate = useNavigate();
@@ -84,7 +84,7 @@ export const Footer = () => {
               <img 
                 src={logo} 
                 alt="Fritze IT-Systeme Logo" 
-                className="h-28 w-auto dark:brightness-0 dark:invert" 
+                className="h-36 w-auto brightness-0 invert" 
               />
             </a>
             <p className="text-sm text-white/60 leading-relaxed mb-6">
