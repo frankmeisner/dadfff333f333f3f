@@ -50,27 +50,27 @@ export const Footer = () => {
 
   return (
     <footer className="bg-slate-900 dark:bg-slate-950 text-white">
-      {/* Main Footer Content - 3 Sections */}
+      {/* Main Footer Content - 4 Sections */}
       <div className="container py-16">
-        <div className="grid gap-12 md:grid-cols-3">
+        <div className="grid gap-10 md:gap-8 md:grid-cols-2 lg:grid-cols-4">
           
-          {/* Section 1: Logo (Large) */}
+          {/* Section 1: Logo & Newsletter */}
           <div className="flex flex-col items-start">
             <a href="/" onClick={handleLogoClick} className="cursor-pointer mb-4">
               <img 
                 src={logo} 
                 alt="Fritze IT-Systeme Logo" 
-                className="h-24 w-auto dark:brightness-0 dark:invert" 
+                className="h-20 w-auto dark:brightness-0 dark:invert" 
               />
             </a>
-            <p className="text-sm text-white/60 max-w-xs leading-relaxed mb-6">
+            <p className="text-sm text-white/60 leading-relaxed mb-6">
               Fritze IT GmbH – Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
             </p>
             
             {/* Newsletter Signup */}
-            <div className="w-full max-w-xs">
+            <div className="w-full">
               <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Newsletter</p>
-              <p className="text-xs text-white/50 mb-3">Updates zu Jobs & IT-Trends erhalten</p>
+              <p className="text-xs text-white/50 mb-3">Updates zu Jobs & IT-Trends</p>
               <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
                 <input
                   type="email"
@@ -91,24 +91,51 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Section 2: Kontakt (Address, Email, Phone, Hours, Application) */}
+          {/* Section 2: Leistungen */}
+          <div>
+            <h4 className="font-semibold mb-5 text-primary text-lg">Leistungen</h4>
+            <ul className="space-y-3 text-sm text-white/70">
+              <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                Prozessoptimierung
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                Digitale Transformation
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                IT-Beratung
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                Workflow-Automatisierung
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition-colors cursor-default">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full"></span>
+                Software-Entwicklung
+              </li>
+            </ul>
+          </div>
+
+          {/* Section 3: Kontakt */}
           <div>
             <h4 className="font-semibold mb-5 text-primary text-lg">Kontakt</h4>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-4 text-sm">
               <div className="flex items-start gap-3 text-white/70">
-                <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <span>Willi-Eichler-Straße 26, 37079 Göttingen</span>
+                <MapPin className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+                <span>Willi-Eichler-Straße 26<br />37079 Göttingen</span>
               </div>
               <div className="flex items-center gap-3 text-white/70">
-                <Mail className="w-4 h-4 text-primary shrink-0" />
+                <Mail className="w-5 h-5 text-primary shrink-0" />
                 <span>info@fritze-it.solutions</span>
               </div>
               <div className="flex items-center gap-3 text-white/70">
-                <Phone className="w-4 h-4 text-primary shrink-0" />
+                <Phone className="w-5 h-5 text-primary shrink-0" />
                 <span>Telefon auf Anfrage</span>
               </div>
               <div className="flex items-start gap-3 text-white/70">
-                <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <Clock className="w-5 h-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p>Mo-Fr: 8:00 - 17:00 Uhr</p>
                   <p>Sa: 9:00 - 12:00 Uhr</p>
@@ -125,42 +152,45 @@ export const Footer = () => {
             </div>
           </div>
 
-          {/* Section 3: Links & Socials (Discreet) */}
+          {/* Section 4: Links & Socials */}
           <div>
             <h4 className="font-semibold mb-5 text-primary text-lg">Links</h4>
-            <ul className="space-y-2 text-sm text-white/70 mb-6">
+            <ul className="space-y-3 text-sm text-white/70 mb-8">
               <li>
-                <a href="/ueber-uns" onClick={(e) => handlePageClick(e, '/ueber-uns')} className="hover:text-white transition-colors cursor-pointer">
+                <a href="/ueber-uns" onClick={(e) => handlePageClick(e, '/ueber-uns')} className="hover:text-white transition-colors cursor-pointer flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-white/30 rounded-full"></span>
                   Über uns
                 </a>
               </li>
               <li>
-                <a href="/impressum" onClick={(e) => handlePageClick(e, '/impressum')} className="hover:text-white transition-colors cursor-pointer">
+                <a href="/impressum" onClick={(e) => handlePageClick(e, '/impressum')} className="hover:text-white transition-colors cursor-pointer flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-white/30 rounded-full"></span>
                   Impressum
                 </a>
               </li>
               <li>
-                <a href="/datenschutz" onClick={(e) => handlePageClick(e, '/datenschutz')} className="hover:text-white transition-colors cursor-pointer">
+                <a href="/datenschutz" onClick={(e) => handlePageClick(e, '/datenschutz')} className="hover:text-white transition-colors cursor-pointer flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-white/30 rounded-full"></span>
                   Datenschutz
                 </a>
               </li>
             </ul>
             
-            {/* Discreet Socials */}
-            <div className="pt-4 border-t border-white/10">
-              <p className="text-xs text-white/40 mb-3 uppercase tracking-wide">Folgen Sie uns</p>
-              <div className="flex gap-2">
+            {/* Socials */}
+            <div>
+              <p className="text-xs text-white/40 mb-3 uppercase tracking-wide font-medium">Folgen Sie uns</p>
+              <div className="flex gap-3">
                 <span 
-                  className="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center text-white/40 hover:text-white/60 hover:bg-white/10 transition-all cursor-default"
+                  className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-primary/20 transition-all cursor-default border border-white/10"
                   title="Twitter"
                 >
-                  <Twitter className="w-4 h-4" />
+                  <Twitter className="w-5 h-5" />
                 </span>
                 <span 
-                  className="w-8 h-8 rounded-md bg-white/5 flex items-center justify-center text-white/40 hover:text-white/60 hover:bg-white/10 transition-all cursor-default"
+                  className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-primary/20 transition-all cursor-default border border-white/10"
                   title="LinkedIn"
                 >
-                  <Linkedin className="w-4 h-4" />
+                  <Linkedin className="w-5 h-5" />
                 </span>
               </div>
             </div>
