@@ -203,7 +203,7 @@ serve(async (req) => {
       });
     }
 
-    // Create profile
+    // Create profile (fail the request if this fails, so users are actually "saved")
     const { error: profileError } = await supabaseAdmin.from("profiles").insert({
       user_id: authData.user.id,
       email: sanitizedEmail,
@@ -213,6 +213,15 @@ serve(async (req) => {
 
     if (profileError) {
       console.error("Create profile error:", profileError.message);
+      // Cleanup auth user + any partial data
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", authData.user.id);
+      await supabaseAdmin.from("profiles").delete().eq("user_id", authData.user.id);
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+
+      return new Response(JSON.stringify({ error: "Profil konnte nicht gespeichert werden: " + profileError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Create role
@@ -223,6 +232,15 @@ serve(async (req) => {
 
     if (roleError) {
       console.error("Create role error:", roleError.message);
+      // Cleanup auth user + profile to avoid orphan records
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", authData.user.id);
+      await supabaseAdmin.from("profiles").delete().eq("user_id", authData.user.id);
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+
+      return new Response(JSON.stringify({ error: "Rolle konnte nicht gespeichert werden: " + roleError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     console.log("User created successfully:", authData.user.id);

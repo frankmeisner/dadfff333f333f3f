@@ -76,73 +76,90 @@ export default function AdminUsersView() {
       password: newUser.password,
       first_name: newUser.first_name.trim(),
       last_name: newUser.last_name.trim(),
-      role: newUser.role
+      role: newUser.role,
     });
 
     if (!validation.success) {
-      toast({ title: 'Fehler', description: (validation as { success: false; error: string }).error, variant: 'destructive' });
+      toast({
+        title: 'Fehler',
+        description: (validation as { success: false; error: string }).error,
+        variant: 'destructive',
+      });
       return;
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({ title: 'Fehler', description: 'Nicht angemeldet.', variant: 'destructive' });
-      return;
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: newUser.email.trim().toLowerCase(),
+          password: newUser.password,
+          first_name: newUser.first_name.trim(),
+          last_name: newUser.last_name.trim(),
+          role: newUser.role,
+        },
+      });
+
+      if (error) {
+        // Try to extract JSON error from the function response
+        let message = error.message || 'Benutzer konnte nicht erstellt werden.';
+        const ctx: Response | undefined = (error as any).context;
+        if (ctx) {
+          try {
+            const json = await ctx.clone().json();
+            if (json?.error) message = json.error;
+          } catch {
+            // ignore
+          }
+        }
+
+        toast({ title: 'Fehler', description: message, variant: 'destructive' });
+        return;
+      }
+
+      if (!data?.success) {
+        toast({ title: 'Fehler', description: 'Benutzer konnte nicht erstellt werden.', variant: 'destructive' });
+        return;
+      }
+
+      toast({ title: 'Erfolg', description: 'Benutzer wurde erstellt.' });
+      setIsDialogOpen(false);
+      setNewUser({ email: '', password: '', first_name: '', last_name: '', role: 'employee' });
+      fetchUsers();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
+      toast({ title: 'Fehler', description: message, variant: 'destructive' });
     }
-
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        email: newUser.email.trim().toLowerCase(),
-        password: newUser.password,
-        first_name: newUser.first_name.trim(),
-        last_name: newUser.last_name.trim(),
-        role: newUser.role
-      })
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      toast({ title: 'Fehler', description: result.error || 'Benutzer konnte nicht erstellt werden.', variant: 'destructive' });
-      return;
-    }
-
-    toast({ title: 'Erfolg', description: 'Benutzer wurde erstellt.' });
-    setIsDialogOpen(false);
-    setNewUser({ email: '', password: '', first_name: '', last_name: '', role: 'employee' });
-    fetchUsers();
   };
 
   const handleDeleteUser = async (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({ title: 'Fehler', description: 'Nicht angemeldet.', variant: 'destructive' });
-      return;
-    }
 
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({ user_id: userId })
-    });
+    try {
+      const { error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userId },
+      });
 
-    const result = await response.json();
+      if (error) {
+        let message = error.message || 'Benutzer konnte nicht gelöscht werden.';
+        const ctx: Response | undefined = (error as any).context;
+        if (ctx) {
+          try {
+            const json = await ctx.clone().json();
+            if (json?.error) message = json.error;
+          } catch {
+            // ignore
+          }
+        }
 
-    if (!response.ok) {
-      toast({ title: 'Fehler', description: result.error || 'Benutzer konnte nicht gelöscht werden.', variant: 'destructive' });
-    } else {
+        toast({ title: 'Fehler', description: message, variant: 'destructive' });
+        return;
+      }
+
       toast({ title: 'Erfolg', description: 'Benutzer wurde gelöscht.' });
       fetchUsers();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
+      toast({ title: 'Fehler', description: message, variant: 'destructive' });
     }
   };
 
