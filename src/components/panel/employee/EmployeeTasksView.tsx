@@ -1,36 +1,66 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Task, TaskAssignment, TaskStatus, TaskPriority, Profile, SmsCodeRequest } from '@/types/panel';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { useTabContext } from '@/components/panel/EmployeeDashboard';
-import { useNotificationSound } from '@/hooks/useNotificationSound';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { cn } from '@/lib/utils';
-import WorkflowStepCard from './WorkflowStepCard';
-import { AnimatedCopyButton, AnimatedSmsCopy } from '@/components/ui/animated-copy-button';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Task, TaskAssignment, TaskStatus, TaskPriority, Profile, SmsCodeRequest } from "@/types/panel";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useTabContext } from "@/components/panel/EmployeeDashboard";
+import { useNotificationSound } from "@/hooks/useNotificationSound";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { cn } from "@/lib/utils";
+import WorkflowStepCard from "./WorkflowStepCard";
+import { AnimatedCopyButton, AnimatedSmsCopy } from "@/components/ui/animated-copy-button";
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { 
-  Calendar, User, Euro, AlertCircle, MessageSquare, CheckCircle2, 
-  FileUp, Mail, Key, UserCheck, Clock, Trophy, PartyPopper, Eye, EyeOff, RefreshCw, Globe, ExternalLink, X, Maximize2, Search, RefreshCcw, FileText, ArrowRight, ChevronDown, Video, Phone, Sparkles, Loader2, Info, Copy, Check
-} from 'lucide-react';
-import { format, formatDistanceStrict } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Calendar,
+  User,
+  Euro,
+  AlertCircle,
+  MessageSquare,
+  CheckCircle2,
+  FileUp,
+  Mail,
+  Key,
+  UserCheck,
+  Clock,
+  Trophy,
+  PartyPopper,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Globe,
+  ExternalLink,
+  X,
+  Maximize2,
+  Search,
+  RefreshCcw,
+  FileText,
+  ArrowRight,
+  ChevronDown,
+  Video,
+  Phone,
+  Sparkles,
+  Loader2,
+  Info,
+  Copy,
+  Check,
+} from "lucide-react";
+import { format, formatDistanceStrict } from "date-fns";
+import { de } from "date-fns/locale";
 
 // SMS Code Display Component
-function SmsCodeDisplay({ 
+function SmsCodeDisplay({
   smsCode,
   onResendCode,
-  isResending
-}: { 
+  isResending,
+}: {
   smsCode: string;
   onResendCode: () => void;
   isResending: boolean;
@@ -44,15 +74,13 @@ function SmsCodeDisplay({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   return (
     <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-      <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
-        Demo-Daten (SMS)
-      </p>
+      <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">Demo-Daten (SMS)</p>
       {!isRevealed ? (
         <div className="flex flex-wrap gap-2">
           <Button
@@ -69,22 +97,15 @@ function SmsCodeDisplay({
             disabled={isResending}
             className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
           >
-            <RefreshCw className={`h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isResending ? "animate-spin" : ""}`} />
             Neuen Code anfordern
           </Button>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <p className="text-3xl font-mono font-bold text-primary tracking-widest">
-              {smsCode}
-            </p>
-            <Button
-              onClick={handleCopy}
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-primary hover:bg-primary/10"
-            >
+            <p className="text-3xl font-mono font-bold text-primary tracking-widest">{smsCode}</p>
+            <Button onClick={handleCopy} variant="ghost" size="sm" className="gap-1.5 text-primary hover:bg-primary/10">
               {copied ? (
                 <>
                   <Check className="h-4 w-4" />
@@ -115,7 +136,7 @@ function SmsCodeDisplay({
               disabled={isResending}
               className="gap-2 text-primary hover:bg-primary/10"
             >
-              <RefreshCw className={`h-4 w-4 ${isResending ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${isResending ? "animate-spin" : ""}`} />
               Neuen Code anfordern
             </Button>
           </div>
@@ -126,20 +147,59 @@ function SmsCodeDisplay({
 }
 
 const priorityConfig: Record<TaskPriority, { color: string; label: string; icon: string }> = {
-  low: { color: 'bg-slate-500/20 text-slate-700 dark:text-slate-300 border border-slate-500/30', label: 'Niedrig', icon: '○' },
-  medium: { color: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30', label: 'Mittel', icon: '◐' },
-  high: { color: 'bg-accent-red-light text-accent-red dark:bg-accent-red/20 dark:text-accent-red-muted border border-accent-red/30', label: 'Hoch', icon: '●' },
-  urgent: { color: 'bg-accent-red/10 text-accent-red dark:bg-accent-red/30 dark:text-accent-red border border-accent-red/50 animate-priority-pulse', label: 'Dringend', icon: '⬤' }
+  low: {
+    color: "bg-slate-500/20 text-slate-700 dark:text-slate-300 border border-slate-500/30",
+    label: "Niedrig",
+    icon: "○",
+  },
+  medium: {
+    color: "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-500/30",
+    label: "Mittel",
+    icon: "◐",
+  },
+  high: {
+    color:
+      "bg-accent-red-light text-accent-red dark:bg-accent-red/20 dark:text-accent-red-muted border border-accent-red/30",
+    label: "Hoch",
+    icon: "●",
+  },
+  urgent: {
+    color:
+      "bg-accent-red/10 text-accent-red dark:bg-accent-red/30 dark:text-accent-red border border-accent-red/50 animate-priority-pulse",
+    label: "Dringend",
+    icon: "⬤",
+  },
 };
 
 const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
-  pending: { color: 'bg-status-pending/20 text-amber-700 dark:text-amber-400 border border-status-pending/30', label: 'Ausstehend' },
-  assigned: { color: 'bg-status-assigned/20 text-sky-700 dark:text-sky-400 border border-status-assigned/30', label: 'Zugewiesen' },
-  in_progress: { color: 'bg-status-in-progress/20 text-violet-700 dark:text-violet-400 border border-status-in-progress/30', label: 'In Bearbeitung' },
-  sms_requested: { color: 'bg-status-sms-requested/20 text-purple-700 dark:text-purple-400 border border-status-sms-requested/30', label: 'SMS angefordert' },
-  pending_review: { color: 'bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/30', label: 'In Überprüfung' },
-  completed: { color: 'bg-status-completed/20 text-green-700 dark:text-green-400 border border-status-completed/30', label: 'Abgeschlossen' },
-  cancelled: { color: 'bg-status-cancelled/20 text-muted-foreground border border-status-cancelled/30', label: 'Storniert' }
+  pending: {
+    color: "bg-status-pending/20 text-amber-700 dark:text-amber-400 border border-status-pending/30",
+    label: "Ausstehend",
+  },
+  assigned: {
+    color: "bg-status-assigned/20 text-sky-700 dark:text-sky-400 border border-status-assigned/30",
+    label: "Zugewiesen",
+  },
+  in_progress: {
+    color: "bg-status-in-progress/20 text-violet-700 dark:text-violet-400 border border-status-in-progress/30",
+    label: "In Bearbeitung",
+  },
+  sms_requested: {
+    color: "bg-status-sms-requested/20 text-purple-700 dark:text-purple-400 border border-status-sms-requested/30",
+    label: "SMS angefordert",
+  },
+  pending_review: {
+    color: "bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/30",
+    label: "In Überprüfung",
+  },
+  completed: {
+    color: "bg-status-completed/20 text-green-700 dark:text-green-400 border border-status-completed/30",
+    label: "Abgeschlossen",
+  },
+  cancelled: {
+    color: "bg-status-cancelled/20 text-muted-foreground border border-status-cancelled/30",
+    label: "Storniert",
+  },
 };
 
 // Total workflow steps constant - MUST be defined before use in functions
@@ -174,20 +234,28 @@ export default function EmployeeTasksView() {
   const [stepNotes, setStepNotes] = useState<Record<string, Record<string, string>>>({});
   const [statusRequests, setStatusRequests] = useState<StatusRequest[]>([]);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<TaskWithDetails | null>(null);
-  const [dialogViewMode, setDialogViewMode] = useState<'details' | 'workflow'>('details');
+  const [dialogViewMode, setDialogViewMode] = useState<"details" | "workflow">("details");
   const [completionDialog, setCompletionDialog] = useState<{
     open: boolean;
     task: TaskWithDetails | null;
     duration: string;
-  }>({ open: false, task: null, duration: '' });
+  }>({ open: false, task: null, duration: "" });
   const [resendingCode, setResendingCode] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [webIdentDialog, setWebIdentDialog] = useState<{ open: boolean; url: string; taskTitle: string; taskId: string }>({ open: false, url: '', taskTitle: '', taskId: '' });
-  const [videoChatDialog, setVideoChatDialog] = useState<{ open: boolean; task: TaskWithDetails | null }>({ open: false, task: null });
-const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
+  const [webIdentDialog, setWebIdentDialog] = useState<{
+    open: boolean;
+    url: string;
+    taskTitle: string;
+    taskId: string;
+  }>({ open: false, url: "", taskTitle: "", taskId: "" });
+  const [videoChatDialog, setVideoChatDialog] = useState<{ open: boolean; task: TaskWithDetails | null }>({
+    open: false,
+    task: null,
+  });
+  const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   const [videoChatConfirmed, setVideoChatConfirmed] = useState(false);
   const [smsCountdown, setSmsCountdown] = useState(30);
   const [showSmsReceivedAnimation, setShowSmsReceivedAnimation] = useState<string | null>(null);
@@ -198,7 +266,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   const tabContext = useTabContext();
   const { playNotificationSound } = useNotificationSound();
   const { permission, requestPermission, showNotification } = usePushNotifications();
-  
+
   const initialLoadComplete = useRef(false);
   const realtimeSubscribed = useRef(false);
   const pollingIntervalId = useRef<number | null>(null);
@@ -212,15 +280,15 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     try {
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
-      toast({ title: 'Kopiert!', description: 'SMS-Code in die Zwischenablage kopiert.' });
+      toast({ title: "Kopiert!", description: "SMS-Code in die Zwischenablage kopiert." });
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
-      toast({ title: 'Fehler', description: 'Kopieren fehlgeschlagen.', variant: 'destructive' });
+      console.error("Failed to copy:", err);
+      toast({ title: "Fehler", description: "Kopieren fehlgeschlagen.", variant: "destructive" });
     }
   };
   useEffect(() => {
-    if (permission === 'default') {
+    if (permission === "default") {
       requestPermission();
     }
   }, [permission, requestPermission]);
@@ -238,12 +306,12 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       if (!document.hidden) syncNow();
     };
 
-    window.addEventListener('focus', syncNow);
-    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener("focus", syncNow);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
-      window.removeEventListener('focus', syncNow);
-      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener("focus", syncNow);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [user]);
 
@@ -254,42 +322,45 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     today.setHours(0, 0, 0, 0);
 
     const { data } = await supabase
-      .from('time_entries')
-      .select('entry_type')
-      .eq('user_id', user.id)
-      .gte('timestamp', today.toISOString())
-      .order('timestamp', { ascending: false })
+      .from("time_entries")
+      .select("entry_type")
+      .eq("user_id", user.id)
+      .gte("timestamp", today.toISOString())
+      .order("timestamp", { ascending: false })
       .limit(1);
 
     if (data && data.length > 0) {
       const lastEntry = data[0].entry_type;
-      setIsCheckedIn(lastEntry === 'check_in' || lastEntry === 'pause_end');
+      setIsCheckedIn(lastEntry === "check_in" || lastEntry === "pause_end");
     } else {
       setIsCheckedIn(false);
     }
   };
 
-  const notifyNewTask = useCallback((taskTitle?: string) => {
-    playNotificationSound();
-    showNotification('🆕 Neuer Auftrag!', {
-      body: taskTitle ? `Neuer Auftrag: ${taskTitle}` : 'Dir wurde ein neuer Auftrag zugewiesen.',
-      tag: 'new-task',
-    });
-    toast({
-      title: '🆕 Neuer Auftrag!',
-      description: taskTitle ? `"${taskTitle}" wurde dir zugewiesen.` : 'Dir wurde ein neuer Auftrag zugewiesen.',
-    });
-  }, [playNotificationSound, showNotification, toast]);
+  const notifyNewTask = useCallback(
+    (taskTitle?: string) => {
+      playNotificationSound();
+      showNotification("🆕 Neuer Auftrag!", {
+        body: taskTitle ? `Neuer Auftrag: ${taskTitle}` : "Dir wurde ein neuer Auftrag zugewiesen.",
+        tag: "new-task",
+      });
+      toast({
+        title: "🆕 Neuer Auftrag!",
+        description: taskTitle ? `"${taskTitle}" wurde dir zugewiesen.` : "Dir wurde ein neuer Auftrag zugewiesen.",
+      });
+    },
+    [playNotificationSound, showNotification, toast],
+  );
 
   const notifySmsCode = useCallback(() => {
     playNotificationSound();
-    showNotification('📱 SMS-Code erhalten!', {
-      body: 'Der Admin hat dir den SMS-Code weitergeleitet.',
-      tag: 'sms-code',
+    showNotification("📱 SMS-Code erhalten!", {
+      body: "Der Admin hat dir den SMS-Code weitergeleitet.",
+      tag: "sms-code",
     });
     toast({
-      title: '📱 SMS-Code erhalten!',
-      description: 'Der Admin hat dir den SMS-Code weitergeleitet.',
+      title: "📱 SMS-Code erhalten!",
+      description: "Der Admin hat dir den SMS-Code weitergeleitet.",
     });
   }, [playNotificationSound, showNotification, toast]);
 
@@ -323,13 +394,13 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
       const channel = supabase
         .channel(`employee-tasks-${user.id}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_assignments' }, (payload) => {
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "task_assignments" }, (payload) => {
           const newData = payload.new as Record<string, unknown> | null;
           if (newData?.user_id === user.id && initialLoadComplete.current) {
             supabase
-              .from('tasks')
-              .select('title')
-              .eq('id', newData.task_id as string)
+              .from("tasks")
+              .select("title")
+              .eq("id", newData.task_id as string)
               .single()
               .then(({ data: taskData }) => {
                 notifyNewTask(taskData?.title);
@@ -339,24 +410,24 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
             fetchTasks();
           }
         })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'task_assignments' }, (payload) => {
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "task_assignments" }, (payload) => {
           const newData = payload.new as Record<string, unknown> | null;
           const oldData = payload.old as Record<string, unknown> | null;
           if (newData?.user_id === user.id || oldData?.user_id === user.id) {
             fetchTasks();
           }
         })
-        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'task_assignments' }, (payload) => {
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "task_assignments" }, (payload) => {
           const oldData = payload.old as Record<string, unknown> | null;
           if (oldData?.user_id === user.id) {
             // Task was revoked - close dialog if this task was selected
             if (oldData?.task_id) {
-              setSelectedTask(prev => {
+              setSelectedTask((prev) => {
                 if (prev && prev.id === oldData.task_id) {
                   toast({
-                    title: 'Auftrag entzogen',
-                    description: 'Dieser Auftrag wurde dir entzogen.',
-                    variant: 'destructive',
+                    title: "Auftrag entzogen",
+                    description: "Dieser Auftrag wurde dir entzogen.",
+                    variant: "destructive",
                   });
                   return null;
                 }
@@ -366,27 +437,32 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
             fetchTasks();
           }
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'sms_code_requests' }, (payload) => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "sms_code_requests" }, (payload) => {
           const newData = payload.new as Record<string, unknown> | null;
           const oldData = payload.old as Record<string, unknown> | null;
           if (newData?.user_id === user.id || oldData?.user_id === user.id) {
-            if (payload.eventType === 'UPDATE' && newData?.sms_code && !oldData?.sms_code && initialLoadComplete.current) {
+            if (
+              payload.eventType === "UPDATE" &&
+              newData?.sms_code &&
+              !oldData?.sms_code &&
+              initialLoadComplete.current
+            ) {
               notifySmsCode();
             }
             fetchTasks();
           }
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
           fetchTasks();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, (payload) => {
           const newData = payload.new as Record<string, unknown> | null;
           const oldData = payload.old as Record<string, unknown> | null;
           if (newData?.user_id === user.id || oldData?.user_id === user.id) {
             fetchStatusRequests();
           }
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'time_entries' }, (payload) => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "time_entries" }, (payload) => {
           const newData = payload.new as Record<string, unknown> | null;
           const oldData = payload.old as Record<string, unknown> | null;
           if (newData?.user_id === user.id || oldData?.user_id === user.id) {
@@ -394,7 +470,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
           }
         })
         .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
+          if (status === "SUBSCRIBED") {
             realtimeSubscribed.current = true;
             if (pollingIntervalId.current) {
               window.clearInterval(pollingIntervalId.current);
@@ -404,7 +480,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
               initialLoadComplete.current = true;
             }, 1000);
           }
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
             startPollingFallback();
           }
         });
@@ -426,7 +502,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   // SMS polling for step 4 - refresh every 30 seconds when waiting for SMS code
   useEffect(() => {
     // Check if any task is waiting for SMS code (step 4, requested but no code yet)
-    const taskWaitingForSms = tasks.find(task => {
+    const taskWaitingForSms = tasks.find((task) => {
       const step = task.assignment?.workflow_step || 1;
       return step === 4 && task.smsRequest && !task.smsRequest.sms_code;
     });
@@ -438,10 +514,10 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
         fetchTasks();
         setSmsCountdown(30); // Reset countdown after fetch
       }, 30000);
-      
+
       // Countdown timer
       smsCountdownIntervalId.current = window.setInterval(() => {
-        setSmsCountdown(prev => (prev > 0 ? prev - 1 : 30));
+        setSmsCountdown((prev) => (prev > 0 ? prev - 1 : 30));
       }, 1000);
     } else {
       // Clear polling when not needed
@@ -469,28 +545,28 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
   // Detect when SMS code is received and show visual confirmation
   useEffect(() => {
-    tasks.forEach(task => {
+    tasks.forEach((task) => {
       const previousCode = previousSmsCodesRef.current[task.id];
       const currentCode = task.smsRequest?.sms_code;
-      
+
       // If code just appeared (was null/undefined, now has value)
       if (!previousCode && currentCode && initialLoadComplete.current) {
         setShowSmsReceivedAnimation(task.id);
         playNotificationSound();
-        
+
         // Clear animation after 3 seconds
         setTimeout(() => {
           setShowSmsReceivedAnimation(null);
         }, 3000);
       }
-      
+
       // Update ref
       previousSmsCodesRef.current[task.id] = currentCode || null;
     });
-    
+
     // Update selectedTask when tasks change (for real-time SMS updates in dialog)
     if (selectedTask) {
-      const updatedTask = tasks.find(t => t.id === selectedTask.id);
+      const updatedTask = tasks.find((t) => t.id === selectedTask.id);
       if (updatedTask && JSON.stringify(updatedTask.smsRequest) !== JSON.stringify(selectedTask.smsRequest)) {
         setSelectedTask(updatedTask);
       }
@@ -499,50 +575,57 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
   const fetchStatusRequests = async () => {
     if (!user) return;
-    
+
     const { data } = await supabase
-      .from('notifications')
-      .select('id, related_task_id, read_at')
-      .eq('user_id', user.id)
-      .eq('type', 'status_request')
-      .is('read_at', null);
-    
+      .from("notifications")
+      .select("id, related_task_id, read_at")
+      .eq("user_id", user.id)
+      .eq("type", "status_request")
+      .is("read_at", null);
+
     if (data) {
       setStatusRequests(data);
     }
   };
 
   const handleDismissStatusRequest = async (taskId: string) => {
-    const request = statusRequests.find(r => r.related_task_id === taskId);
+    const request = statusRequests.find((r) => r.related_task_id === taskId);
     if (request) {
-      await supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', request.id);
-      setStatusRequests(prev => prev.filter(r => r.id !== request.id));
+      await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", request.id);
+      setStatusRequests((prev) => prev.filter((r) => r.id !== request.id));
     }
   };
 
   const fetchTasks = async () => {
     if (!user) return;
 
-    const { data: assignments } = await supabase
-      .from('task_assignments')
-      .select('*')
-      .eq('user_id', user.id);
+    const { data: assignments } = await supabase.from("task_assignments").select("*").eq("user_id", user.id);
 
     if (assignments && assignments.length > 0) {
-      const taskIds = assignments.map(a => a.task_id);
-      
+      const taskIds = assignments.map((a) => a.task_id);
+
       const [tasksRes, profilesRes, smsRes, docsRes, evalsRes, kycDocsRes] = await Promise.all([
-        supabase.from('tasks').select('*').in('id', taskIds).order('created_at', { ascending: false }),
-        supabase.from('profiles').select('*'),
-        supabase.from('sms_code_requests').select('*').in('task_id', taskIds).eq('user_id', user.id).order('requested_at', { ascending: false }),
-        supabase.from('documents').select('id, task_id').eq('user_id', user.id).in('task_id', taskIds),
-        supabase.from('task_evaluations').select('task_id').eq('user_id', user.id).in('task_id', taskIds),
-        supabase.from('documents').select('id, task_id, status, document_type, review_notes').eq('user_id', user.id).in('task_id', taskIds).in('document_type', ['id_card', 'passport', 'address_proof'])
+        supabase.from("tasks").select("*").in("id", taskIds).order("created_at", { ascending: false }),
+        supabase.from("profiles").select("*"),
+        supabase
+          .from("sms_code_requests")
+          .select("*")
+          .in("task_id", taskIds)
+          .eq("user_id", user.id)
+          .order("requested_at", { ascending: false }),
+        supabase.from("documents").select("id, task_id").eq("user_id", user.id).in("task_id", taskIds),
+        supabase.from("task_evaluations").select("task_id").eq("user_id", user.id).in("task_id", taskIds),
+        supabase
+          .from("documents")
+          .select("id, task_id, status, document_type, review_notes")
+          .eq("user_id", user.id)
+          .in("task_id", taskIds)
+          .in("document_type", ["id_card", "passport", "address_proof"]),
       ]);
 
       const docCounts: Record<string, number> = {};
       if (docsRes.data) {
-        docsRes.data.forEach(doc => {
+        docsRes.data.forEach((doc) => {
           if (doc.task_id) {
             docCounts[doc.task_id] = (docCounts[doc.task_id] || 0) + 1;
           }
@@ -553,15 +636,15 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       // Process KYC document status per task
       const kycStatusMap: Record<string, KycDocStatus> = {};
       if (kycDocsRes.data) {
-        kycDocsRes.data.forEach(doc => {
+        kycDocsRes.data.forEach((doc) => {
           if (doc.task_id) {
             if (!kycStatusMap[doc.task_id]) {
               kycStatusMap[doc.task_id] = { pending: 0, approved: 0, rejected: 0, rejectedNotes: [] };
             }
-            const status = doc.status || 'pending';
-            if (status === 'pending') kycStatusMap[doc.task_id].pending++;
-            else if (status === 'approved') kycStatusMap[doc.task_id].approved++;
-            else if (status === 'rejected') {
+            const status = doc.status || "pending";
+            if (status === "pending") kycStatusMap[doc.task_id].pending++;
+            else if (status === "approved") kycStatusMap[doc.task_id].approved++;
+            else if (status === "rejected") {
               kycStatusMap[doc.task_id].rejected++;
               if (doc.review_notes) {
                 kycStatusMap[doc.task_id].rejectedNotes.push(doc.review_notes);
@@ -574,23 +657,23 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
       const evalMap: Record<string, boolean> = {};
       if (evalsRes.data) {
-        evalsRes.data.forEach(ev => {
+        evalsRes.data.forEach((ev) => {
           evalMap[ev.task_id] = true;
         });
       }
       setTaskEvaluations(evalMap);
 
       if (tasksRes.data) {
-        const enrichedTasks = tasksRes.data.map(task => {
-          const assignment = assignments.find(a => a.task_id === task.id);
+        const enrichedTasks = tasksRes.data.map((task) => {
+          const assignment = assignments.find((a) => a.task_id === task.id);
           const assignedBy = profilesRes.data?.find((p: any) => p.user_id === task.created_by);
-          const taskSmsRequests = smsRes.data?.filter(s => s.task_id === task.id) || [];
-          const smsRequest = taskSmsRequests.find(s => s.sms_code) || taskSmsRequests[0];
+          const taskSmsRequests = smsRes.data?.filter((s) => s.task_id === task.id) || [];
+          const smsRequest = taskSmsRequests.find((s) => s.sms_code) || taskSmsRequests[0];
           return {
-            ...task as Task,
+            ...(task as Task),
             assignment: assignment as TaskAssignment | undefined,
             assignedBy: assignedBy as Profile | undefined,
-            smsRequest: smsRequest as SmsCodeRequest | undefined
+            smsRequest: smsRequest as SmsCodeRequest | undefined,
           };
         });
         setTasks(enrichedTasks);
@@ -604,54 +687,58 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   };
 
   const handleAcceptTask = async (taskId: string) => {
-    const { error } = await supabase.rpc('accept_task', { _task_id: taskId });
-    
+    const { error } = await supabase.rpc("accept_task", { _task_id: taskId });
+
     if (error) {
-      toast({ title: 'Fehler', description: 'Auftrag konnte nicht angenommen werden.', variant: 'destructive' });
+      toast({ title: "Fehler", description: "Auftrag konnte nicht angenommen werden.", variant: "destructive" });
     } else {
-      toast({ title: 'Auftrag übernommen!', description: 'Du bist jetzt für diesen Auftrag verantwortlich.' });
+      toast({ title: "Auftrag übernommen!", description: "Du bist jetzt für diesen Auftrag verantwortlich." });
       fetchTasks();
     }
   };
 
   const handleReturnTask = async (taskId: string) => {
-    await supabase.from('task_assignments').delete().eq('task_id', taskId).eq('user_id', user?.id);
-    await supabase.from('tasks').update({ status: 'pending' }).eq('id', taskId);
-    toast({ title: 'Auftrag abgegeben', description: 'Der Auftrag wurde zurückgegeben.' });
+    await supabase.from("task_assignments").delete().eq("task_id", taskId).eq("user_id", user?.id);
+    await supabase.from("tasks").update({ status: "pending" }).eq("id", taskId);
+    toast({ title: "Auftrag abgegeben", description: "Der Auftrag wurde zurückgegeben." });
     fetchTasks();
   };
 
   const handleRequestSms = async (taskId: string) => {
     setRequestingSmsId(taskId);
-    
-    const { error } = await supabase.from('sms_code_requests').insert({
+
+    const { error } = await supabase.from("sms_code_requests").insert({
       task_id: taskId,
-      user_id: user?.id
+      user_id: user?.id,
     });
 
     if (error) {
-      toast({ title: 'Fehler', description: 'SMS-Anfrage fehlgeschlagen.', variant: 'destructive' });
+      toast({ title: "Fehler", description: "SMS-Anfrage fehlgeschlagen.", variant: "destructive" });
     } else {
-      await supabase.from('tasks').update({ status: 'sms_requested' }).eq('id', taskId);
-      toast({ title: 'Erfolg', description: 'SMS-Code wurde angefordert.' });
+      await supabase.from("tasks").update({ status: "sms_requested" }).eq("id", taskId);
+      toast({ title: "Erfolg", description: "SMS-Code wurde angefordert." });
       fetchTasks();
     }
-    
+
     setRequestingSmsId(null);
   };
 
   const handleResendSmsCode = async (taskId: string, _existingRequestId: string) => {
     setResendingCode(taskId);
 
-    const { error } = await supabase.from('sms_code_requests').insert({
+    const { error } = await supabase.from("sms_code_requests").insert({
       task_id: taskId,
       user_id: user?.id,
     });
 
     if (error) {
-      toast({ title: 'Fehler', description: 'Neuer SMS-Code konnte nicht angefordert werden.', variant: 'destructive' });
+      toast({
+        title: "Fehler",
+        description: "Neuer SMS-Code konnte nicht angefordert werden.",
+        variant: "destructive",
+      });
     } else {
-      toast({ title: 'Erfolg', description: 'Neuer SMS-Code wurde angefordert.' });
+      toast({ title: "Erfolg", description: "Neuer SMS-Code wurde angefordert." });
       fetchTasks();
     }
 
@@ -660,96 +747,99 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
   const handleCompleteTask = async (task: TaskWithDetails) => {
     const acceptedAt = task.assignment?.accepted_at || task.assignment?.assigned_at;
-    let duration = 'Unbekannt';
+    let duration = "Unbekannt";
     if (acceptedAt) {
       duration = formatDistanceStrict(new Date(acceptedAt), new Date(), { locale: de });
     }
-    
-    const notes = progressNotes[task.id] || '';
-    
-    const { error } = await supabase.rpc('complete_task', {
+
+    const notes = progressNotes[task.id] || "";
+
+    const { error } = await supabase.rpc("complete_task", {
       _task_id: task.id,
-      _progress_notes: notes || null
+      _progress_notes: notes || null,
     });
 
     if (error) {
-      toast({ title: 'Fehler', description: 'Auftrag konnte nicht abgeschlossen werden.', variant: 'destructive' });
+      toast({ title: "Fehler", description: "Auftrag konnte nicht abgeschlossen werden.", variant: "destructive" });
       return;
     }
-    
+
     setCompletionDialog({ open: true, task, duration });
     setSelectedTask(null);
     fetchTasks();
   };
 
   const handleUpdateNotes = async (taskId: string, notesOverride?: string) => {
-    const notes = notesOverride ?? progressNotes[taskId] ?? '';
+    const notes = notesOverride ?? progressNotes[taskId] ?? "";
     const { error } = await supabase
-      .from('task_assignments')
+      .from("task_assignments")
       .update({ progress_notes: notes || null })
-      .eq('task_id', taskId)
-      .eq('user_id', user?.id);
+      .eq("task_id", taskId)
+      .eq("user_id", user?.id);
 
     if (error) {
       toast({
-        title: 'Fehler',
-        description: 'Notizen konnten nicht gespeichert werden.',
-        variant: 'destructive',
+        title: "Fehler",
+        description: "Notizen konnten nicht gespeichert werden.",
+        variant: "destructive",
       });
       return;
     }
 
-    toast({ title: 'Gespeichert', description: 'Notizen aktualisiert.' });
+    toast({ title: "Gespeichert", description: "Notizen aktualisiert." });
   };
 
   const handleSaveStepNote = async (taskId: string, stepNumber: number) => {
     if (!user) return;
-    
+
     const currentStepNotes = stepNotes[taskId] || {};
-    const noteForStep = currentStepNotes[stepNumber.toString()] || '';
-    
+    const noteForStep = currentStepNotes[stepNumber.toString()] || "";
+
     // Validate minimum word count (at least 3 words)
-    const wordCount = noteForStep.trim().split(/\s+/).filter(word => word.length > 0).length;
+    const wordCount = noteForStep
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
     if (wordCount < 3) {
       toast({
-        title: 'Zu kurz',
-        description: 'Bitte schreibe mindestens 3 Wörter in deine Notiz.',
-        variant: 'destructive',
+        title: "Zu kurz",
+        description: "Bitte schreibe mindestens 3 Wörter in deine Notiz.",
+        variant: "destructive",
       });
       return;
     }
-    
+
     setSavingStepNote(`${taskId}-${stepNumber}`);
-    
+
     // Get existing step_notes from database
     const { data: assignment } = await supabase
-      .from('task_assignments')
-      .select('step_notes')
-      .eq('task_id', taskId)
-      .eq('user_id', user.id)
+      .from("task_assignments")
+      .select("step_notes")
+      .eq("task_id", taskId)
+      .eq("user_id", user.id)
       .single();
-    
+
     const existingNotes = (assignment?.step_notes as Record<string, string>) || {};
     const updatedNotes = { ...existingNotes, [stepNumber.toString()]: noteForStep };
-    
+
     const { error } = await supabase
-      .from('task_assignments')
+      .from("task_assignments")
       .update({ step_notes: updatedNotes })
-      .eq('task_id', taskId)
-      .eq('user_id', user.id);
+      .eq("task_id", taskId)
+      .eq("user_id", user.id);
 
     setSavingStepNote(null);
 
     if (error) {
       toast({
-        title: 'Fehler',
-        description: 'Schritt-Notiz konnte nicht gespeichert werden.',
-        variant: 'destructive',
+        title: "Fehler",
+        description: "Schritt-Notiz konnte nicht gespeichert werden.",
+        variant: "destructive",
       });
       return;
     }
 
-    toast({ title: 'Gespeichert', description: `Notiz für Schritt ${stepNumber} gespeichert.` });
+    toast({ title: "Gespeichert", description: `Notiz für Schritt ${stepNumber} gespeichert.` });
   };
 
   const getStepNote = (taskId: string, stepNumber: number): string => {
@@ -758,67 +848,70 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       return stepNotes[taskId][stepNumber.toString()];
     }
     // Then check task assignment
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     const assignmentNotes = (task?.assignment as any)?.step_notes as Record<string, string> | undefined;
-    return assignmentNotes?.[stepNumber.toString()] || '';
+    return assignmentNotes?.[stepNumber.toString()] || "";
   };
 
   const setStepNote = (taskId: string, stepNumber: number, note: string) => {
-    setStepNotes(prev => ({
+    setStepNotes((prev) => ({
       ...prev,
       [taskId]: {
         ...(prev[taskId] || {}),
-        [stepNumber.toString()]: note
-      }
+        [stepNumber.toString()]: note,
+      },
     }));
   };
 
   const handleGoToDocuments = (taskId: string) => {
     if (tabContext) {
       tabContext.setPendingTaskId(taskId);
-      tabContext.setActiveTab('documents');
+      tabContext.setActiveTab("documents");
     }
   };
 
   const getWorkflowStep = (task: TaskWithDetails) => {
     const step = (task.assignment as any)?.workflow_step;
-    return typeof step === 'number' && step >= 1 && step <= TOTAL_WORKFLOW_STEPS ? step : 1;
+    return typeof step === "number" && step >= 1 && step <= TOTAL_WORKFLOW_STEPS ? step : 1;
   };
 
   const updateWorkflow = async (
     taskId: string,
-    updates: { workflow_step?: number; workflow_digital?: boolean | null }
+    updates: { workflow_step?: number; workflow_digital?: boolean | null },
   ) => {
     if (!user) return;
 
     const { error } = await supabase
-      .from('task_assignments')
+      .from("task_assignments")
       .update(updates)
-      .eq('task_id', taskId)
-      .eq('user_id', user.id);
+      .eq("task_id", taskId)
+      .eq("user_id", user.id);
 
     if (error) {
       toast({
-        title: 'Fehler',
-        description: 'Fortschritt konnte nicht gespeichert werden.',
-        variant: 'destructive',
+        title: "Fehler",
+        description: "Fortschritt konnte nicht gespeichert werden.",
+        variant: "destructive",
       });
       return;
     }
 
     await fetchTasks();
-    
+
     // Update selectedTask if it's the same task to refresh the dialog immediately
     if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask(prev => {
+      setSelectedTask((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           assignment: {
             ...prev.assignment,
             workflow_step: updates.workflow_step ?? (prev.assignment as any)?.workflow_step,
-            workflow_digital: updates.workflow_digital !== undefined ? updates.workflow_digital : (prev.assignment as any)?.workflow_digital,
-          } as any
+            workflow_digital:
+              updates.workflow_digital !== undefined
+                ? updates.workflow_digital
+                : (prev.assignment as any)?.workflow_digital,
+          } as any,
         };
       });
     }
@@ -827,7 +920,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   const setWorkflowStep = async (
     task: TaskWithDetails,
     nextStep: number,
-    extra?: { workflow_digital?: boolean | null }
+    extra?: { workflow_digital?: boolean | null },
   ) => {
     const current = getWorkflowStep(task);
 
@@ -839,20 +932,20 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     // Only enforce forward progression for nextStep > current
     if (nextStep > current && nextStep !== current + 1) {
       toast({
-        title: 'Reihenfolge beachten',
+        title: "Reihenfolge beachten",
         description: `Bitte bearbeite die Schritte strikt der Reihe nach (1 bis ${TOTAL_WORKFLOW_STEPS}).`,
-        variant: 'destructive',
+        variant: "destructive",
       });
       return;
     }
 
     await updateWorkflow(task.id, { workflow_step: nextStep, ...extra });
-    
+
     // Auto-scroll to the new step after a short delay
     setTimeout(() => {
       const stepElement = document.getElementById(`workflow-step-${nextStep}`);
       if (stepElement) {
-        stepElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        stepElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }, 100);
   };
@@ -872,17 +965,20 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   // Helper to validate step notes before proceeding
   const validateStepNotes = (taskId: string, stepNumber: number): boolean => {
     const currentStepNotes = stepNotes[taskId] || {};
-    const noteForStep = currentStepNotes[stepNumber.toString()] || '';
-    
+    const noteForStep = currentStepNotes[stepNumber.toString()] || "";
+
     // Also check saved notes from task assignment
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasks.find((t) => t.id === taskId);
     const savedNotes = (task?.assignment as any)?.step_notes as Record<string, string> | undefined;
-    const savedNote = savedNotes?.[stepNumber.toString()] || '';
-    
+    const savedNote = savedNotes?.[stepNumber.toString()] || "";
+
     // Use whichever note exists (local or saved)
     const noteToCheck = noteForStep || savedNote;
-    
-    const wordCount = noteToCheck.trim().split(/\s+/).filter(word => word.length > 0).length;
+
+    const wordCount = noteToCheck
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
     return wordCount >= 3;
   };
 
@@ -894,9 +990,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     if (step > 1 && step < 9) {
       if (!validateStepNotes(task.id, step)) {
         toast({
-          title: 'Notiz erforderlich',
-          description: 'Bitte schreibe und speichere mindestens 3 Wörter in deine Schritt-Notiz, bevor du fortfährst.',
-          variant: 'destructive',
+          title: "Notiz erforderlich",
+          description: "Bitte schreibe und speichere mindestens 3 Wörter in deine Schritt-Notiz, bevor du fortfährst.",
+          variant: "destructive",
         });
         return;
       }
@@ -911,12 +1007,12 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       const hasEvaluation = taskEvaluations[task.id];
       if (!hasEvaluation) {
         toast({
-          title: 'Bewertungsbogen ausfüllen',
+          title: "Bewertungsbogen ausfüllen",
           description: 'Bitte gehe zum Tab „Bewertungsbögen" und fülle deine Bewertung aus.',
-          variant: 'destructive',
+          variant: "destructive",
         });
         if (tabContext) {
-          tabContext.setActiveTab('evaluations');
+          tabContext.setActiveTab("evaluations");
         }
         return;
       }
@@ -924,8 +1020,8 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       if (skipKycSms) {
         await setWorkflowStep(task, 7);
         toast({
-          title: 'Vereinfachter Ablauf',
-          description: 'Dieser Auftrag erfordert kein KYC/SMS. Du kannst direkt fortfahren.',
+          title: "Vereinfachter Ablauf",
+          description: "Dieser Auftrag erfordert kein KYC/SMS. Du kannst direkt fortfahren.",
         });
         return;
       }
@@ -939,38 +1035,39 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       return;
     }
 
-      if (step === 4) {
-        // Step 4: ID Upload - Check if at least 3 documents (front + back ID + address proof) are uploaded
-        if (!hasKycDocuments(task.id)) {
-          handleGoToDocuments(task.id);
-          toast({
-            title: 'Dokumente fehlen',
-            description: 'Bitte lade Vorder- und Rückseite deines Ausweises sowie einen Adressnachweis hoch (mindestens 3 Dokumente).',
-            variant: 'destructive',
-          });
-          return;
-        }
+    if (step === 4) {
+      // Step 4: ID Upload - Check if at least 3 documents (front + back ID + address proof) are uploaded
+      if (!hasKycDocuments(task.id)) {
+        handleGoToDocuments(task.id);
         toast({
-          title: 'Ausweisfotos vorhanden',
-          description: 'Super! Deine Ausweisfotos wurden erfolgreich hochgeladen.',
+          title: "Dokumente fehlen",
+          description:
+            "Bitte lade Vorder- und Rückseite deines Ausweises sowie einen Adressnachweis hoch (mindestens 3 Dokumente).",
+          variant: "destructive",
         });
-        // Show loading animation for demo credentials
-        setDemoLoadingTaskId(task.id);
-        await setWorkflowStep(task, 5);
-        // Simulate loading and then record demo viewed
-        setTimeout(async () => {
-          // Mark demo as viewed in database
-          if (user) {
-            await supabase
-              .from('task_assignments')
-              .update({ demo_viewed_at: new Date().toISOString() })
-              .eq('task_id', task.id)
-              .eq('user_id', user.id);
-          }
-          setDemoLoadingTaskId(null);
-        }, 1500);
         return;
       }
+      toast({
+        title: "Ausweisfotos vorhanden",
+        description: "Super! Deine Ausweisfotos wurden erfolgreich hochgeladen.",
+      });
+      // Show loading animation for demo credentials
+      setDemoLoadingTaskId(task.id);
+      await setWorkflowStep(task, 5);
+      // Simulate loading and then record demo viewed
+      setTimeout(async () => {
+        // Mark demo as viewed in database
+        if (user) {
+          await supabase
+            .from("task_assignments")
+            .update({ demo_viewed_at: new Date().toISOString() })
+            .eq("task_id", task.id)
+            .eq("user_id", user.id);
+        }
+        setDemoLoadingTaskId(null);
+      }, 1500);
+      return;
+    }
 
     if (step === 5) {
       // Step 5: Demo-Daten - Just proceed to step 6
@@ -982,9 +1079,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       // Only proceed to step 7 when user explicitly confirms video chat is done
       if (!videoChatConfirmed) {
         toast({
-          title: 'Bestätigung erforderlich',
-          description: 'Bitte bestätige, dass du den Videochat abgeschlossen hast.',
-          variant: 'destructive',
+          title: "Bestätigung erforderlich",
+          description: "Bitte bestätige, dass du den Videochat abgeschlossen hast.",
+          variant: "destructive",
         });
         return;
       }
@@ -1004,9 +1101,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
         await setWorkflowStep(task, 9);
       } else {
         toast({
-          title: 'Nachweis fehlt',
-          description: 'Bitte lade zuerst einen Nachweis in „Dokumente“ hoch.',
-          variant: 'destructive',
+          title: "Nachweis fehlt",
+          description: "Bitte lade zuerst einen Nachweis in „Dokumente“ hoch.",
+          variant: "destructive",
         });
       }
       return;
@@ -1015,9 +1112,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     if (step === 9) {
       if ((taskDocuments[task.id] || 0) <= 0) {
         toast({
-          title: 'Nachweis fehlt',
-          description: 'Bitte lade zuerst einen Nachweis hoch, bevor du abschließt.',
-          variant: 'destructive',
+          title: "Nachweis fehlt",
+          description: "Bitte lade zuerst einen Nachweis hoch, bevor du abschließt.",
+          variant: "destructive",
         });
         return;
       }
@@ -1025,12 +1122,15 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
     }
   };
 
-  const activeTasks = tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled' && t.status !== 'pending_review');
-  const pendingReviewTasks = tasks.filter(t => t.status === 'pending_review');
-  const completedTasks = tasks.filter(t => t.status === 'completed');
-  const filteredTasks = activeTasks.filter(t => 
-    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.customer_name.toLowerCase().includes(searchQuery.toLowerCase())
+  const activeTasks = tasks.filter(
+    (t) => t.status !== "completed" && t.status !== "cancelled" && t.status !== "pending_review",
+  );
+  const pendingReviewTasks = tasks.filter((t) => t.status === "pending_review");
+  const completedTasks = tasks.filter((t) => t.status === "completed");
+  const filteredTasks = activeTasks.filter(
+    (t) =>
+      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.customer_name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Task workflow steps based on images
@@ -1038,49 +1138,58 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
   const getTaskSteps = (task: TaskWithDetails) => [
     {
       number: 1,
-      title: 'Webseite erkunden',
-      description: 'Schau dir die Internetseite in Ruhe an. Achte auf den ersten Eindruck, wie übersichtlich alles ist und wie dir das Design gefällt. Nimm dir ruhig ein paar Minuten Zeit dafür.'
+      title: "Webseite erkunden",
+      description:
+        "Schau dir die Internetseite in Ruhe an. Achte auf den ersten Eindruck, wie übersichtlich alles ist und wie dir das Design gefällt. Nimm dir ruhig ein paar Minuten Zeit dafür.",
     },
     {
       number: 2,
-      title: 'Deine Meinung abgeben',
-      description: 'Jetzt kannst du deine ehrliche Meinung zur Webseite abgeben. Fülle den kurzen Fragebogen aus – es geht um Design, Übersichtlichkeit und deinen Gesamteindruck.'
+      title: "Deine Meinung abgeben",
+      description:
+        "Jetzt kannst du deine ehrliche Meinung zur Webseite abgeben. Fülle den kurzen Fragebogen aus – es geht um Design, Übersichtlichkeit und deinen Gesamteindruck.",
     },
     {
       number: 3,
-      title: 'Videochat: Ja oder Nein?',
-      description: 'Möchtest du den digitalen Ablauf mit einem kurzen Videochat testen? Das dauert nur wenige Minuten und ist komplett anonym. Du entscheidest selbst!'
+      title: "Videochat: Ja oder Nein?",
+      description:
+        "Möchtest du den digitalen Ablauf mit einem kurzen Videochat testen? Das dauert nur wenige Minuten und ist komplett anonym. Du entscheidest selbst!",
     },
     {
       number: 4,
-      title: 'Ausweis fotografieren',
-      description: 'Mach ein Foto von Vorder- und Rückseite deines Ausweises. Achte darauf, dass alles gut lesbar ist. Die Bilder werden nur intern geprüft.'
+      title: "Ausweis fotografieren",
+      description:
+        "Mach ein Foto von Vorder- und Rückseite deines Ausweises. Achte darauf, dass alles gut lesbar ist. Die Bilder werden nur intern geprüft.",
     },
     {
       number: 5,
-      title: 'Zugangsdaten erhalten',
-      description: 'Super! Die Demo-Zugangsdaten erscheinen gleich hier. Werktags zwischen 9-18 Uhr bekommst du sie meist innerhalb von 30 Minuten.'
+      title: "Zugangsdaten erhalten",
+      description:
+        "Super! Die Demo-Zugangsdaten erscheinen gleich hier. Werktags zwischen 9-18 Uhr bekommst du sie meist innerhalb von 30 Minuten.",
     },
     {
       number: 6,
-      title: 'Videochat starten',
-      description: 'Jetzt geht\'s los! Starte den Videochat auf der externen Seite. Das dauert nur etwa 5 Minuten und klappt super per Laptop oder Handy.'
+      title: "Videochat starten",
+      description:
+        "Jetzt geht's los! Starte den Videochat auf der externen Seite. Der Vorgang dauert etwa 5 Minuten und klappt super per Laptop oder Handy.",
     },
     {
       number: 7,
-      title: 'Abschluss & Eindruck',
-      description: 'Geschafft! Fasse kurz deinen Eindruck vom gesamten Ablauf zusammen. Was hat dir gefallen? Was könnte besser sein?'
+      title: "Abschluss & Eindruck",
+      description:
+        "Geschafft! Fasse kurz deinen Eindruck vom gesamten Ablauf zusammen. Was hat dir gefallen? Was könnte besser sein?",
     },
     {
       number: 8,
-      title: 'Nachweis hochladen',
-      description: 'Fast fertig! Lade noch einen Nachweis (Screenshot oder Foto) hoch, damit wir sehen können, dass alles geklappt hat.'
+      title: "Nachweis hochladen",
+      description:
+        "Fast fertig! Lade noch einen Nachweis (Screenshot oder Foto) hoch, damit wir sehen können, dass alles geklappt hat.",
     },
     {
       number: 9,
-      title: 'Fertig! 🎉',
-      description: 'Herzlichen Glückwunsch! Du kannst den Auftrag jetzt abschließen. Die Arbeitszeit wird dir gutgeschrieben.'
-    }
+      title: "Fertig! 🎉",
+      description:
+        "Herzlichen Glückwunsch! Du kannst den Auftrag jetzt abschließen. Die Arbeitszeit wird dir gutgeschrieben.",
+    },
   ];
 
   return (
@@ -1103,18 +1212,18 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
               className="pl-10 w-48"
             />
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={async () => {
               setIsRefreshing(true);
               await fetchTasks();
               setTimeout(() => setIsRefreshing(false), 500);
-            }} 
+            }}
             className="gap-2"
             disabled={isRefreshing}
           >
             <RefreshCcw className={cn("h-4 w-4 transition-transform", isRefreshing && "animate-spin")} />
-            {isRefreshing ? 'Lädt...' : 'Aktualisieren'}
+            {isRefreshing ? "Lädt..." : "Aktualisieren"}
           </Button>
         </div>
       </div>
@@ -1127,10 +1236,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
             </div>
             <h3 className="text-lg font-semibold mb-2">Keine Aufträge</h3>
             <p className="text-muted-foreground">
-              {tasks.length > 0 
-                ? '🎉 Super gemacht! Du hast alle deine Aufträge abgeschlossen.'
-                : 'Dir wurden noch keine Aufträge zugewiesen.'
-              }
+              {tasks.length > 0
+                ? "🎉 Super gemacht! Du hast alle deine Aufträge abgeschlossen."
+                : "Dir wurden noch keine Aufträge zugewiesen."}
             </p>
           </CardContent>
         </Card>
@@ -1138,14 +1246,26 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
         <div className="grid md:grid-cols-2 gap-4">
           {filteredTasks.map((task) => {
             const workflowDigital = (task.assignment as any)?.workflow_digital;
-            const videoChatStatus = workflowDigital === true 
-              ? { text: 'Digitaler Ablauf gewählt', color: 'bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900/30 text-green-700 dark:text-green-400' }
-              : workflowDigital === false 
-                ? { text: 'Digitaler Ablauf abgelehnt', color: 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400' }
-                : null;
-            
+            const videoChatStatus =
+              workflowDigital === true
+                ? {
+                    text: "Digitaler Ablauf gewählt",
+                    color:
+                      "bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900/30 text-green-700 dark:text-green-400",
+                  }
+                : workflowDigital === false
+                  ? {
+                      text: "Digitaler Ablauf abgelehnt",
+                      color:
+                        "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30 text-red-700 dark:text-red-400",
+                    }
+                  : null;
+
             return (
-              <Card key={task.id} className="overflow-hidden hover:shadow-lg transition-all border-primary/10 hover:border-primary/20">
+              <Card
+                key={task.id}
+                className="overflow-hidden hover:shadow-lg transition-all border-primary/10 hover:border-primary/20"
+              >
                 <CardContent className="p-0 bg-gradient-to-br from-background to-primary/5 dark:to-primary/5">
                   {/* Card Header */}
                   <div className="p-4 pb-3">
@@ -1158,12 +1278,18 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           {statusConfig[task.status].label}
                         </Badge>
                         {task.special_compensation && task.special_compensation > 0 && (
-                          <Badge variant="outline" className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                          <Badge
+                            variant="outline"
+                            className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                          >
                             {task.special_compensation.toFixed(2)} €
                           </Badge>
                         )}
                         {(task as any).skip_kyc_sms && (
-                          <Badge variant="outline" className="bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                          <Badge
+                            variant="outline"
+                            className="bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                          >
                             Ohne KYC/SMS
                           </Badge>
                         )}
@@ -1171,35 +1297,31 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                       {task.deadline && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4" />
-                          {format(new Date(task.deadline), 'dd.MM.yyyy', { locale: de })}
+                          {format(new Date(task.deadline), "dd.MM.yyyy", { locale: de })}
                         </div>
                       )}
                     </div>
-                    
+
                     <h3 className="font-semibold text-lg mb-1 line-clamp-2">{task.title}</h3>
-                    
+
                     <Badge variant="outline" className={`mt-2 ${priorityConfig[task.priority].color}`}>
                       {priorityConfig[task.priority].label}
                     </Badge>
                   </div>
-                  
+
                   {/* Video Chat Status - based on workflow_digital */}
                   {videoChatStatus && (
                     <div className={`px-4 py-2 border-y ${videoChatStatus.color}`}>
                       <div className="flex items-center gap-2 text-sm">
-                        {workflowDigital === true ? (
-                          <CheckCircle2 className="h-4 w-4" />
-                        ) : (
-                          <X className="h-4 w-4" />
-                        )}
+                        {workflowDigital === true ? <CheckCircle2 className="h-4 w-4" /> : <X className="h-4 w-4" />}
                         {videoChatStatus.text}
                       </div>
                     </div>
                   )}
-                  
+
                   {/* SMS Code Display on Card */}
                   {task.smsRequest?.sms_code && (
-                    <div 
+                    <div
                       className="px-4 py-2 bg-primary/5 border-y border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors group"
                       onClick={() => handleCopySmsCode(task.smsRequest!.sms_code!)}
                     >
@@ -1221,7 +1343,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Step Progress Overview */}
                   {task.assignment?.accepted_at && (
                     <div className="px-4 py-3 border-t border-border/50">
@@ -1240,8 +1362,8 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             <div
                               key={step}
                               className={cn(
-                                'flex-1 h-2 rounded-full transition-colors',
-                                isDone ? 'bg-primary' : isActive ? 'bg-primary/60' : 'bg-muted'
+                                "flex-1 h-2 rounded-full transition-colors",
+                                isDone ? "bg-primary" : isActive ? "bg-primary/60" : "bg-muted",
                               )}
                               title={`Schritt ${step}`}
                             />
@@ -1250,7 +1372,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Time estimate */}
                   <div className="px-4 py-2">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1258,40 +1380,37 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                       <span>Geschätzt: 5h</span>
                     </div>
                   </div>
-                  
+
                   {/* Actions */}
                   <div className="p-4 pt-2 flex flex-col gap-2">
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         className="flex-1 gap-2"
                         onClick={() => {
-                          setDialogViewMode('details');
+                          setDialogViewMode("details");
                           setSelectedTask(task);
                         }}
                       >
                         <FileText className="h-4 w-4" />
                         Details
                       </Button>
-                      {task.status === 'assigned' && !task.assignment?.accepted_at ? (
+                      {task.status === "assigned" && !task.assignment?.accepted_at ? (
                         isCheckedIn ? (
-                          <Button 
-                            className="flex-1 gap-2"
-                            onClick={() => handleAcceptTask(task.id)}
-                          >
+                          <Button className="flex-1 gap-2" onClick={() => handleAcceptTask(task.id)}>
                             <ArrowRight className="h-4 w-4" />
                             Starten
                           </Button>
                         ) : (
-                          <Button 
-                            className="flex-1 gap-2 bg-green-600 hover:bg-green-700" 
+                          <Button
+                            className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
                             onClick={async () => {
                               // Clock in first, then start task
-                              await supabase.from('time_entries').insert({
+                              await supabase.from("time_entries").insert({
                                 user_id: user?.id,
-                                entry_type: 'check_in'
+                                entry_type: "check_in",
                               });
-                              toast({ title: 'Eingestempelt!', description: 'Du wurdest eingestempelt.' });
+                              toast({ title: "Eingestempelt!", description: "Du wurdest eingestempelt." });
                               setIsCheckedIn(true);
                               // Then accept the task
                               handleAcceptTask(task.id);
@@ -1301,11 +1420,11 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             Einstempeln & Starten
                           </Button>
                         )
-                      ) : task.assignment?.accepted_at && task.status !== 'completed' ? (
-                        <Button 
+                      ) : task.assignment?.accepted_at && task.status !== "completed" ? (
+                        <Button
                           className="flex-1 gap-2"
                           onClick={() => {
-                            setDialogViewMode('workflow');
+                            setDialogViewMode("workflow");
                             setSelectedTask(task);
                           }}
                         >
@@ -1331,7 +1450,10 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
           </h3>
           <div className="grid md:grid-cols-2 gap-4">
             {pendingReviewTasks.map((task) => (
-              <Card key={task.id} className="overflow-hidden border-orange-500/20 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/30 hover:border-orange-500/40 transition-all duration-300">
+              <Card
+                key={task.id}
+                className="overflow-hidden border-orange-500/20 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/30 hover:border-orange-500/40 transition-all duration-300"
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge className="bg-orange-500/20 text-orange-700 dark:text-orange-400 border border-orange-500/30">
@@ -1361,7 +1483,10 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
           </h3>
           <div className="grid md:grid-cols-2 gap-4">
             {completedTasks.slice(0, 4).map((task) => (
-              <Card key={task.id} className="overflow-hidden border-green-500/20 bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/30 hover:border-green-500/40 transition-all duration-300 cursor-default">
+              <Card
+                key={task.id}
+                className="overflow-hidden border-green-500/20 bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/30 hover:border-green-500/40 transition-all duration-300 cursor-default"
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge className="bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30">
@@ -1387,14 +1512,12 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto [&>button]:hidden">
           {selectedTask && (
             <>
-              {dialogViewMode === 'details' ? (
+              {dialogViewMode === "details" ? (
                 // DETAILS VIEW - Shows task information
                 <>
                   <DialogHeader>
                     <DialogTitle className="text-xl">{selectedTask.title}</DialogTitle>
-                    <DialogDescription>
-                      Auftragsdetails und Informationen
-                    </DialogDescription>
+                    <DialogDescription>Auftragsdetails und Informationen</DialogDescription>
                   </DialogHeader>
 
                   <div className="space-y-6">
@@ -1417,7 +1540,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm font-medium">Deadline:</span>
-                            <span className="text-sm">{format(new Date(selectedTask.deadline), 'dd.MM.yyyy', { locale: de })}</span>
+                            <span className="text-sm">
+                              {format(new Date(selectedTask.deadline), "dd.MM.yyyy", { locale: de })}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -1427,11 +1552,17 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             {statusConfig[selectedTask.status].label}
                           </Badge>
                           {selectedTask.special_compensation && selectedTask.special_compensation > 0 && (
-                            <Badge variant="outline" className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                            <Badge
+                              variant="outline"
+                              className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                            >
                               {selectedTask.special_compensation.toFixed(2)} €
                             </Badge>
                           )}
-                          <Badge variant="outline" className={cn(priorityConfig[selectedTask.priority].color, "animate-pulse")}>
+                          <Badge
+                            variant="outline"
+                            className={cn(priorityConfig[selectedTask.priority].color, "animate-pulse")}
+                          >
                             {priorityConfig[selectedTask.priority].label}
                           </Badge>
                         </div>
@@ -1493,11 +1624,8 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
                     <div className="flex-1" />
 
-                    {selectedTask.assignment?.accepted_at && selectedTask.status !== 'completed' && (
-                      <Button
-                        className="gap-2"
-                        onClick={() => setDialogViewMode('workflow')}
-                      >
+                    {selectedTask.assignment?.accepted_at && selectedTask.status !== "completed" && (
+                      <Button className="gap-2" onClick={() => setDialogViewMode("workflow")}>
                         <ArrowRight className="h-4 w-4" />
                         Auftragsschritte
                       </Button>
@@ -1530,8 +1658,8 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             <div
                               key={step}
                               className={cn(
-                                'flex-1 h-2 rounded-full transition-colors',
-                                isDone ? 'bg-primary' : isActive ? 'bg-primary/60' : 'bg-muted'
+                                "flex-1 h-2 rounded-full transition-colors",
+                                isDone ? "bg-primary" : isActive ? "bg-primary/60" : "bg-muted",
                               )}
                             />
                           );
@@ -1555,7 +1683,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               variant="outline"
                               size="sm"
                               className="gap-2 shrink-0 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                              onClick={() => window.open(selectedTask.web_ident_url!, '_blank', 'noopener,noreferrer')}
+                              onClick={() => window.open(selectedTask.web_ident_url!, "_blank", "noopener,noreferrer")}
                             >
                               <ExternalLink className="h-4 w-4" />
                               Öffnen
@@ -1567,16 +1695,12 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                       {/* Current Step - Elegant Single Page View */}
                       <div className="space-y-4" ref={workflowContentRef}>
                         {(() => {
-                          const currentStepData = steps.find(s => s.number === currentStep);
+                          const currentStepData = steps.find((s) => s.number === currentStep);
                           if (!currentStepData) return null;
-                          
+
                           return (
                             <div id={`workflow-step-${currentStep}`} className="space-y-4">
-                              <WorkflowStepCard
-                                step={currentStepData}
-                                currentStep={currentStep}
-                                isExpanded={true}
-                              />
+                              <WorkflowStepCard step={currentStepData} currentStep={currentStep} isExpanded={true} />
                             </div>
                           );
                         })()}
@@ -1585,19 +1709,21 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                       {/* Bewertungsbogen Hinweis (Step 2) */}
                       {currentStep === 2 && (
                         <div className="p-4 rounded-lg border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30">
-                          <h4 className="font-medium mb-2 text-amber-800 dark:text-amber-300">Bewertungsbogen ausfüllen</h4>
+                          <h4 className="font-medium mb-2 text-amber-800 dark:text-amber-300">
+                            Bewertungsbogen ausfüllen
+                          </h4>
                           <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
-                            {taskEvaluations[selectedTask.id] 
-                              ? 'Bewertung wurde ausgefüllt. Du kannst jetzt zum nächsten Schritt.'
+                            {taskEvaluations[selectedTask.id]
+                              ? "Bewertung wurde ausgefüllt. Du kannst jetzt zum nächsten Schritt."
                               : 'Bitte gehe zum Tab „Bewertungsbögen", um deine strukturierte Bewertung für diesen Auftrag einzutragen.'}
                           </p>
                           <div className="flex gap-2 flex-wrap">
                             {!taskEvaluations[selectedTask.id] && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 onClick={() => {
                                   if (tabContext) {
-                                    tabContext.setActiveTab('evaluations');
+                                    tabContext.setActiveTab("evaluations");
                                   }
                                 }}
                                 className="gap-2"
@@ -1606,10 +1732,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               </Button>
                             )}
                             {taskEvaluations[selectedTask.id] && (
-                              <Button 
-                                onClick={() => setWorkflowStep(selectedTask, 3)}
-                                className="gap-2"
-                              >
+                              <Button onClick={() => setWorkflowStep(selectedTask, 3)} className="gap-2">
                                 <CheckCircle2 className="h-4 w-4" />
                                 Bewertung ausgefüllt → Weiter
                               </Button>
@@ -1628,19 +1751,21 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             <div>
                               <p className="font-medium text-sm">Video Beratung</p>
                               <div className="flex items-center gap-2 text-sm">
-                                <span className={`w-2 h-2 rounded-full ${
-                                  (selectedTask.assignment as any)?.workflow_digital === true
-                                    ? 'bg-green-500'
-                                    : (selectedTask.assignment as any)?.workflow_digital === false
-                                      ? 'bg-red-500'
-                                      : 'bg-amber-500'
-                                }`} />
+                                <span
+                                  className={`w-2 h-2 rounded-full ${
+                                    (selectedTask.assignment as any)?.workflow_digital === true
+                                      ? "bg-green-500"
+                                      : (selectedTask.assignment as any)?.workflow_digital === false
+                                        ? "bg-red-500"
+                                        : "bg-amber-500"
+                                  }`}
+                                />
                                 <span className="text-muted-foreground">
                                   {(selectedTask.assignment as any)?.workflow_digital === true
-                                    ? 'Digitaler Ablauf gewählt'
+                                    ? "Digitaler Ablauf gewählt"
                                     : (selectedTask.assignment as any)?.workflow_digital === false
-                                      ? 'Abgelehnt'
-                                      : 'Noch nicht entschieden'}
+                                      ? "Abgelehnt"
+                                      : "Noch nicht entschieden"}
                                 </span>
                               </div>
                             </div>
@@ -1649,88 +1774,97 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                       )}
 
                       {/* Task credentials - Elegant Card for External Site - Only show in steps 5 and 6 */}
-                      {(selectedTask.test_email || selectedTask.test_password) && currentStep >= 5 && currentStep <= 6 && (
-                        <div className="rounded-xl border overflow-hidden bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5">
-                          {/* Compact Header */}
-                          <div className="px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                              <Key className="h-5 w-5 text-white" />
+                      {(selectedTask.test_email || selectedTask.test_password) &&
+                        currentStep >= 5 &&
+                        currentStep <= 6 && (
+                          <div className="rounded-xl border overflow-hidden bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5">
+                            {/* Compact Header */}
+                            <div className="px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                                <Key className="h-5 w-5 text-white" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-white">Demo-Zugang</h4>
+                                <p className="text-xs text-white/70">Für die externe Seite</p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-semibold text-white">Demo-Zugang</h4>
-                              <p className="text-xs text-white/70">Für die externe Seite</p>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 space-y-3">
-                            {/* Quick Copy All Button */}
-                            {selectedTask.test_email && selectedTask.test_password && (
-                              <Button
-                                variant="outline"
-                                className="w-full gap-2 h-11 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                                onClick={async () => {
-                                  const text = `E-Mail: ${selectedTask.test_email}\nPasswort: ${selectedTask.test_password}`;
-                                  await navigator.clipboard.writeText(text);
-                                  toast({ title: 'Alle Zugangsdaten kopiert!', description: 'E-Mail & Passwort in die Zwischenablage kopiert.' });
-                                }}
-                              >
-                                <Copy className="h-4 w-4" />
-                                Alle Zugangsdaten kopieren
-                              </Button>
-                            )}
-                            
-                            {/* Individual Fields */}
-                            <div className="grid gap-2">
-                              {selectedTask.test_email && (
-                                <div 
-                                  className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg border hover:bg-muted/80 transition-colors cursor-pointer group"
+
+                            <div className="p-4 space-y-3">
+                              {/* Quick Copy All Button */}
+                              {selectedTask.test_email && selectedTask.test_password && (
+                                <Button
+                                  variant="outline"
+                                  className="w-full gap-2 h-11 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
                                   onClick={async () => {
-                                    await navigator.clipboard.writeText(selectedTask.test_email!);
-                                    toast({ title: 'Kopiert!', description: 'E-Mail kopiert.' });
+                                    const text = `E-Mail: ${selectedTask.test_email}\nPasswort: ${selectedTask.test_password}`;
+                                    await navigator.clipboard.writeText(text);
+                                    toast({
+                                      title: "Alle Zugangsdaten kopiert!",
+                                      description: "E-Mail & Passwort in die Zwischenablage kopiert.",
+                                    });
                                   }}
                                 >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                                      <Mail className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">E-Mail</p>
-                                      <p className="font-mono text-sm truncate">{selectedTask.test_email}</p>
-                                    </div>
-                                  </div>
-                                  <Copy className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 transition-colors shrink-0" />
-                                </div>
+                                  <Copy className="h-4 w-4" />
+                                  Alle Zugangsdaten kopieren
+                                </Button>
                               )}
-                              {selectedTask.test_password && (
-                                <div 
-                                  className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg border hover:bg-muted/80 transition-colors cursor-pointer group"
-                                  onClick={async () => {
-                                    await navigator.clipboard.writeText(selectedTask.test_password!);
-                                    toast({ title: 'Kopiert!', description: 'Passwort kopiert.' });
-                                  }}
-                                >
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center shrink-0">
-                                      <Key className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+
+                              {/* Individual Fields */}
+                              <div className="grid gap-2">
+                                {selectedTask.test_email && (
+                                  <div
+                                    className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg border hover:bg-muted/80 transition-colors cursor-pointer group"
+                                    onClick={async () => {
+                                      await navigator.clipboard.writeText(selectedTask.test_email!);
+                                      toast({ title: "Kopiert!", description: "E-Mail kopiert." });
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                                        <Mail className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                                          E-Mail
+                                        </p>
+                                        <p className="font-mono text-sm truncate">{selectedTask.test_email}</p>
+                                      </div>
                                     </div>
-                                    <div className="min-w-0">
-                                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Passwort</p>
-                                      <p className="font-mono text-sm truncate">{selectedTask.test_password}</p>
-                                    </div>
+                                    <Copy className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 transition-colors shrink-0" />
                                   </div>
-                                  <Copy className="h-4 w-4 text-muted-foreground group-hover:text-teal-600 transition-colors shrink-0" />
-                                </div>
-                              )}
+                                )}
+                                {selectedTask.test_password && (
+                                  <div
+                                    className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg border hover:bg-muted/80 transition-colors cursor-pointer group"
+                                    onClick={async () => {
+                                      await navigator.clipboard.writeText(selectedTask.test_password!);
+                                      toast({ title: "Kopiert!", description: "Passwort kopiert." });
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center shrink-0">
+                                        <Key className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                                          Passwort
+                                        </p>
+                                        <p className="font-mono text-sm truncate">{selectedTask.test_password}</p>
+                                      </div>
+                                    </div>
+                                    <Copy className="h-4 w-4 text-muted-foreground group-hover:text-teal-600 transition-colors shrink-0" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Hint */}
+                              <p className="text-xs text-center text-muted-foreground">
+                                Klicke auf ein Feld, um es zu kopieren
+                              </p>
                             </div>
-                            
-                            {/* Hint */}
-                            <p className="text-xs text-center text-muted-foreground">
-                              Klicke auf ein Feld, um es zu kopieren
-                            </p>
                           </div>
-                        </div>
-                      )}
-                      
+                        )}
+
                       {/* Step 4 Info - ID Upload with Examples */}
                       {currentStep === 4 && (
                         <div className="rounded-xl border overflow-hidden bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-violet-500/5">
@@ -1738,7 +1872,10 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           <div className="relative h-28 bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-600 flex items-center justify-center overflow-hidden">
                             <div className="absolute inset-0">
                               <div className="absolute top-4 left-4 w-16 h-16 rounded-full bg-white/10 blur-xl animate-pulse" />
-                              <div className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-white/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+                              <div
+                                className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-white/5 blur-2xl animate-pulse"
+                                style={{ animationDelay: "1s" }}
+                              />
                             </div>
                             <div className="relative z-10 flex flex-col items-center gap-2">
                               <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl shadow-black/20 border border-white/30">
@@ -1747,41 +1884,50 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               <h3 className="text-lg font-bold text-white">Ausweis fotografieren</h3>
                             </div>
                           </div>
-                          
+
                           <div className="p-5 space-y-4">
                             <div className="text-center">
                               <p className="text-sm text-muted-foreground mb-4">
-                                Fotografiere deinen Ausweis (Vorder- und Rückseite) sowie einen Adressnachweis und lade die Bilder hoch. Die Qualität muss gut sein, damit alles lesbar ist.
+                                Fotografiere deinen Ausweis (Vorder- und Rückseite) sowie einen Adressnachweis und lade
+                                die Bilder hoch. Die Qualität muss gut sein, damit alles lesbar ist.
                               </p>
                             </div>
-                            
+
                             {/* Example Images - ID Front/Back + Address Proof - Clickable for Upload */}
                             <div className="grid grid-cols-3 gap-3">
-                              <div 
+                              <div
                                 className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
                                 onClick={() => handleGoToDocuments(selectedTask.id)}
                               >
                                 <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
                                   <div className="text-center">
                                     <FileUp className="h-6 w-6 text-slate-500 group-hover:text-primary mx-auto mb-1 transition-colors" />
-                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">Hochladen</span>
+                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">
+                                      Hochladen
+                                    </span>
                                   </div>
                                 </div>
-                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">Ausweis Vorne</p>
+                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                                  Ausweis Vorne
+                                </p>
                               </div>
-                              <div 
+                              <div
                                 className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
                                 onClick={() => handleGoToDocuments(selectedTask.id)}
                               >
                                 <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
                                   <div className="text-center">
                                     <FileUp className="h-6 w-6 text-slate-500 group-hover:text-primary mx-auto mb-1 transition-colors" />
-                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">Hochladen</span>
+                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">
+                                      Hochladen
+                                    </span>
                                   </div>
                                 </div>
-                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">Ausweis Hinten</p>
+                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
+                                  Ausweis Hinten
+                                </p>
                               </div>
-                              <div 
+                              <div
                                 className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-amber-500/50 transition-all group"
                                 onClick={() => handleGoToDocuments(selectedTask.id)}
                               >
@@ -1791,30 +1937,36 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                     <span className="text-[10px] text-amber-600 dark:text-amber-400">Hochladen</span>
                                   </div>
                                 </div>
-                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Adressnachweis</p>
+                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                  Adressnachweis
+                                </p>
                               </div>
                             </div>
-                            
+
                             <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
                               <p className="text-xs text-amber-700 dark:text-amber-400">
-                                <strong>Adressnachweis:</strong> Kontoauszug, Rechnung oder offizielles Schreiben mit deinem Namen und Adresse (max. 3 Monate alt)
+                                <strong>Adressnachweis:</strong> Kontoauszug, Rechnung oder offizielles Schreiben mit
+                                deinem Namen und Adresse (max. 3 Monate alt)
                               </p>
                             </div>
-                            
+
                             {/* Document Status Display */}
                             {(() => {
                               const kycStatus = taskKycStatus[selectedTask.id];
-                              const totalDocs = (kycStatus?.pending || 0) + (kycStatus?.approved || 0) + (kycStatus?.rejected || 0);
-                              
+                              const totalDocs =
+                                (kycStatus?.pending || 0) + (kycStatus?.approved || 0) + (kycStatus?.rejected || 0);
+
                               return (
                                 <div className="space-y-3">
                                   {/* Upload Counter */}
                                   <div className="flex items-center justify-center gap-2 flex-wrap">
-                                    <span className={`px-3 py-1.5 rounded-full text-sm font-medium ${totalDocs >= 3 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>
+                                    <span
+                                      className={`px-3 py-1.5 rounded-full text-sm font-medium ${totalDocs >= 3 ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-muted text-muted-foreground"}`}
+                                    >
                                       {totalDocs} / 3 Dokumente
                                     </span>
                                   </div>
-                                  
+
                                   {/* Status Details */}
                                   {totalDocs > 0 && (
                                     <div className="flex items-center justify-center gap-3 flex-wrap text-xs">
@@ -1838,7 +1990,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                       )}
                                     </div>
                                   )}
-                                  
+
                                   {/* Rejection Warning */}
                                   {kycStatus?.rejected > 0 && (
                                     <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800/30">
@@ -1850,7 +2002,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                           </p>
                                           {kycStatus.rejectedNotes.length > 0 && (
                                             <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                                              Grund: {kycStatus.rejectedNotes.join(', ')}
+                                              Grund: {kycStatus.rejectedNotes.join(", ")}
                                             </p>
                                           )}
                                           <p className="text-xs text-red-600 dark:text-red-400 mt-1">
@@ -1860,17 +2012,19 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                       </div>
                                     </div>
                                   )}
-                                  
+
                                   {/* All Approved Message */}
-                                  {kycStatus?.approved >= 3 && kycStatus?.rejected === 0 && kycStatus?.pending === 0 && (
-                                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800/30 flex items-center gap-2">
-                                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
-                                      <p className="text-sm text-green-700 dark:text-green-400">
-                                        Alle Dokumente genehmigt. Du kannst fortfahren.
-                                      </p>
-                                    </div>
-                                  )}
-                                  
+                                  {kycStatus?.approved >= 3 &&
+                                    kycStatus?.rejected === 0 &&
+                                    kycStatus?.pending === 0 && (
+                                      <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800/30 flex items-center gap-2">
+                                        <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+                                        <p className="text-sm text-green-700 dark:text-green-400">
+                                          Alle Dokumente genehmigt. Du kannst fortfahren.
+                                        </p>
+                                      </div>
+                                    )}
+
                                   {/* Pending Review Message */}
                                   {kycStatus?.pending > 0 && kycStatus?.rejected === 0 && (
                                     <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/30 flex items-center gap-2">
@@ -1883,19 +2037,19 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                 </div>
                               );
                             })()}
-                            
+
                             {/* Upload Button */}
                             <Button
                               className="w-full gap-2 h-12"
-                              variant={hasKycDocuments(selectedTask.id) ? 'outline' : 'default'}
+                              variant={hasKycDocuments(selectedTask.id) ? "outline" : "default"}
                               onClick={() => handleGoToDocuments(selectedTask.id)}
                             >
                               <FileUp className="h-5 w-5" />
-                              {taskKycStatus[selectedTask.id]?.rejected > 0 
-                                ? 'Neue Dokumente hochladen'
-                                : hasKycDocuments(selectedTask.id) 
-                                  ? 'Weitere Dokumente hochladen' 
-                                  : 'Ausweisdokumente hochladen'}
+                              {taskKycStatus[selectedTask.id]?.rejected > 0
+                                ? "Neue Dokumente hochladen"
+                                : hasKycDocuments(selectedTask.id)
+                                  ? "Weitere Dokumente hochladen"
+                                  : "Ausweisdokumente hochladen"}
                             </Button>
                           </div>
                         </div>
@@ -1916,9 +2070,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                 </p>
                               </div>
                             </div>
-                            
+
                             {/* Demo Credentials with Loading Animation */}
-                            {(selectedTask.test_email || selectedTask.test_password) ? (
+                            {selectedTask.test_email || selectedTask.test_password ? (
                               <>
                                 {demoLoadingTaskId === selectedTask.id ? (
                                   <div className="p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
@@ -1939,15 +2093,20 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 space-y-3">
                                     <div className="flex items-center gap-2 mb-2">
                                       <CheckCircle2 className="h-4 w-4 text-primary" />
-                                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">Demo-Zugangsdaten</span>
+                                      <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                                        Demo-Zugangsdaten
+                                      </span>
                                     </div>
-                                    
+
                                     {selectedTask.test_email && (
-                                      <div 
+                                      <div
                                         className="flex items-center gap-3 p-3 bg-background/80 rounded-lg cursor-pointer hover:bg-background transition-colors group"
                                         onClick={async () => {
                                           await navigator.clipboard.writeText(selectedTask.test_email!);
-                                          toast({ title: 'Kopiert!', description: 'E-Mail in Zwischenablage kopiert.' });
+                                          toast({
+                                            title: "Kopiert!",
+                                            description: "E-Mail in Zwischenablage kopiert.",
+                                          });
                                         }}
                                       >
                                         <Mail className="h-4 w-4 text-primary" />
@@ -1955,13 +2114,16 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                         <Copy className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                       </div>
                                     )}
-                                    
+
                                     {selectedTask.test_password && (
-                                      <div 
+                                      <div
                                         className="flex items-center gap-3 p-3 bg-background/80 rounded-lg cursor-pointer hover:bg-background transition-colors group"
                                         onClick={async () => {
                                           await navigator.clipboard.writeText(selectedTask.test_password!);
-                                          toast({ title: 'Kopiert!', description: 'Passwort in Zwischenablage kopiert.' });
+                                          toast({
+                                            title: "Kopiert!",
+                                            description: "Passwort in Zwischenablage kopiert.",
+                                          });
                                         }}
                                       >
                                         <Key className="h-4 w-4 text-primary" />
@@ -1969,7 +2131,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                         <Copy className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                       </div>
                                     )}
-                                    
+
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -1977,7 +2139,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                       onClick={async () => {
                                         const text = `E-Mail: ${selectedTask.test_email}\nPasswort: ${selectedTask.test_password}`;
                                         await navigator.clipboard.writeText(text);
-                                        toast({ title: 'Kopiert!', description: 'Alle Zugangsdaten kopiert.' });
+                                        toast({ title: "Kopiert!", description: "Alle Zugangsdaten kopiert." });
                                       }}
                                     >
                                       <Copy className="h-4 w-4" />
@@ -1991,15 +2153,19 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                 <p className="text-sm">Keine Demo-Zugangsdaten für diesen Auftrag hinterlegt.</p>
                               </div>
                             )}
-                            
+
                             {/* SMS Info Box */}
                             <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
                               <div className="flex items-start gap-3">
                                 <MessageSquare className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                                 <div>
-                                  <p className="font-medium text-amber-800 dark:text-amber-300 mb-1">Hinweis zum SMS-Code</p>
+                                  <p className="font-medium text-amber-800 dark:text-amber-300 mb-1">
+                                    Hinweis zum SMS-Code
+                                  </p>
                                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                                    Während des Videochats wirst du nach einem SMS-Code gefragt. Du kannst diesen Code <strong>erst dann anfordern</strong>, wenn du im Videochat bist und der Code benötigt wird.
+                                    Während des Videochats wirst du nach einem SMS-Code gefragt. Du kannst diesen Code{" "}
+                                    <strong>erst dann anfordern</strong>, wenn du im Videochat bist und der Code
+                                    benötigt wird.
                                   </p>
                                 </div>
                               </div>
@@ -2016,9 +2182,12 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                             {/* Animated Background Elements */}
                             <div className="absolute inset-0">
                               <div className="absolute top-4 left-4 w-16 h-16 rounded-full bg-white/10 blur-xl animate-pulse" />
-                              <div className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-white/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+                              <div
+                                className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-white/5 blur-2xl animate-pulse"
+                                style={{ animationDelay: "1s" }}
+                              />
                             </div>
-                            
+
                             {/* Main Icon */}
                             <div className="relative z-10 flex flex-col items-center gap-3">
                               <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl shadow-black/20 border border-white/30">
@@ -2026,11 +2195,13 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               </div>
                               <div className="text-center">
                                 <h3 className="text-lg font-bold text-white">Video-Verifizierung</h3>
-                                <p className="text-xs text-white/80">Externe Plattform für den Identifikationsprozess</p>
+                                <p className="text-xs text-white/80">
+                                  Externe Plattform für den Identifikationsprozess
+                                </p>
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Content Area */}
                           <div className="p-5 space-y-4">
                             {/* SMS Animation Overlay */}
@@ -2038,16 +2209,20 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30 animate-fade-in">
                                 <div className="flex items-center gap-3">
                                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
-                                  <CheckCircle2 className="h-6 w-6 text-white" />
-                                </div>
-                                <div>
-                                  <p className="font-bold text-emerald-600 dark:text-emerald-400">SMS-Code eingegangen</p>
-                                  <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80">Der Verifizierungscode steht bereit.</p>
+                                    <CheckCircle2 className="h-6 w-6 text-white" />
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-emerald-600 dark:text-emerald-400">
+                                      SMS-Code eingegangen
+                                    </p>
+                                    <p className="text-sm text-emerald-600/80 dark:text-emerald-400/80">
+                                      Der Verifizierungscode steht bereit.
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                            
+                            )}
+
                             {/* SMS Code Display - Elegant Animated Card */}
                             {selectedTask.smsRequest?.sms_code ? (
                               <div className="p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20">
@@ -2055,13 +2230,20 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
                                     <MessageSquare className="h-4 w-4 text-primary" />
                                   </div>
-                                  <p className="text-xs font-semibold text-primary uppercase tracking-wide">SMS-Code für Verifizierung</p>
+                                  <p className="text-xs font-semibold text-primary uppercase tracking-wide">
+                                    SMS-Code für Verifizierung
+                                  </p>
                                 </div>
                                 <div className="flex items-center justify-between gap-3 flex-wrap">
                                   {/* Animated SMS Copy Component */}
-                                  <AnimatedSmsCopy 
+                                  <AnimatedSmsCopy
                                     code={selectedTask.smsRequest.sms_code}
-                                    onCopied={() => toast({ title: 'Kopiert!', description: 'SMS-Code in die Zwischenablage kopiert.' })}
+                                    onCopied={() =>
+                                      toast({
+                                        title: "Kopiert!",
+                                        description: "SMS-Code in die Zwischenablage kopiert.",
+                                      })
+                                    }
                                   />
                                   <Button
                                     variant="outline"
@@ -2070,7 +2252,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                     disabled={resendingCode === selectedTask.id}
                                     onClick={() => handleResendSmsCode(selectedTask.id, selectedTask.smsRequest!.id)}
                                   >
-                                    <RefreshCw className={cn("h-3 w-3", resendingCode === selectedTask.id && "animate-spin")} />
+                                    <RefreshCw
+                                      className={cn("h-3 w-3", resendingCode === selectedTask.id && "animate-spin")}
+                                    />
                                     Neuer Code
                                   </Button>
                                 </div>
@@ -2087,26 +2271,35 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   </div>
                                   <p className="font-semibold mb-1">SMS-Code wird bereitgestellt</p>
                                   <p className="text-sm text-muted-foreground max-w-xs mb-3">
-                                    Der zuständige Administrator wurde benachrichtigt und stellt den Verifizierungscode bereit.
+                                    Der zuständige Administrator wurde benachrichtigt und stellt den Verifizierungscode
+                                    bereit.
                                   </p>
-                                  
+
                                   <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
                                     <div className="flex items-center gap-1.5 px-2.5 py-1 bg-muted rounded-full text-xs text-muted-foreground">
                                       <Clock className="h-3 w-3" />
-                                      {format(new Date(selectedTask.smsRequest.requested_at), 'HH:mm', { locale: de })} Uhr
+                                      {format(new Date(selectedTask.smsRequest.requested_at), "HH:mm", {
+                                        locale: de,
+                                      })}{" "}
+                                      Uhr
                                     </div>
                                     <div className="px-2.5 py-1 bg-primary/10 rounded-full text-xs font-medium text-primary">
-                                      vor {formatDistanceStrict(new Date(selectedTask.smsRequest.requested_at), new Date(), { locale: de, addSuffix: false })}
+                                      vor{" "}
+                                      {formatDistanceStrict(
+                                        new Date(selectedTask.smsRequest.requested_at),
+                                        new Date(),
+                                        { locale: de, addSuffix: false },
+                                      )}
                                     </div>
                                   </div>
-                                  
+
                                   <div className="w-full max-w-xs">
                                     <div className="flex items-center justify-center gap-2 text-sm mb-2">
                                       <span className="font-mono text-primary font-bold">{smsCountdown}s</span>
                                       <span className="text-muted-foreground">bis zur Aktualisierung</span>
                                     </div>
                                     <div className="h-1 bg-muted rounded-full overflow-hidden">
-                                      <div 
+                                      <div
                                         className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-1000"
                                         style={{ width: `${(smsCountdown / 30) * 100}%` }}
                                       />
@@ -2124,7 +2317,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                       }}
                                     >
                                       <RefreshCcw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
-                                      {isRefreshing ? 'Prüfe...' : 'Jetzt prüfen'}
+                                      {isRefreshing ? "Prüfe..." : "Jetzt prüfen"}
                                     </Button>
                                   </div>
                                 </div>
@@ -2167,9 +2360,12 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                 <div className="flex items-start gap-3 mb-3">
                                   <ExternalLink className="h-5 w-5 text-cyan-600 dark:text-cyan-400 mt-0.5 shrink-0" />
                                   <div>
-                                    <p className="font-medium text-cyan-800 dark:text-cyan-300 mb-1">Externe Verifizierungsplattform</p>
+                                    <p className="font-medium text-cyan-800 dark:text-cyan-300 mb-1">
+                                      Externe Verifizierungsplattform
+                                    </p>
                                     <p className="text-sm text-cyan-700 dark:text-cyan-400">
-                                      Die Identifikation erfolgt auf einer externen Plattform. Ihre Sitzung in diesem System bleibt aktiv.
+                                      Die Identifikation erfolgt auf einer externen Plattform. Ihre Sitzung in diesem
+                                      System bleibt aktiv.
                                     </p>
                                   </div>
                                 </div>
@@ -2179,7 +2375,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    window.open(selectedTask.web_ident_url!, '_blank', 'noopener,noreferrer');
+                                    window.open(selectedTask.web_ident_url!, "_blank", "noopener,noreferrer");
                                   }}
                                 >
                                   <ExternalLink className="h-5 w-5" />
@@ -2197,8 +2393,12 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                   onCheckedChange={(checked) => setVideoChatConfirmed(checked === true)}
                                   className="mt-0.5"
                                 />
-                                <label htmlFor="videochat-confirm-step6" className="text-sm cursor-pointer leading-relaxed">
-                                  Hiermit bestätige ich, dass der Video-Identifikationsprozess <strong>erfolgreich abgeschlossen</strong> wurde.
+                                <label
+                                  htmlFor="videochat-confirm-step6"
+                                  className="text-sm cursor-pointer leading-relaxed"
+                                >
+                                  Hiermit bestätige ich, dass der Video-Identifikationsprozess{" "}
+                                  <strong>erfolgreich abgeschlossen</strong> wurde.
                                 </label>
                               </div>
                             </div>
@@ -2213,7 +2413,10 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           <div className="relative h-28 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 flex items-center justify-center overflow-hidden">
                             <div className="absolute inset-0">
                               <div className="absolute top-4 left-4 w-16 h-16 rounded-full bg-white/10 blur-xl animate-pulse" />
-                              <div className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-white/5 blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+                              <div
+                                className="absolute bottom-4 right-4 w-24 h-24 rounded-full bg-white/5 blur-2xl animate-pulse"
+                                style={{ animationDelay: "1s" }}
+                              />
                             </div>
                             <div className="relative z-10 flex flex-col items-center gap-2">
                               <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl shadow-black/20 border border-white/30">
@@ -2222,16 +2425,19 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               <h3 className="text-lg font-bold text-white">Fast geschafft!</h3>
                             </div>
                           </div>
-                          
+
                           <div className="p-5 space-y-4">
                             <div className="text-center">
                               <p className="text-sm text-muted-foreground mb-4">
-                                Super! Du hast den wichtigsten Teil bereits erledigt. Fasse jetzt kurz deinen Gesamteindruck zusammen.
+                                Super! Du hast den wichtigsten Teil bereits erledigt. Fasse jetzt kurz deinen
+                                Gesamteindruck zusammen.
                               </p>
                             </div>
-                            
+
                             <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/30">
-                              <h4 className="font-medium text-emerald-800 dark:text-emerald-300 mb-3">Was sollst du festhalten?</h4>
+                              <h4 className="font-medium text-emerald-800 dark:text-emerald-300 mb-3">
+                                Was sollst du festhalten?
+                              </h4>
                               <ul className="space-y-2 text-sm text-emerald-700 dark:text-emerald-400">
                                 <li className="flex items-start gap-2">
                                   <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
@@ -2247,7 +2453,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                                 </li>
                               </ul>
                             </div>
-                            
+
                             <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border text-sm text-muted-foreground">
                               <Info className="h-4 w-4 shrink-0" />
                               <span>Schreibe deine Gedanken in die Notiz unten und klicke dann auf "Weiter".</span>
@@ -2284,13 +2490,13 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                           onChange={(e) => setStepNote(selectedTask.id, currentStep, e.target.value)}
                           className="min-h-[80px] bg-background"
                         />
-                        
+
                         {/* Show previous step notes */}
                         {currentStep > 1 && (
                           <div className="mt-4 pt-4 border-t border-border/50">
                             <p className="text-xs font-medium text-muted-foreground mb-2">Vorherige Schritt-Notizen:</p>
                             <div className="space-y-2 max-h-32 overflow-y-auto">
-                              {Array.from({ length: currentStep - 1 }, (_, i) => i + 1).map(step => {
+                              {Array.from({ length: currentStep - 1 }, (_, i) => i + 1).map((step) => {
                                 const note = getStepNote(selectedTask.id, step);
                                 if (!note) return null;
                                 return (
@@ -2307,13 +2513,13 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
                       {/* Action buttons */}
                       <div className="flex flex-wrap gap-3 pt-4 border-t">
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           onClick={async () => {
                             if (currentStep > 1) {
                               await handleGoBackStep(selectedTask);
                             } else {
-                              setDialogViewMode('details');
+                              setDialogViewMode("details");
                             }
                           }}
                         >
@@ -2322,7 +2528,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
 
                         <div className="flex-1" />
 
-                        {selectedTask.status === 'assigned' && !selectedTask.assignment?.accepted_at && isCheckedIn && (
+                        {selectedTask.status === "assigned" && !selectedTask.assignment?.accepted_at && isCheckedIn && (
                           <Button
                             onClick={async () => {
                               await handleAcceptTask(selectedTask.id);
@@ -2344,32 +2550,29 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                               Dokumente
                             </Button>
 
-                            <Button
-                              className="gap-2"
-                              onClick={() => handlePrimaryStepAction(selectedTask)}
-                            >
+                            <Button className="gap-2" onClick={() => handlePrimaryStepAction(selectedTask)}>
                               {(() => {
                                 const step = getWorkflowStep(selectedTask);
-                                if (step === 3) return 'Speichern & Weiter';
-                                if (step === 4) return 'Ausweisfotos hochladen';
-                                if (step === 5) return 'Speichern & Weiter';
+                                if (step === 3) return "Speichern & Weiter";
+                                if (step === 4) return "Ausweisfotos hochladen";
+                                if (step === 5) return "Speichern & Weiter";
                                 if (step === 6) {
-                                  if (videoChatConfirmed) return 'Weiter';
-                                  return 'Bitte Checkbox bestätigen';
+                                  if (videoChatConfirmed) return "Weiter";
+                                  return "Bitte Checkbox bestätigen";
                                 }
-                                if (step === 7) return 'Speichern & Weiter';
-                                if (step === 8) return (taskDocuments[selectedTask.id] || 0) > 0 ? 'Speichern & Weiter' : 'Nachweis hochladen';
-                                if (step === 9) return 'Auftrag abschließen';
-                                return 'Speichern & Weiter';
+                                if (step === 7) return "Speichern & Weiter";
+                                if (step === 8)
+                                  return (taskDocuments[selectedTask.id] || 0) > 0
+                                    ? "Speichern & Weiter"
+                                    : "Nachweis hochladen";
+                                if (step === 9) return "Auftrag abschließen";
+                                return "Speichern & Weiter";
                               })()}
                               <ArrowRight className="h-4 w-4" />
                             </Button>
 
                             {getWorkflowStep(selectedTask) === 8 && (taskDocuments[selectedTask.id] || 0) > 0 ? (
-                              <Button
-                                onClick={() => handleCompleteTask(selectedTask)}
-                                className="gap-2"
-                              >
+                              <Button onClick={() => handleCompleteTask(selectedTask)} className="gap-2">
                                 <CheckCircle2 className="h-4 w-4" />
                                 Abschließen
                               </Button>
@@ -2390,22 +2593,23 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
       <Dialog open={videoChatDialog.open} onOpenChange={(open) => setVideoChatDialog({ ...videoChatDialog, open })}>
         <DialogContent className="max-w-2xl [&>button]:hidden">
           <DialogHeader>
-            <DialogTitle className="text-center text-xl">
-              Möchtest du den Video-Chat durchführen?
-            </DialogTitle>
+            <DialogTitle className="text-center text-xl">Möchtest du den Video-Chat durchführen?</DialogTitle>
             <DialogDescription className="text-center">
-              Der Video-Chat ist ein wichtiger Teil des Bewertungsprozesses. Bitte lies dir die folgenden Hinweise sorgfältig durch.
+              Der Video-Chat ist ein wichtiger Teil des Bewertungsprozesses. Bitte lies dir die folgenden Hinweise
+              sorgfältig durch.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4">
             <div>
               <h4 className="font-semibold mb-3">Hinweise für den Video-Chat</h4>
               <p className="text-sm text-muted-foreground mb-4">
-                Damit du den Anmeldeprozess realistisch bewerten kannst, bitten wir dich, dich wie ein echter Neukunde zu verhalten. Deine Angaben dienen ausschließlich der internen Bewertung – sie sind nicht rechtsverbindlich.
+                Damit du den Anmeldeprozess realistisch bewerten kannst, bitten wir dich, dich wie ein echter Neukunde
+                zu verhalten. Deine Angaben dienen ausschließlich der internen Bewertung – sie sind nicht
+                rechtsverbindlich.
               </p>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-2">Gesetzlich vorgeschriebene Fragen im Chat</h4>
               <p className="text-sm text-muted-foreground mb-3">
@@ -2415,82 +2619,84 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                 <p>„Wirst du gezwungen, einen Account zu eröffnen?"</p>
                 <p>„Steht jemand bei dir, der dich zur Anmeldung drängt?"</p>
               </div>
-              <p className="text-sm font-medium mt-3">
-                Diese Fragen musst du immer mit „Nein" beantworten.
-              </p>
+              <p className="text-sm font-medium mt-3">Diese Fragen musst du immer mit „Nein" beantworten.</p>
               <p className="text-sm text-muted-foreground mt-2">
                 Falls keine solchen Fragen gestellt werden, vermerke das bitte im Bewertungsbogen.
               </p>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-2">Wichtige Hinweise zur Durchführung</h4>
               <p className="text-sm text-muted-foreground">
-                Wähle eine ruhige Umgebung mit guter Beleuchtung, funktionierender Webcam und stabiler Internetverbindung.
+                Wähle eine ruhige Umgebung mit guter Beleuchtung, funktionierender Webcam und stabiler
+                Internetverbindung.
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Folge den Anweisungen des Video-Chat-Systems bzw. der Mitarbeiterin oder des Mitarbeiters Schritt für Schritt.
+                Folge den Anweisungen des Video-Chat-Systems bzw. der Mitarbeiterin oder des Mitarbeiters Schritt für
+                Schritt.
               </p>
               <p className="text-sm text-muted-foreground mt-2">
                 Sollte etwas unklar oder technisch problematisch sein, notiere es bitte im Bewertungsbogen.
               </p>
             </div>
-            
+
             <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-lg">
               <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                 <AlertCircle className="h-5 w-5 shrink-0" />
                 <p className="text-sm">
-                  Bei Ablehnung wird die Bewertung als nicht erfolgreich gewertet und fließt nicht in deine Leistungen ein.
+                  Bei Ablehnung wird die Bewertung als nicht erfolgreich gewertet und fließt nicht in deine Leistungen
+                  ein.
                 </p>
               </div>
             </div>
           </div>
-          
-           <div className="flex gap-3">
-             <Button
-               variant="outline"
-               className="flex-1 gap-2"
-               onClick={async () => {
-                 const task = videoChatDialog.task;
-                 setVideoChatDialog({ open: false, task: null });
-                 if (!task) return;
-                 await updateWorkflow(task.id, { workflow_step: 6, workflow_digital: false });
-                 toast({ title: 'Okay', description: 'Du hast den digitalen Ablauf abgelehnt. Weiter mit Schritt 6.' });
-               }}
-             >
-               <X className="h-4 w-4" />
-               Ablehnen
-             </Button>
-             <Button
-               className="flex-1 gap-2"
-               onClick={async () => {
-                 const task = videoChatDialog.task;
-                 setVideoChatDialog({ open: false, task: null });
-                 if (!task) return;
-                 await updateWorkflow(task.id, { workflow_step: 4, workflow_digital: true });
-                 toast({ title: 'Einverstanden', description: 'Weiter mit Schritt 4: Demo-Daten anfordern.' });
-               }}
-             >
-               <CheckCircle2 className="h-4 w-4" />
-               Einverstanden
-             </Button>
-           </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1 gap-2"
+              onClick={async () => {
+                const task = videoChatDialog.task;
+                setVideoChatDialog({ open: false, task: null });
+                if (!task) return;
+                await updateWorkflow(task.id, { workflow_step: 6, workflow_digital: false });
+                toast({ title: "Okay", description: "Du hast den digitalen Ablauf abgelehnt. Weiter mit Schritt 6." });
+              }}
+            >
+              <X className="h-4 w-4" />
+              Ablehnen
+            </Button>
+            <Button
+              className="flex-1 gap-2"
+              onClick={async () => {
+                const task = videoChatDialog.task;
+                setVideoChatDialog({ open: false, task: null });
+                if (!task) return;
+                await updateWorkflow(task.id, { workflow_step: 4, workflow_digital: true });
+                toast({ title: "Einverstanden", description: "Weiter mit Schritt 4: Demo-Daten anfordern." });
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Einverstanden
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Completion Dialog */}
-      <Dialog open={completionDialog.open} onOpenChange={(open) => {
-        if (!open) setCompletionDialog({ ...completionDialog, open: false });
-      }}>
+      <Dialog
+        open={completionDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setCompletionDialog({ ...completionDialog, open: false });
+        }}
+      >
         <DialogContent className="sm:max-w-md [&>button]:hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-2xl">
               <PartyPopper className="h-6 w-6 text-yellow-500" />
               Hervorragende Arbeit!
             </DialogTitle>
-            <DialogDescription>
-              Du hast den Auftrag erfolgreich abgeschlossen
-            </DialogDescription>
+            <DialogDescription>Du hast den Auftrag erfolgreich abgeschlossen</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="text-center">
@@ -2500,7 +2706,7 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
               <h3 className="text-xl font-bold">{completionDialog.task?.title}</h3>
               <p className="text-muted-foreground">{completionDialog.task?.customer_name}</p>
             </div>
-            
+
             <div className="p-4 bg-muted/50 rounded-xl space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground flex items-center gap-2">
@@ -2515,11 +2721,13 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                     <Euro className="h-4 w-4" />
                     Sondervergütung
                   </span>
-                  <span className="font-bold text-lg text-emerald-600">{completionDialog.task.special_compensation.toFixed(2)} €</span>
+                  <span className="font-bold text-lg text-emerald-600">
+                    {completionDialog.task.special_compensation.toFixed(2)} €
+                  </span>
                 </div>
               )}
             </div>
-            
+
             <div className="text-center">
               <Button
                 onClick={() => {
@@ -2549,23 +2757,23 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                 <p className="text-sm text-muted-foreground">Video-Verifizierung</p>
               </div>
             </div>
-            
+
             <Button
               variant="ghost"
               size="icon"
               className="hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setWebIdentDialog({ open: false, url: '', taskTitle: '', taskId: '' })}
+              onClick={() => setWebIdentDialog({ open: false, url: "", taskTitle: "", taskId: "" })}
             >
               <X className="h-5 w-5" />
             </Button>
           </div>
-          
+
           {/* Content */}
           <div className="p-6 space-y-6">
             {/* Phone Number & SMS Code */}
             <div className="flex flex-wrap gap-3">
               {(() => {
-                const currentTask = tasks.find(t => t.id === webIdentDialog.taskId);
+                const currentTask = tasks.find((t) => t.id === webIdentDialog.taskId);
                 return (
                   <>
                     {currentTask?.customer_phone && (
@@ -2595,8 +2803,8 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                 <div>
                   <p className="font-medium text-amber-800 dark:text-amber-300 mb-1">Wichtiger Hinweis</p>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    Die Videochat-Seite kann aus Sicherheitsgründen nicht in einem eingebetteten Fenster angezeigt werden. 
-                    Bitte öffne die Seite in einem neuen Tab über den Button unten.
+                    Die Videochat-Seite kann aus Sicherheitsgründen nicht in einem eingebetteten Fenster angezeigt
+                    werden. Bitte öffne die Seite in einem neuen Tab über den Button unten.
                   </p>
                 </div>
               </div>
@@ -2611,7 +2819,8 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                 className="mt-0.5"
               />
               <label htmlFor="videochat-dialog-confirm" className="text-sm cursor-pointer leading-relaxed">
-                Ich bestätige, dass ich den Videochat <strong>erfolgreich abgeschlossen</strong> habe und die Verifizierung durchgeführt wurde.
+                Ich bestätige, dass ich den Videochat <strong>erfolgreich abgeschlossen</strong> habe und die
+                Verifizierung durchgeführt wurde.
               </label>
             </div>
 
@@ -2626,9 +2835,9 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                   Extern Öffnen
                 </a>
               </Button>
-              
-              <Button 
-                variant="outline" 
+
+              <Button
+                variant="outline"
                 className="gap-2"
                 onClick={() => {
                   if (webIdentDialog.taskId) {
@@ -2648,15 +2857,15 @@ const [savingStepNote, setSavingStepNote] = useState<string | null>(null);
                 disabled={!videoChatConfirmed}
                 onClick={async () => {
                   const taskId = webIdentDialog.taskId;
-                  setWebIdentDialog({ open: false, url: '', taskTitle: '', taskId: '' });
+                  setWebIdentDialog({ open: false, url: "", taskTitle: "", taskId: "" });
                   if (taskId) {
-                    const task = tasks.find(t => t.id === taskId);
+                    const task = tasks.find((t) => t.id === taskId);
                     if (task) {
                       await setWorkflowStep(task, 6);
                       setVideoChatConfirmed(false);
                       toast({
-                        title: 'Videochat abgeschlossen',
-                        description: 'Weiter mit Schritt 6: Unterlagen abwarten.',
+                        title: "Videochat abgeschlossen",
+                        description: "Weiter mit Schritt 6: Unterlagen abwarten.",
                       });
                     }
                   }
