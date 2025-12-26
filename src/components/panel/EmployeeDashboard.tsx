@@ -267,7 +267,7 @@ export default function EmployeeDashboard() {
         { id: 'evaluations', label: 'Bewertungsbögen', icon: ClipboardCheck, badge: pendingEvaluations > 0 ? pendingEvaluations : undefined },
         { id: 'compensation', label: 'Sondervergütungen', icon: Euro },
         { id: 'chat', label: 'Nachrichten', icon: MessageCircle, badge: unreadMessages > 0 ? unreadMessages : undefined },
-        { id: 'documents', label: 'Meine Verträge', icon: FileText },
+        { id: 'documents', label: 'Dokumente', icon: FileText },
       ],
     },
     {

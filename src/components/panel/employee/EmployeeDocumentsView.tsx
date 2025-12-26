@@ -198,11 +198,14 @@ export default function EmployeeDocumentsView() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Datei auswählen</Label>
-              <Input
-                type="file"
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
+              <div className="relative">
+                <Input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer"
+                  id="document-upload"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
                 Erlaubt: Alle gängigen Formate (PDF, Word, Excel, Bilder, etc.) • Max. 10MB
               </p>

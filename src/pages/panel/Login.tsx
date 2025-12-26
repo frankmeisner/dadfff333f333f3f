@@ -139,8 +139,8 @@ export default function PanelLogin() {
               </div>
             </div>
             
-            {/* Remember me & Forgot password */}
-            <div className="flex items-center justify-between">
+            {/* Remember me */}
+            <div className="flex items-center justify-center">
               <div className="flex items-center gap-2">
                 <Checkbox 
                   id="remember" 
@@ -151,12 +151,6 @@ export default function PanelLogin() {
                   Angemeldet bleiben
                 </Label>
               </div>
-              <button 
-                type="button"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Passwort vergessen?
-              </button>
             </div>
             
             {/* Submit button */}
@@ -199,12 +193,6 @@ export default function PanelLogin() {
                 <Link to="/datenschutz" className="text-muted-foreground hover:text-foreground transition-colors">
                   Datenschutz
                 </Link>
-                <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
-                  AGB
-                </button>
-                <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Cookies
-                </button>
               </div>
             </div>
           </form>

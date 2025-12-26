@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, HelpCircle } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAvatarRefresh } from '@/hooks/useAvatarRefresh';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,10 +44,6 @@ export default function PanelHeader({
         {/* Right side - Actions */}
         <div className="flex items-center gap-2">
           {headerActions}
-          
-          <Button variant="ghost" size="icon" className="hidden md:flex">
-            <HelpCircle className="h-5 w-5 text-muted-foreground" />
-          </Button>
           
           <ThemeToggle />
 
