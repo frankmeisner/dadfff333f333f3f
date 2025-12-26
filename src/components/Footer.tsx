@@ -60,7 +60,7 @@ export const Footer = () => {
               <img 
                 src={logo} 
                 alt="Fritze IT-Systeme Logo" 
-                className="h-20 w-auto dark:brightness-0 dark:invert" 
+                className="h-28 w-auto dark:brightness-0 dark:invert" 
               />
             </a>
             <p className="text-sm text-white/60 leading-relaxed mb-6">
