@@ -3,6 +3,30 @@ import { Button } from "@/components/ui/button";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const applicationSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(2, "Name muss mindestens 2 Zeichen haben")
+    .max(100, "Name darf maximal 100 Zeichen haben"),
+  email: z.string()
+    .trim()
+    .email("Bitte geben Sie eine gültige E-Mail-Adresse ein")
+    .max(255, "E-Mail darf maximal 255 Zeichen haben"),
+  phone: z.string()
+    .trim()
+    .max(30, "Telefonnummer darf maximal 30 Zeichen haben")
+    .optional()
+    .or(z.literal("")),
+  position: z.string().optional(),
+  message: z.string()
+    .trim()
+    .min(10, "Nachricht muss mindestens 10 Zeichen haben")
+    .max(5000, "Nachricht darf maximal 5000 Zeichen haben"),
+});
+
+type FormErrors = Partial<Record<keyof z.infer<typeof applicationSchema>, string>>;
 
 export const Contact = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +36,7 @@ export const Contact = () => {
     position: "",
     message: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,8 +67,45 @@ export const Contact = () => {
     }
   };
 
+  const validateForm = (): boolean => {
+    try {
+      applicationSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: FormErrors = {};
+        error.errors.forEach((err) => {
+          const field = err.path[0] as keyof FormErrors;
+          newErrors[field] = err.message;
+        });
+        setErrors(newErrors);
+        
+        // Show first error as toast
+        const firstError = error.errors[0];
+        if (firstError) {
+          toast.error(firstError.message);
+        }
+      }
+      return false;
+    }
+  };
+
+  const handleFieldChange = (field: keyof typeof formData, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: undefined });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsSubmitting(true);
 
     try {
@@ -185,10 +247,15 @@ export const Contact = () => {
                       type="text"
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full h-11 px-4 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      onChange={(e) => handleFieldChange("name", e.target.value)}
+                      className={`w-full h-11 px-4 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                        errors.name ? "border-destructive" : "border-border"
+                      }`}
                       placeholder="Max Mustermann"
                     />
+                    {errors.name && (
+                      <p className="text-destructive text-xs mt-1">{errors.name}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
@@ -198,10 +265,15 @@ export const Contact = () => {
                       type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full h-11 px-4 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      onChange={(e) => handleFieldChange("email", e.target.value)}
+                      className={`w-full h-11 px-4 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                        errors.email ? "border-destructive" : "border-border"
+                      }`}
                       placeholder="max@beispiel.de"
                     />
+                    {errors.email && (
+                      <p className="text-destructive text-xs mt-1">{errors.email}</p>
+                    )}
                   </div>
                 </div>
 
@@ -213,10 +285,15 @@ export const Contact = () => {
                     <input
                       type="tel"
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full h-11 px-4 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                      onChange={(e) => handleFieldChange("phone", e.target.value)}
+                      className={`w-full h-11 px-4 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                        errors.phone ? "border-destructive" : "border-border"
+                      }`}
                       placeholder="+49 123 456789"
                     />
+                    {errors.phone && (
+                      <p className="text-destructive text-xs mt-1">{errors.phone}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
@@ -224,7 +301,7 @@ export const Contact = () => {
                     </label>
                     <select
                       value={formData.position}
-                      onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                      onChange={(e) => handleFieldChange("position", e.target.value)}
                       className="w-full h-11 px-4 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     >
                       <option value="">Position auswählen</option>
@@ -244,11 +321,17 @@ export const Contact = () => {
                     required
                     rows={4}
                     value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none"
+                    onChange={(e) => handleFieldChange("message", e.target.value)}
+                    className={`w-full px-4 py-3 rounded-lg border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none ${
+                      errors.message ? "border-destructive" : "border-border"
+                    }`}
                     placeholder="Erzählen Sie uns von sich und warum Sie Teil unseres Teams werden möchten..."
                   />
+                  {errors.message && (
+                    <p className="text-destructive text-xs mt-1">{errors.message}</p>
+                  )}
                 </div>
+
 
                 {/* File Upload */}
                 <div className="mb-6">
