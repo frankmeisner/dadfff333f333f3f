@@ -5,6 +5,7 @@ import { Team } from "@/components/Team";
 import { Benefits } from "@/components/Benefits";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
+import { BackToTop } from "@/components/BackToTop";
 
 const Index = () => {
   return (
@@ -18,6 +19,7 @@ const Index = () => {
         <Contact />
       </main>
       <Footer />
+      <BackToTop />
     </div>
   );
 };
