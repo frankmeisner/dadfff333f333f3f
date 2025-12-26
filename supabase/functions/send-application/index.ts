@@ -12,9 +12,6 @@ interface ApplicationRequest {
   name: string;
   email: string;
   phone?: string;
-  startDate: string;
-  salaryExpectation?: string;
-  experience?: string;
   message: string;
   jobTitle: string;
   resumeBase64?: string;
@@ -36,9 +33,6 @@ const handler = async (req: Request): Promise<Response> => {
       name, 
       email, 
       phone, 
-      startDate, 
-      salaryExpectation, 
-      experience, 
       message, 
       jobTitle,
       resumeBase64,
@@ -65,16 +59,8 @@ const handler = async (req: Request): Promise<Response> => {
             <td style="padding: 12px;">${phone || 'Nicht angegeben'}</td>
           </tr>
           <tr>
-            <td style="padding: 12px; font-weight: bold;">Gewünschter Starttermin:</td>
-            <td style="padding: 12px;">${startDate}</td>
-          </tr>
-          <tr style="background-color: #f8f9fa;">
-            <td style="padding: 12px; font-weight: bold;">Gehaltsvorstellung:</td>
-            <td style="padding: 12px;">${salaryExpectation || 'Keine Angabe'}</td>
-          </tr>
-          <tr>
-            <td style="padding: 12px; font-weight: bold;">Vorerfahrungen:</td>
-            <td style="padding: 12px;">${experience || 'Keine Angabe'}</td>
+            <td style="padding: 12px; font-weight: bold;">Position:</td>
+            <td style="padding: 12px;">${jobTitle}</td>
           </tr>
         </table>
         
@@ -149,7 +135,6 @@ const handler = async (req: Request): Promise<Response> => {
           <h3 style="color: #333; margin-top: 0;">Ihre Bewerbungsdaten:</h3>
           <ul style="line-height: 1.8;">
             <li><strong>Position:</strong> ${jobTitle}</li>
-            <li><strong>Gewünschter Starttermin:</strong> ${startDate}</li>
             ${resumeFileName ? `<li><strong>Lebenslauf:</strong> ${resumeFileName}</li>` : ''}
           </ul>
         </div>
