@@ -1174,7 +1174,7 @@ export default function EmployeeTasksView() {
       number: 2,
       title: "Deine Meinung abgeben",
       description:
-        "Jetzt kannst du deine ehrliche Meinung zur Webseite abgeben. Fülle den kurzen Fragebogen aus – es geht um Design, Übersichtlichkeit und deinen Gesamteindruck.",
+        "Jetzt kannst du deine ehrliche Meinung zur Webseite abgeben. Fülle den kurzen Fragebogen aus - es geht um Design, Übersichtlichkeit und deinen Gesamteindruck.",
     },
     {
       number: 3,
