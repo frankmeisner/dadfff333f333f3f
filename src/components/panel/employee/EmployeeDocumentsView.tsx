@@ -16,22 +16,23 @@ import { de } from 'date-fns/locale';
 import { useTabContext } from '../EmployeeDashboard';
 
 const documentTypes = [
-  { value: 'documentation', label: 'Dokumentation' },
-  { value: 'id_card', label: 'Personalausweis' },
-  { value: 'passport', label: 'Reisepass' },
   { value: 'address_proof', label: 'Adressnachweis' },
-  { value: 'contract', label: 'Vertrag' },
-  { value: 'certificate', label: 'Zertifikat' },
   { value: 'task_document', label: 'Auftragsdokument' },
   { value: 'letter', label: 'Brief' },
-  { value: 'other', label: 'Sonstiges' }
+  { value: 'documentation', label: 'Dokumentation' },
+  { value: 'proof', label: 'Nachweis' },
+  { value: 'id_card', label: 'Personalausweis' },
+  { value: 'passport', label: 'Reisepass' },
+  { value: 'other', label: 'Sonstiges' },
+  { value: 'contract', label: 'Vertrag' },
+  { value: 'certificate', label: 'Zertifikat' }
 ];
 
 export default function EmployeeDocumentsView() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState('id_card');
+  const [documentType, setDocumentType] = useState('address_proof');
   const [selectedTask, setSelectedTask] = useState<string>('none');
   const [uploading, setUploading] = useState(false);
   const [lockedTaskId, setLockedTaskId] = useState<string | null>(null);
@@ -138,7 +139,7 @@ export default function EmployeeDocumentsView() {
 
       toast({ title: 'Erfolg', description: 'Dokument wurde hochgeladen.' });
       setSelectedFile(null);
-      setDocumentType('id_card');
+      setDocumentType('address_proof');
       setSelectedTask('none');
       // Reset file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -197,18 +198,47 @@ export default function EmployeeDocumentsView() {
         <CardContent>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Datei auswählen</Label>
+              <Label htmlFor="document-upload">Datei auswählen</Label>
               <div className="relative">
-                <Input
+                <input
                   type="file"
                   onChange={handleFileChange}
-                  className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90 file:cursor-pointer"
+                  className="hidden"
                   id="document-upload"
                 />
+                <label
+                  htmlFor="document-upload"
+                  className={`flex items-center justify-center gap-3 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                    selectedFile 
+                      ? 'border-primary bg-primary/5 hover:bg-primary/10' 
+                      : 'border-border hover:border-primary hover:bg-muted/50'
+                  }`}
+                >
+                  {selectedFile ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-sm text-foreground">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                      <div className="text-center">
+                        <p className="font-medium text-foreground">Datei auswählen</p>
+                        <p className="text-xs text-muted-foreground">
+                          PDF, Word, Excel, Bilder (max. 10MB)
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </label>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Erlaubt: Alle gängigen Formate (PDF, Word, Excel, Bilder, etc.) • Max. 10MB
-              </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -1,7 +1,8 @@
-import { Mail, MapPin, Send, Upload } from "lucide-react";
+import { Mail, MapPin, Send, Upload, FileText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Contact = () => {
   const [formData, setFormData] = useState({
@@ -11,21 +12,92 @@ export const Contact = () => {
     position: "",
     message: "",
   });
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("Die Datei ist zu groß. Maximal 10 MB erlaubt.");
+        return;
+      }
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Bitte laden Sie eine PDF- oder Word-Datei hoch.");
+        return;
+      }
+      setResumeFile(file);
+      toast.success(`Dokument "${file.name}" ausgewählt`);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setResumeFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const subject = encodeURIComponent(`Bewerbung: ${formData.position || "Initiativbewerbung"}`);
-    const body = encodeURIComponent(
-      `Name: ${formData.name}\nE-Mail: ${formData.email}\nTelefon: ${formData.phone}\n\nGewünschte Position: ${formData.position || "Initiativbewerbung"}\n\nNachricht:\n${formData.message}`
-    );
-    
-    window.location.href = `mailto:bewerbung@fritze-it.solutions?subject=${subject}&body=${body}`;
-    
-    toast.success("E-Mail-Programm wird geöffnet...");
-    setIsSubmitting(false);
+    try {
+      // Convert file to base64 if present
+      let resumeBase64: string | undefined;
+      let resumeFileName: string | undefined;
+      let resumeContentType: string | undefined;
+
+      if (resumeFile) {
+        const reader = new FileReader();
+        const base64Promise = new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+        });
+        reader.readAsDataURL(resumeFile);
+        resumeBase64 = await base64Promise;
+        resumeFileName = resumeFile.name;
+        resumeContentType = resumeFile.type;
+      }
+
+      // Send application via edge function
+      const { error } = await supabase.functions.invoke('send-application', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || undefined,
+          message: formData.message,
+          jobTitle: formData.position || "Initiativbewerbung",
+          resumeBase64,
+          resumeFileName,
+          resumeContentType,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Bewerbung erfolgreich gesendet!");
+      setFormData({ name: "", email: "", phone: "", position: "", message: "" });
+      setResumeFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error: any) {
+      console.error("Error sending application:", error);
+      toast.error("Fehler beim Senden der Bewerbung. Bitte versuchen Sie es erneut.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -164,7 +236,7 @@ export const Contact = () => {
                   </div>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-4">
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Nachricht / Anschreiben *
                   </label>
@@ -178,14 +250,51 @@ export const Contact = () => {
                   />
                 </div>
 
-                <div className="bg-muted/50 rounded-lg p-4 mb-6">
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <Upload className="w-5 h-5" />
-                    <div className="text-sm">
-                      <p className="font-medium text-foreground">Hinweis zu Unterlagen</p>
-                      <p>Bitte fügen Sie Ihren Lebenslauf und Zeugnisse als Anhang in der E-Mail hinzu.</p>
+                {/* File Upload */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Lebenslauf / Dokumente
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="resume-upload"
+                  />
+                  
+                  {resumeFile ? (
+                    <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                      <FileText className="w-8 h-8 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{resumeFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(resumeFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleRemoveFile}
+                        className="shrink-0 text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
                     </div>
-                  </div>
+                  ) : (
+                    <label
+                      htmlFor="resume-upload"
+                      className="flex items-center justify-center gap-3 p-6 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                      <Upload className="w-6 h-6 text-muted-foreground" />
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-foreground">Dokument hochladen</p>
+                        <p className="text-xs text-muted-foreground">PDF, DOC, DOCX (max. 10 MB)</p>
+                      </div>
+                    </label>
+                  )}
                 </div>
 
                 <Button 
@@ -195,7 +304,7 @@ export const Contact = () => {
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Wird gesendet..." : "Bewerbung per E-Mail senden"}
+                  {isSubmitting ? "Wird gesendet..." : "Bewerbung absenden"}
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center mt-4">
