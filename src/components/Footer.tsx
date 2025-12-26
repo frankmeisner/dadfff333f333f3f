@@ -1,10 +1,15 @@
-import { Mail, Phone, MapPin, Clock, Twitter, Linkedin } from "lucide-react";
+import { useState } from "react";
+import { Mail, Phone, MapPin, Clock, Twitter, Linkedin, Send } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
 export const Footer = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -26,6 +31,23 @@ export const Footer = () => {
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
   };
 
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    
+    setIsLoading(true);
+    // Simulate newsletter signup
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    toast({
+      title: "Erfolgreich angemeldet!",
+      description: "Sie erhalten bald Updates zu Jobs & IT-Trends.",
+    });
+    
+    setEmail("");
+    setIsLoading(false);
+  };
+
   return (
     <footer className="bg-slate-900 dark:bg-slate-950 text-white">
       {/* Main Footer Content - 3 Sections */}
@@ -41,9 +63,32 @@ export const Footer = () => {
                 className="h-24 w-auto dark:brightness-0 dark:invert" 
               />
             </a>
-            <p className="text-sm text-white/60 max-w-xs leading-relaxed">
+            <p className="text-sm text-white/60 max-w-xs leading-relaxed mb-6">
               Fritze IT GmbH – Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
             </p>
+            
+            {/* Newsletter Signup */}
+            <div className="w-full max-w-xs">
+              <p className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">Newsletter</p>
+              <p className="text-xs text-white/50 mb-3">Updates zu Jobs & IT-Trends erhalten</p>
+              <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Ihre E-Mail"
+                  className="flex-1 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-md text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-3 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
           </div>
 
           {/* Section 2: Kontakt (Address, Email, Phone, Hours, Application) */}
