@@ -64,7 +64,7 @@ export const Footer = () => {
               />
             </a>
             <p className="text-sm text-white/60 leading-relaxed mb-6">
-              Fritze IT GmbH – Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
+              Fritze IT GmbH - Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
             </p>
             
             {/* Newsletter Signup */}
