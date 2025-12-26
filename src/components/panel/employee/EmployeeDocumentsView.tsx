@@ -47,11 +47,13 @@ export default function EmployeeDocumentsView() {
     }
   }, [user]);
 
-  // Handle pending task from navigation
+  // Handle pending task from navigation (e.g., from Step 8)
   useEffect(() => {
     if (tabContext?.pendingTaskId) {
       setSelectedTask(tabContext.pendingTaskId);
       setLockedTaskId(tabContext.pendingTaskId);
+      // Auto-select "Nachweis" (proof) as document type when navigating from workflow (Step 8)
+      setDocumentType('proof');
       // Clear the pending task after using it
       tabContext.setPendingTaskId(null);
     }
