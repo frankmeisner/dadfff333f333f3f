@@ -1170,7 +1170,7 @@ export default function EmployeeTasksView() {
       number: 6,
       title: "Videochat starten",
       description:
-        "Jetzt geht's los! Starte den Videochat auf der externen Seite. Der Vorgang dauert etwa 5 Minuten und klappt super per Laptop oder Handy.",
+        "Jetzt geht's los! Starte den Videochat auf der externen Seite. Der Vorgang dauert etwa 5 Minuten und lässt sich problemlos über Laptop oder Smartphone durchführen.",
     },
     {
       number: 7,
