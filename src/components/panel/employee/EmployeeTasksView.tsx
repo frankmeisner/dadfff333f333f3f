@@ -260,6 +260,8 @@ export default function EmployeeTasksView() {
   const [smsCountdown, setSmsCountdown] = useState(30);
   const [showSmsReceivedAnimation, setShowSmsReceivedAnimation] = useState<string | null>(null);
   const [requestingSmsId, setRequestingSmsId] = useState<string | null>(null);
+  const [smsRequested, setSmsRequested] = useState<Record<string, boolean>>({});
+  const [resendCooldown, setResendCooldown] = useState<Record<string, number>>({});
   const [demoLoadingTaskId, setDemoLoadingTaskId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -717,13 +719,38 @@ export default function EmployeeTasksView() {
     } else {
       await supabase.from("tasks").update({ status: "sms_requested" }).eq("id", taskId);
       toast({ title: "Erfolg", description: "SMS-Code wurde angefordert." });
+      setSmsRequested(prev => ({ ...prev, [taskId]: true }));
       fetchTasks();
     }
 
     setRequestingSmsId(null);
   };
 
+  const startResendCooldown = (taskId: string) => {
+    setResendCooldown(prev => ({ ...prev, [taskId]: 30 }));
+    const intervalId = setInterval(() => {
+      setResendCooldown(prev => {
+        const current = prev[taskId] || 0;
+        if (current <= 1) {
+          clearInterval(intervalId);
+          return { ...prev, [taskId]: 0 };
+        }
+        return { ...prev, [taskId]: current - 1 };
+      });
+    }, 1000);
+  };
+
   const handleResendSmsCode = async (taskId: string, _existingRequestId: string) => {
+    // Check if cooldown is active
+    if ((resendCooldown[taskId] || 0) > 0) {
+      toast({
+        title: "Bitte warten",
+        description: `Du kannst in ${resendCooldown[taskId]} Sekunden erneut anfordern.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setResendingCode(taskId);
 
     const { error } = await supabase.from("sms_code_requests").insert({
@@ -739,6 +766,7 @@ export default function EmployeeTasksView() {
       });
     } else {
       toast({ title: "Erfolg", description: "Neuer SMS-Code wurde angefordert." });
+      startResendCooldown(taskId);
       fetchTasks();
     }
 
@@ -2154,22 +2182,7 @@ export default function EmployeeTasksView() {
                               </div>
                             )}
 
-                            {/* SMS Info Box */}
-                            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/30">
-                              <div className="flex items-start gap-3">
-                                <MessageSquare className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-                                <div>
-                                  <p className="font-medium text-amber-800 dark:text-amber-300 mb-1">
-                                    Hinweis zum SMS-Code
-                                  </p>
-                                  <p className="text-sm text-amber-700 dark:text-amber-400">
-                                    Während des Videochats wirst du nach einem SMS-Code gefragt. Du kannst diesen Code{" "}
-                                    <strong>erst dann anfordern</strong>, wenn du im Videochat bist und der Code
-                                    benötigt wird.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
+                            {/* SMS Info Box removed - now shown only in Step 6 */}
                           </div>
                         </div>
                       )}
@@ -2333,23 +2346,73 @@ export default function EmployeeTasksView() {
                                   <p className="text-sm text-muted-foreground mb-4">
                                     Für die Identifikation im Videochat wird ein SMS-Verifizierungscode benötigt.
                                   </p>
-                                  <Button
-                                    className="gap-2 bg-gradient-to-r from-primary to-primary/80"
-                                    disabled={requestingSmsId === selectedTask.id}
-                                    onClick={() => handleRequestSms(selectedTask.id)}
-                                  >
-                                    {requestingSmsId === selectedTask.id ? (
-                                      <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Wird angefordert...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Phone className="h-4 w-4" />
-                                        SMS-Code anfordern
-                                      </>
-                                    )}
-                                  </Button>
+                                  
+                                  {smsRequested[selectedTask.id] ? (
+                                    // SMS already requested - show disabled button and resend option
+                                    <div className="space-y-3 w-full">
+                                      <Button
+                                        className="gap-2 w-full opacity-50 cursor-not-allowed"
+                                        disabled={true}
+                                      >
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        SMS-Code angefordert
+                                      </Button>
+                                      
+                                      <div className="relative">
+                                        <Button
+                                          variant="outline"
+                                          className="gap-2 w-full"
+                                          disabled={resendingCode === selectedTask.id || (resendCooldown[selectedTask.id] || 0) > 0}
+                                          onClick={() => handleResendSmsCode(selectedTask.id, "")}
+                                        >
+                                          {resendingCode === selectedTask.id ? (
+                                            <>
+                                              <Loader2 className="h-4 w-4 animate-spin" />
+                                              Wird angefordert...
+                                            </>
+                                          ) : (resendCooldown[selectedTask.id] || 0) > 0 ? (
+                                            <>
+                                              <RefreshCw className="h-4 w-4" />
+                                              Erneut senden in {resendCooldown[selectedTask.id]}s
+                                            </>
+                                          ) : (
+                                            <>
+                                              <RefreshCw className="h-4 w-4" />
+                                              Erneut SMS anfordern
+                                            </>
+                                          )}
+                                        </Button>
+                                        
+                                        {(resendCooldown[selectedTask.id] || 0) > 0 && (
+                                          <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
+                                            <div
+                                              className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-1000"
+                                              style={{ width: `${((resendCooldown[selectedTask.id] || 0) / 30) * 100}%` }}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    // Initial request button
+                                    <Button
+                                      className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+                                      disabled={requestingSmsId === selectedTask.id}
+                                      onClick={() => handleRequestSms(selectedTask.id)}
+                                    >
+                                      {requestingSmsId === selectedTask.id ? (
+                                        <>
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                          Wird angefordert...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Phone className="h-4 w-4" />
+                                          SMS-Code anfordern
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -2553,11 +2616,13 @@ export default function EmployeeTasksView() {
                             <Button className="gap-2" onClick={() => handlePrimaryStepAction(selectedTask)}>
                               {(() => {
                                 const step = getWorkflowStep(selectedTask);
+                                if (step === 1) return "Speichern & Weiter";
+                                if (step === 2) return "Speichern & Weiter";
                                 if (step === 3) return "Speichern & Weiter";
                                 if (step === 4) return "Ausweisfotos hochladen";
                                 if (step === 5) return "Speichern & Weiter";
                                 if (step === 6) {
-                                  if (videoChatConfirmed) return "Weiter";
+                                  if (videoChatConfirmed) return "Speichern & Weiter";
                                   return "Bitte Checkbox bestätigen";
                                 }
                                 if (step === 7) return "Speichern & Weiter";
@@ -2570,13 +2635,6 @@ export default function EmployeeTasksView() {
                               })()}
                               <ArrowRight className="h-4 w-4" />
                             </Button>
-
-                            {getWorkflowStep(selectedTask) === 8 && (taskDocuments[selectedTask.id] || 0) > 0 ? (
-                              <Button onClick={() => handleCompleteTask(selectedTask)} className="gap-2">
-                                <CheckCircle2 className="h-4 w-4" />
-                                Abschließen
-                              </Button>
-                            ) : null}
                           </>
                         )}
                       </div>
