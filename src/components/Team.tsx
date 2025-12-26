@@ -47,10 +47,10 @@ const teamMembers = [
 
 export const Team = () => {
   return (
-    <section id="team" className="py-20 bg-background">
+    <section id="team" className="py-20 bg-muted/30">
       <div className="container">
         <div className="text-center max-w-2xl mx-auto mb-12 space-y-4 animate-fade-up">
-          <span className="inline-block text-sm font-semibold text-secondary bg-secondary/10 px-4 py-1.5 rounded-full">
+          <span className="inline-block text-sm font-semibold text-primary bg-primary/10 px-4 py-1.5 rounded-full">
             Unser Team
           </span>
           <h2 className="text-3xl md:text-4xl font-bold text-foreground">Die Menschen hinter dem Erfolg</h2>
