@@ -87,11 +87,17 @@ export const Hero = () => {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <a href="#jobs" className="flex flex-col items-center gap-2 text-primary-foreground/70 hover:text-primary-foreground transition-colors">
-          <span className="text-sm font-medium">Weiter scrollen</span>
-          <ArrowDown className="w-5 h-5" />
-        </a>
-      </div>
+      <button
+        onClick={() => {
+          const jobsSection = document.getElementById('jobs');
+          if (jobsSection) {
+            jobsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce cursor-pointer flex flex-col items-center gap-2 text-primary-foreground/70 hover:text-primary-foreground transition-colors bg-transparent border-none"
+      >
+        <span className="text-sm font-medium">Weiter scrollen</span>
+        <ArrowDown className="w-5 h-5" />
+      </button>
     </section>;
 };
