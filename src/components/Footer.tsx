@@ -41,8 +41,8 @@ export const Footer = () => {
                 className="h-24 w-auto dark:brightness-0 dark:invert" 
               />
             </a>
-            <p className="text-sm text-white/50 max-w-xs">
-              Innovative IT-Lösungen für die digitale Transformation Ihres Unternehmens.
+            <p className="text-sm text-white/60 max-w-xs leading-relaxed">
+              Fritze IT GmbH – Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
             </p>
           </div>
 
