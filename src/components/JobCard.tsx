@@ -26,55 +26,57 @@ export const JobCard = ({
   delay = 0,
 }: JobCardProps) => {
   return (
-    <article
-      className="group relative bg-card rounded-xl border border-border p-6 shadow-soft hover:shadow-card transition-all duration-300 hover:-translate-y-1 animate-fade-up"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-200">
-            {title}
-          </h3>
-          <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
-            {description}
-          </p>
-        </div>
+    <Link to={`/jobs/${id}`} className="block">
+      <article
+        className="group relative bg-card rounded-xl border border-border p-6 shadow-soft hover:shadow-card transition-all duration-300 hover:-translate-y-1 animate-fade-up cursor-pointer"
+        style={{ animationDelay: `${delay}ms` }}
+      >
+        <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors duration-200">
+              {title}
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
+              {description}
+            </p>
+          </div>
 
-        <div className="flex flex-wrap gap-3">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-            <MapPin className="w-3.5 h-3.5" />
-            {location}
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-            <Briefcase className="w-3.5 h-3.5" />
-            {type}
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-            <Clock className="w-3.5 h-3.5" />
-            {workModel}
-          </span>
-          {department && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-full">
-              <Building2 className="w-3.5 h-3.5" />
-              {department}
+          <div className="flex flex-wrap gap-3">
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+              <MapPin className="w-3.5 h-3.5" />
+              {location}
             </span>
-          )}
-          {salary && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full">
-              <Euro className="w-3.5 h-3.5" />
-              {salary}
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+              <Briefcase className="w-3.5 h-3.5" />
+              {type}
             </span>
-          )}
-        </div>
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+              <Clock className="w-3.5 h-3.5" />
+              {workModel}
+            </span>
+            {department && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-full">
+                <Building2 className="w-3.5 h-3.5" />
+                {department}
+              </span>
+            )}
+            {salary && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full">
+                <Euro className="w-3.5 h-3.5" />
+                {salary}
+              </span>
+            )}
+          </div>
 
-        <div className="pt-2">
-          <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
-            <Link to={`/jobs/${id}`}>Details ansehen</Link>
-          </Button>
+          <div className="pt-2">
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-primary group-hover:underline">
+              Details ansehen →
+            </span>
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+    </Link>
   );
 };

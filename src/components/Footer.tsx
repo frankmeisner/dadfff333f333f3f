@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Clock, Briefcase, Shield, Cloud, Code, Headphones, Users, Twitter, Linkedin, Server, Lock, Cog } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, Briefcase, Shield, Cloud, Code, Headphones, Users, Twitter, Linkedin, Server, Lock, Cog, Globe } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
@@ -51,13 +51,31 @@ export const Footer = () => {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
           {/* Logo & Description */}
           <div className="lg:col-span-1">
-            <a href="/" onClick={handleLogoClick} className="flex items-center gap-2.5 mb-4 cursor-pointer">
-              <img src={logo} alt="Fritze IT-Systeme Logo" className="h-12 w-auto dark:brightness-0 dark:invert" />
+            <a href="/" onClick={handleLogoClick} className="flex items-center gap-2.5 mb-6 cursor-pointer">
+              <img src={logo} alt="Fritze IT-Systeme Logo" className="h-20 w-auto dark:brightness-0 dark:invert" />
             </a>
-            <p className="text-white/70 text-sm leading-relaxed">
-              Fritze IT GmbH – Ihr Partner für Prozessoptimierung und digitale Transformation seit 2011.
-            </p>
-            <div className="mt-6 space-y-2 text-sm text-white/60">
+            {/* Social & Contact Icons under Logo */}
+            <div className="flex gap-3 mb-6">
+              <span 
+                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center cursor-default"
+                title="Twitter"
+              >
+                <Twitter className="w-5 h-5" />
+              </span>
+              <span 
+                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center cursor-default"
+                title="LinkedIn"
+              >
+                <Linkedin className="w-5 h-5" />
+              </span>
+              <span 
+                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center cursor-default"
+                title="Website"
+              >
+                <Globe className="w-5 h-5" />
+              </span>
+            </div>
+            <div className="space-y-2 text-sm text-white/60">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-white/40" />
                 <span>Willi-Eichler-Straße 26, 37079 Göttingen</span>
@@ -148,33 +166,12 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* Social & Contact */}
+          {/* Contact Info */}
           <div>
-            <h4 className="font-semibold mb-5 text-primary">Kontakt & Social</h4>
+            <h4 className="font-semibold mb-5 text-primary">Kontakt</h4>
             <p className="text-sm text-white/70 mb-4">
               Folgen Sie uns und bleiben Sie informiert.
             </p>
-            <div className="flex gap-3 mb-6">
-              <span 
-                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-default"
-                title="Twitter"
-              >
-                <Twitter className="w-5 h-5" />
-              </span>
-              <span 
-                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-default"
-                title="LinkedIn"
-              >
-                <Linkedin className="w-5 h-5" />
-              </span>
-              <a 
-                href="mailto:info@fritze-it.solutions" 
-                className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-                title="E-Mail"
-              >
-                <Mail className="w-5 h-5" />
-              </a>
-            </div>
             <div className="bg-white/5 rounded-lg p-4">
               <p className="text-sm font-medium text-white mb-1">Bewerbungen an:</p>
               <p className="text-sm text-white/70">bewerbung@fritze-it.solutions</p>
