@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import PanelSidebar from './PanelSidebar';
 import PanelHeader from './PanelHeader';
-import { TelegramToast } from './TelegramToast';
+import { TelegramToastStack, ToastNotification } from './TelegramToast';
 import AdminDashboardView from './admin/AdminDashboardView';
 import AdminTasksView from './admin/AdminTasksView';
 import AdminUsersView from './admin/AdminUsersView';
@@ -19,13 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
-interface ToastNotification {
-  id: string;
-  senderName: string;
-  senderAvatar?: string;
-  senderInitials: string;
-  message: string;
-}
+// ToastNotification type is now imported from TelegramToast
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTabState] = useState(() => {
@@ -36,7 +30,7 @@ export default function AdminDashboard() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [toastNotification, setToastNotification] = useState<ToastNotification | null>(null);
+  const [toastNotifications, setToastNotifications] = useState<ToastNotification[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
   const activeTabRef = useRef(activeTab);
@@ -165,14 +159,14 @@ export default function AdminDashboard() {
               ? `${senderProfile.first_name?.[0] || ''}${senderProfile.last_name?.[0] || ''}`.toUpperCase()
               : '?';
             
-            // Show toast notification
-            setToastNotification({
+            // Add toast notification to stack
+            setToastNotifications(prev => [...prev, {
               id: payload.new.id,
               senderName,
               senderAvatar: senderProfile?.avatar_url || undefined,
               senderInitials: initials,
               message: payload.new.message?.substring(0, 100) || 'Bild gesendet'
-            });
+            }]);
           } else {
             // Auto-mark as read if in chat tab
             supabase
@@ -431,17 +425,12 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* Toast notification for new messages */}
-      {toastNotification && (
-        <TelegramToast
-          senderName={toastNotification.senderName}
-          senderAvatar={toastNotification.senderAvatar}
-          senderInitials={toastNotification.senderInitials}
-          message={toastNotification.message}
-          onClose={() => setToastNotification(null)}
-          onClick={() => setActiveTab('chat')}
-        />
-      )}
+      {/* Toast notifications for new messages */}
+      <TelegramToastStack
+        notifications={toastNotifications}
+        onClose={(id) => setToastNotifications(prev => prev.filter(n => n.id !== id))}
+        onClick={() => setActiveTab('chat')}
+      />
     </div>
   );
 }
