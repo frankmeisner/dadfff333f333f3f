@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, User, Mail, Shield, Trash2, Eye } from 'lucide-react';
+import { Plus, User, Mail, Shield, Trash2, Eye, Loader2 } from 'lucide-react';
 import AdminEmployeeDetailView from './AdminEmployeeDetailView';
 import { userCreationSchema, validateWithSchema } from '@/lib/validation';
 
@@ -39,6 +39,8 @@ export default function AdminUsersView() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<UserWithRole | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [newUser, setNewUser] = useState({
@@ -88,6 +90,7 @@ export default function AdminUsersView() {
       return;
     }
 
+    setIsCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-user', {
         body: {
@@ -128,12 +131,15 @@ export default function AdminUsersView() {
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
       toast({ title: 'Fehler', description: message, variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleDeleteUser = async (userId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    setDeletingUserId(userId);
     try {
       const { error } = await supabase.functions.invoke('delete-user', {
         body: { user_id: userId },
@@ -160,6 +166,8 @@ export default function AdminUsersView() {
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Unbekannter Fehler';
       toast({ title: 'Fehler', description: message, variant: 'destructive' });
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -249,7 +257,16 @@ export default function AdminUsersView() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleCreateUser} className="w-full">Benutzer erstellen</Button>
+              <Button onClick={handleCreateUser} className="w-full" disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Erstelle...
+                  </>
+                ) : (
+                  'Benutzer erstellen'
+                )}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -318,8 +335,13 @@ export default function AdminUsersView() {
                       size="sm"
                       className="text-destructive hover:text-destructive"
                       onClick={(e) => handleDeleteUser(user.user_id, e)}
+                      disabled={deletingUserId === user.user_id}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {deletingUserId === user.user_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
