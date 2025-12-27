@@ -51,6 +51,7 @@ import {
   Info,
   Copy,
   Check,
+  Download,
 } from "lucide-react";
 import { format, formatDistanceStrict } from "date-fns";
 import { de } from "date-fns/locale";
@@ -1965,13 +1966,48 @@ export default function EmployeeTasksView() {
                               ) => {
                                 const hasDoc = !!existingDoc;
                                 
+                                // Status-based styling
+                                const getStatusStyles = (status: string) => {
+                                  switch (status) {
+                                    case 'approved':
+                                      return {
+                                        bg: 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700',
+                                        indicator: 'bg-green-500',
+                                        icon: <CheckCircle2 className="h-4 w-4 text-white" />,
+                                        label: 'Genehmigt',
+                                        labelClass: 'text-green-600 dark:text-green-400',
+                                        thumbBg: 'bg-green-100 dark:bg-green-800/30 border-green-200 dark:border-green-700',
+                                      };
+                                    case 'rejected':
+                                      return {
+                                        bg: 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700',
+                                        indicator: 'bg-red-500',
+                                        icon: <X className="h-4 w-4 text-white" />,
+                                        label: 'Abgelehnt',
+                                        labelClass: 'text-red-600 dark:text-red-400',
+                                        thumbBg: 'bg-red-100 dark:bg-red-800/30 border-red-200 dark:border-red-700',
+                                      };
+                                    default: // pending
+                                      return {
+                                        bg: 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700',
+                                        indicator: 'bg-amber-500',
+                                        icon: <Clock className="h-4 w-4 text-white" />,
+                                        label: 'Ausstehend',
+                                        labelClass: 'text-amber-600 dark:text-amber-400',
+                                        thumbBg: 'bg-amber-100 dark:bg-amber-800/30 border-amber-200 dark:border-amber-700',
+                                      };
+                                  }
+                                };
+                                
+                                const statusStyles = hasDoc ? getStatusStyles(existingDoc.status) : null;
+                                
                                 return (
                                   <div
                                     className={cn(
-                                      "p-3 rounded-xl border text-center transition-all relative",
+                                      "p-3 rounded-xl border text-center transition-all relative cursor-pointer",
                                       hasDoc 
-                                        ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
-                                        : "bg-muted/30 cursor-pointer hover:bg-muted/50 hover:border-primary/50 group"
+                                        ? statusStyles?.bg
+                                        : "bg-muted/30 hover:bg-muted/50 hover:border-primary/50 group"
                                     )}
                                     onClick={() => {
                                       if (hasDoc) {
@@ -1983,13 +2019,19 @@ export default function EmployeeTasksView() {
                                   >
                                     {hasDoc ? (
                                       <>
-                                        {/* Success indicator */}
-                                        <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
-                                          <CheckCircle2 className="h-4 w-4 text-white" />
+                                        {/* Status indicator */}
+                                        <div className={cn(
+                                          "absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg",
+                                          statusStyles?.indicator
+                                        )}>
+                                          {statusStyles?.icon}
                                         </div>
                                         
                                         {/* Preview thumbnail or icon */}
-                                        <div className="w-full h-20 rounded-lg bg-green-100 dark:bg-green-800/30 flex items-center justify-center mb-2 border border-green-200 dark:border-green-700 overflow-hidden">
+                                        <div className={cn(
+                                          "w-full h-20 rounded-lg flex items-center justify-center mb-2 border overflow-hidden",
+                                          statusStyles?.thumbBg
+                                        )}>
                                           {existingDoc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
                                             <img 
                                               src={supabase.storage.from('documents').getPublicUrl(existingDoc.file_path).data?.publicUrl}
@@ -1997,17 +2039,17 @@ export default function EmployeeTasksView() {
                                               className="w-full h-full object-cover"
                                             />
                                           ) : (
-                                            <FileText className="h-8 w-8 text-green-600 dark:text-green-400" />
+                                            <FileText className={cn("h-8 w-8", statusStyles?.labelClass)} />
                                           )}
                                         </div>
-                                        <p className="text-[10px] font-medium text-green-700 dark:text-green-400 truncate">
+                                        <p className={cn("text-[10px] font-medium truncate", statusStyles?.labelClass)}>
                                           {existingDoc.file_name.length > 15 
                                             ? existingDoc.file_name.slice(0, 12) + '...' 
                                             : existingDoc.file_name}
                                         </p>
-                                        <p className="text-[9px] text-green-600/70 dark:text-green-500 flex items-center justify-center gap-1 mt-0.5">
-                                          <Eye className="h-3 w-3" />
-                                          Vorschau
+                                        <p className={cn("text-[9px] flex items-center justify-center gap-1 mt-0.5", statusStyles?.labelClass)}>
+                                          {statusStyles?.icon && <span className="h-3 w-3">{statusStyles.icon.type === CheckCircle2 ? <CheckCircle2 className="h-3 w-3" /> : statusStyles.icon.type === X ? <X className="h-3 w-3" /> : <Clock className="h-3 w-3" />}</span>}
+                                          {statusStyles?.label}
                                         </p>
                                       </>
                                     ) : (
@@ -3074,12 +3116,29 @@ export default function EmployeeTasksView() {
                 )}
               </div>
               
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-wrap justify-end gap-2 pt-2">
                 <Button
                   variant="outline"
                   onClick={() => setPreviewDialog({ open: false, document: null, url: "" })}
                 >
                   Schließen
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={async () => {
+                    // Download the file
+                    const link = document.createElement('a');
+                    link.href = previewDialog.url;
+                    link.download = previewDialog.document?.file_name || 'download';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                  Herunterladen
                 </Button>
                 <Button
                   variant="outline"
