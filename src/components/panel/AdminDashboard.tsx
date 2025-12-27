@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import PanelSidebar from './PanelSidebar';
 import PanelHeader from './PanelHeader';
@@ -29,6 +29,12 @@ export default function AdminDashboard() {
   const [searchValue, setSearchValue] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+  const activeTabRef = useRef(activeTab);
+
+  // Keep ref in sync
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   const setActiveTab = (tab: string) => {
     sessionStorage.setItem('adminActiveTab', tab);
@@ -119,25 +125,40 @@ export default function AdminDashboard() {
         console.log('Notifications channel status:', status);
       });
 
-    // Chat message notifications
+    // Chat message notifications - listen for messages where user is recipient
     const chatChannel = supabase
-      .channel('admin-chat-live')
+      .channel(`admin-chat-badge-${user.id}`)
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
-        table: 'chat_messages' 
+        table: 'chat_messages',
+        filter: `recipient_id=eq.${user.id}`
       }, (payload) => {
         console.log('Chat message received:', payload);
-        if (user && payload.new.recipient_id === user.id && !payload.new.is_group_message) {
-          setUnreadMessages(prev => prev + 1);
+        if (!payload.new.is_group_message && !payload.new.read_at) {
+          // Only increment if not currently in chat tab (use ref for accurate value in callback)
+          if (activeTabRef.current !== 'chat') {
+            setUnreadMessages(prev => prev + 1);
+          } else {
+            // Auto-mark as read if in chat tab
+            supabase
+              .from('chat_messages')
+              .update({ read_at: new Date().toISOString() })
+              .eq('id', payload.new.id)
+              .then(() => {});
+          }
         }
       })
       .on('postgres_changes', { 
         event: 'UPDATE', 
         schema: 'public', 
-        table: 'chat_messages' 
-      }, () => {
-        fetchUnreadMessages();
+        table: 'chat_messages',
+        filter: `recipient_id=eq.${user.id}`
+      }, (payload) => {
+        // When a message is marked as read, refresh the count
+        if (payload.new.read_at && !payload.old?.read_at) {
+          fetchUnreadMessages();
+        }
       })
       .subscribe((status) => {
         console.log('Chat channel status:', status);

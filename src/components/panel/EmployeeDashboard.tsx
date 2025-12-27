@@ -213,60 +213,75 @@ export default function EmployeeDashboard() {
     markChatAsReadIfInChatTab();
 
     const channel = supabase
-      .channel('notification-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, fetchUnreadNotificationsCount)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, async () => {
-        await fetchUnreadMessages();
-        await markChatAsReadIfInChatTab();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_evaluations' }, fetchPendingEvaluations)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignments' }, () => {
-        fetchPendingEvaluations();
-        fetchUnreadTasks();
-      })
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages'
+      .channel(`employee-badge-counts-${user.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, fetchUnreadNotificationsCount)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'chat_messages',
+        filter: `recipient_id=eq.${user.id}`
       }, async (payload: any) => {
         const newMessage = payload.new;
-        // Only notify if message is for this user and not sent by this user
-        const isForUser = newMessage.recipient_id === user.id || newMessage.is_group_message === true;
-        const isFromOther = newMessage.sender_id !== user.id;
-
-        if (isForUser && isFromOther) {
-          // Fetch sender profile for notification
-          const { data: senderProfile } = await supabase
-            .from('profiles')
-            .select('first_name, last_name')
-            .eq('user_id', newMessage.sender_id)
-            .single();
-
-          const senderName = senderProfile
-            ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
-            : 'Jemand';
-
-          // Show desktop notification (only if not in chat tab)
+        if (!newMessage.is_group_message && !newMessage.read_at && newMessage.sender_id !== user.id) {
+          // Only increment if not currently in chat tab
           if (activeTabRef.current !== 'chat') {
+            setUnreadMessages(prev => prev + 1);
+            
+            // Show desktop notification
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name')
+              .eq('user_id', newMessage.sender_id)
+              .maybeSingle();
+
+            const senderName = senderProfile
+              ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
+              : 'Jemand';
+
             showDesktopNotification(
               `Neue Nachricht von ${senderName}`,
               newMessage.message?.substring(0, 100) || 'Bild gesendet',
               () => setActiveTab('chat')
             );
+          } else {
+            // Auto-mark as read if in chat tab
+            await supabase
+              .from('chat_messages')
+              .update({ read_at: new Date().toISOString() })
+              .eq('id', newMessage.id);
           }
         }
       })
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications'
-      }, (payload: any) => {
-        if (payload.new.user_id === user.id && payload.new.type === 'status_request') {
-          toast({
-            title: payload.new.title,
-            description: 'Bitte gehe zum Auftrag und trage deinen Fortschritt ein.',
-          });
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'chat_messages',
+        filter: `recipient_id=eq.${user.id}`
+      }, async (payload) => {
+        // When a message is marked as read, refresh the count
+        if (payload.new.read_at && !payload.old?.read_at) {
+          await fetchUnreadMessages();
         }
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'task_evaluations',
+        filter: `user_id=eq.${user.id}`
+      }, fetchPendingEvaluations)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'task_assignments',
+        filter: `user_id=eq.${user.id}`
+      }, () => {
+        fetchPendingEvaluations();
+        fetchUnreadTasks();
       })
       .subscribe();
 
