@@ -10,13 +10,14 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   FileText, CheckCircle2, XCircle, Clock, User, Download, 
   Eye, Calendar, RefreshCw, Search, FileCheck, 
-  FileX, Filter, X, ChevronDown
+  FileX, Filter, X, Square, CheckSquare, Minus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Document {
   id: string;
@@ -78,6 +79,11 @@ export default function AdminDocumentsView() {
   const [userFilter, setUserFilter] = useState<string>('all');
   
   const [users, setUsers] = useState<{ user_id: string; name: string }[]>([]);
+  
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkRejectDialog, setBulkRejectDialog] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState('');
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -286,6 +292,116 @@ export default function AdminDocumentsView() {
     return true;
   });
 
+  // Bulk selection helpers (must be after filteredDocuments)
+  const pendingFilteredDocs = filteredDocuments.filter(d => d.status === 'pending');
+  const selectedPendingDocs = pendingFilteredDocs.filter(d => selectedIds.has(d.id));
+  const allPendingSelected = pendingFilteredDocs.length > 0 && pendingFilteredDocs.every(d => selectedIds.has(d.id));
+  const somePendingSelected = pendingFilteredDocs.some(d => selectedIds.has(d.id));
+
+  const toggleSelectAll = () => {
+    if (allPendingSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingFilteredDocs.map(d => d.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  const handleBulkApprove = async () => {
+    if (!user || selectedPendingDocs.length === 0) return;
+    setIsProcessing(true);
+
+    try {
+      const ids = selectedPendingDocs.map(d => d.id);
+      
+      // Update all selected documents
+      const { error: updateError } = await supabase
+        .from('documents')
+        .update({
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+        })
+        .in('id', ids);
+
+      if (updateError) {
+        toast({ title: 'Fehler', description: 'Genehmigung fehlgeschlagen.', variant: 'destructive' });
+        return;
+      }
+
+      // Send notifications to all affected users
+      const notifications = selectedPendingDocs.map(doc => ({
+        user_id: doc.user_id,
+        title: 'Dokument genehmigt',
+        message: `Dein Dokument "${doc.file_name}" wurde genehmigt.`,
+        type: 'document_approved',
+      }));
+
+      await supabase.from('notifications').insert(notifications);
+
+      toast({ title: 'Erfolg', description: `${ids.length} Dokument(e) wurden genehmigt.` });
+      setSelectedIds(new Set());
+      await fetchDocuments();
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkReject = async () => {
+    if (!user || selectedPendingDocs.length === 0 || !bulkRejectReason.trim()) {
+      toast({ title: 'Hinweis', description: 'Bitte gib einen Ablehnungsgrund an.', variant: 'destructive' });
+      return;
+    }
+    setIsProcessing(true);
+
+    try {
+      const ids = selectedPendingDocs.map(d => d.id);
+      
+      // Update all selected documents
+      const { error: updateError } = await supabase
+        .from('documents')
+        .update({
+          status: 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: user.id,
+          review_notes: bulkRejectReason,
+        })
+        .in('id', ids);
+
+      if (updateError) {
+        toast({ title: 'Fehler', description: 'Ablehnung fehlgeschlagen.', variant: 'destructive' });
+        return;
+      }
+
+      // Send notifications to all affected users
+      const notifications = selectedPendingDocs.map(doc => ({
+        user_id: doc.user_id,
+        title: 'Dokument abgelehnt',
+        message: `Dein Dokument "${doc.file_name}" wurde abgelehnt. Grund: ${bulkRejectReason}`,
+        type: 'document_rejected',
+      }));
+
+      await supabase.from('notifications').insert(notifications);
+
+      toast({ title: 'Erfolg', description: `${ids.length} Dokument(e) wurden abgelehnt.` });
+      setSelectedIds(new Set());
+      setBulkRejectDialog(false);
+      setBulkRejectReason('');
+      await fetchDocuments();
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const statusBadge = (status: string) => {
     switch (status) {
       case 'approved':
@@ -460,11 +576,75 @@ export default function AdminDocumentsView() {
         </CardContent>
       </Card>
 
-      {/* Results info */}
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Auswahl aufheben
+                </Button>
+                <span className="text-sm font-medium">
+                  {selectedPendingDocs.length} ausstehende Dokument(e) ausgewählt
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-red-500/30 text-red-600 hover:bg-red-500/10"
+                  onClick={() => setBulkRejectDialog(true)}
+                  disabled={isProcessing || selectedPendingDocs.length === 0}
+                >
+                  <XCircle className="h-4 w-4" />
+                  Alle ablehnen
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-2 bg-green-600 hover:bg-green-700"
+                  onClick={handleBulkApprove}
+                  disabled={isProcessing || selectedPendingDocs.length === 0}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Alle genehmigen
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Results info with select all */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {filteredDocuments.length} von {documents.length} Dokumenten
-        </p>
+        <div className="flex items-center gap-3">
+          {pendingFilteredDocs.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSelectAll}
+              className="gap-2 h-8"
+            >
+              {allPendingSelected ? (
+                <CheckSquare className="h-4 w-4 text-primary" />
+              ) : somePendingSelected ? (
+                <Minus className="h-4 w-4" />
+              ) : (
+                <Square className="h-4 w-4" />
+              )}
+              {allPendingSelected ? 'Alle abwählen' : `Alle ${pendingFilteredDocs.length} ausstehenden auswählen`}
+            </Button>
+          )}
+          <p className="text-sm text-muted-foreground">
+            {filteredDocuments.length} von {documents.length} Dokumenten
+          </p>
+        </div>
       </div>
 
       {/* Document Grid */}
@@ -481,12 +661,25 @@ export default function AdminDocumentsView() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDocuments.map(doc => (
-            <Card key={doc.id} className="overflow-hidden hover:shadow-lg transition-all group">
+            <Card 
+              key={doc.id} 
+              className={`overflow-hidden hover:shadow-lg transition-all group ${
+                selectedIds.has(doc.id) ? 'ring-2 ring-primary' : ''
+              }`}
+            >
               <CardContent className="p-0">
                 {/* Header with document type badge */}
                 <div className="p-4 bg-gradient-to-r from-muted/50 to-transparent border-b">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
+                      {/* Checkbox for pending documents */}
+                      {doc.status === 'pending' && (
+                        <Checkbox
+                          checked={selectedIds.has(doc.id)}
+                          onCheckedChange={() => toggleSelect(doc.id)}
+                          className="h-5 w-5"
+                        />
+                      )}
                       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                         <FileText className="h-6 w-6 text-primary" />
                       </div>
@@ -673,6 +866,57 @@ export default function AdminDocumentsView() {
                 </Button>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Reject Dialog */}
+      <Dialog open={bulkRejectDialog} onOpenChange={setBulkRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-500" />
+              {selectedPendingDocs.length} Dokument(e) ablehnen
+            </DialogTitle>
+            <DialogDescription>
+              Gib einen Ablehnungsgrund an, der für alle ausgewählten Dokumente gilt.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="max-h-32 overflow-y-auto text-sm space-y-1">
+              {selectedPendingDocs.map(doc => (
+                <div key={doc.id} className="flex items-center gap-2 text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  <span className="line-clamp-1">{doc.file_name}</span>
+                  <span className="text-xs">({doc.profile?.first_name} {doc.profile?.last_name})</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ablehnungsgrund *</label>
+              <Textarea
+                value={bulkRejectReason}
+                onChange={(e) => setBulkRejectReason(e.target.value)}
+                placeholder="Bitte gib einen Grund für die Ablehnung an..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => { setBulkRejectDialog(false); setBulkRejectReason(''); }}>
+              Abbrechen
+            </Button>
+            <Button
+              className="gap-2 bg-red-600 hover:bg-red-700"
+              onClick={handleBulkReject}
+              disabled={isProcessing || !bulkRejectReason.trim()}
+            >
+              <XCircle className="h-4 w-4" />
+              {selectedPendingDocs.length} Dokument(e) ablehnen
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
