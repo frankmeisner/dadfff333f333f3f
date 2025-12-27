@@ -24,6 +24,10 @@ const typeConfig: Record<string, { icon: typeof Bell; color: string; label: stri
   status_request: { icon: MessageSquare, color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10', label: 'Statusanfrage' },
   task_completed: { icon: CheckCircle2, color: 'text-green-600 dark:text-green-400 bg-green-500/10', label: 'Abgeschlossen' },
   task_assigned: { icon: ClipboardList, color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10', label: 'Zugewiesen' },
+  task_approved: { icon: CheckCircle2, color: 'text-green-600 dark:text-green-400 bg-green-500/10', label: 'Genehmigt' },
+  task_rejected: { icon: AlertCircle, color: 'text-red-600 dark:text-red-400 bg-red-500/10', label: 'Abgelehnt' },
+  document_approved: { icon: CheckCircle2, color: 'text-green-600 dark:text-green-400 bg-green-500/10', label: 'Dokument genehmigt' },
+  document_rejected: { icon: AlertCircle, color: 'text-red-600 dark:text-red-400 bg-red-500/10', label: 'Dokument abgelehnt' },
   info: { icon: Bell, color: 'text-primary bg-primary/10', label: 'Info' },
 };
 
