@@ -217,17 +217,27 @@ export default function EmployeeDashboard() {
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'notifications',
-        filter: `user_id=eq.${user.id}`
-      }, fetchUnreadNotificationsCount)
+        table: 'notifications'
+      }, (payload: any) => {
+        // Only process if this notification is for the current user
+        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+          fetchUnreadNotificationsCount();
+        }
+      })
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
-        table: 'chat_messages',
-        filter: `recipient_id=eq.${user.id}`
+        table: 'chat_messages'
       }, async (payload: any) => {
         const newMessage = payload.new;
-        if (!newMessage.is_group_message && !newMessage.read_at && newMessage.sender_id !== user.id) {
+        console.log('Employee: New chat message received:', newMessage);
+        
+        // Only process direct messages to this user
+        if (newMessage.recipient_id !== user.id || newMessage.is_group_message) {
+          return;
+        }
+        
+        if (!newMessage.read_at && newMessage.sender_id !== user.id) {
           // Only increment if not currently in chat tab
           if (activeTabRef.current !== 'chat') {
             setUnreadMessages(prev => prev + 1);
@@ -260,28 +270,31 @@ export default function EmployeeDashboard() {
       .on('postgres_changes', { 
         event: 'UPDATE', 
         schema: 'public', 
-        table: 'chat_messages',
-        filter: `recipient_id=eq.${user.id}`
-      }, async (payload) => {
-        // When a message is marked as read, refresh the count
-        if (payload.new.read_at && !payload.old?.read_at) {
+        table: 'chat_messages'
+      }, async (payload: any) => {
+        // When a message to this user is marked as read, refresh the count
+        if (payload.new?.recipient_id === user.id && payload.new?.read_at && !payload.old?.read_at) {
           await fetchUnreadMessages();
         }
       })
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'task_evaluations',
-        filter: `user_id=eq.${user.id}`
-      }, fetchPendingEvaluations)
+        table: 'task_evaluations'
+      }, (payload: any) => {
+        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+          fetchPendingEvaluations();
+        }
+      })
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'task_assignments',
-        filter: `user_id=eq.${user.id}`
-      }, () => {
-        fetchPendingEvaluations();
-        fetchUnreadTasks();
+        table: 'task_assignments'
+      }, (payload: any) => {
+        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+          fetchPendingEvaluations();
+          fetchUnreadTasks();
+        }
       })
       .subscribe();
 
