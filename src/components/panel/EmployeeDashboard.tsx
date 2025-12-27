@@ -125,13 +125,13 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchUnreadCount = async () => {
+    const fetchUnreadNotificationsCount = async () => {
       const { count } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .is('read_at', null);
-      
+
       setUnreadNotifications(count || 0);
     };
 
@@ -154,7 +154,7 @@ export default function EmployeeDashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .is('accepted_at', null);
-      
+
       setUnreadTasks(count || 0);
     };
 
@@ -179,7 +179,7 @@ export default function EmployeeDashboard() {
         .eq('user_id', user.id);
 
       const evaluatedTaskIds = existingEvals?.map(e => e.task_id) || [];
-      
+
       // Get tasks that need evaluation (in_progress or sms_requested, not yet evaluated)
       const { data: tasksNeedingEval } = await supabase
         .from('tasks')
@@ -191,30 +191,49 @@ export default function EmployeeDashboard() {
       setPendingEvaluations(pendingCount);
     };
 
-    fetchUnreadCount();
+    const markChatAsReadIfInChatTab = async () => {
+      if (activeTabRef.current !== 'chat') return;
+
+      await supabase
+        .from('chat_messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('recipient_id', user.id)
+        .eq('is_group_message', false)
+        .is('read_at', null);
+
+      await fetchUnreadMessages();
+    };
+
+    fetchUnreadNotificationsCount();
     fetchUnreadMessages();
     fetchUnreadTasks();
     fetchPendingEvaluations();
 
+    // If user is already on chat tab, clear badge immediately
+    markChatAsReadIfInChatTab();
+
     const channel = supabase
       .channel('notification-count')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, fetchUnreadCount)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, fetchUnreadMessages)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, fetchUnreadNotificationsCount)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, async () => {
+        await fetchUnreadMessages();
+        await markChatAsReadIfInChatTab();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_evaluations' }, fetchPendingEvaluations)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignments' }, () => {
         fetchPendingEvaluations();
         fetchUnreadTasks();
       })
       .on('postgres_changes', {
-        event: 'INSERT', 
-        schema: 'public', 
+        event: 'INSERT',
+        schema: 'public',
         table: 'chat_messages'
       }, async (payload: any) => {
         const newMessage = payload.new;
         // Only notify if message is for this user and not sent by this user
         const isForUser = newMessage.recipient_id === user.id || newMessage.is_group_message === true;
         const isFromOther = newMessage.sender_id !== user.id;
-        
+
         if (isForUser && isFromOther) {
           // Fetch sender profile for notification
           const { data: senderProfile } = await supabase
@@ -222,11 +241,11 @@ export default function EmployeeDashboard() {
             .select('first_name, last_name')
             .eq('user_id', newMessage.sender_id)
             .single();
-          
-          const senderName = senderProfile 
-            ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim() 
+
+          const senderName = senderProfile
+            ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
             : 'Jemand';
-          
+
           // Show desktop notification (only if not in chat tab)
           if (activeTabRef.current !== 'chat') {
             showDesktopNotification(
@@ -238,8 +257,8 @@ export default function EmployeeDashboard() {
         }
       })
       .on('postgres_changes', {
-        event: 'INSERT', 
-        schema: 'public', 
+        event: 'INSERT',
+        schema: 'public',
         table: 'notifications'
       }, (payload: any) => {
         if (payload.new.user_id === user.id && payload.new.type === 'status_request') {
