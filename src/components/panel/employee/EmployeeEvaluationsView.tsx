@@ -61,6 +61,41 @@ export default function EmployeeEvaluationsView() {
     if (user) {
       fetchEvaluations();
       fetchPendingTasks();
+
+      // Real-time subscription for evaluations and task assignments
+      const channel = supabase
+        .channel(`employee-evaluations-${user.id}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'task_evaluations'
+        }, (payload: any) => {
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchEvaluations();
+            fetchPendingTasks();
+          }
+        })
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'task_assignments'
+        }, (payload: any) => {
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchPendingTasks();
+          }
+        })
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tasks'
+        }, () => {
+          fetchPendingTasks();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

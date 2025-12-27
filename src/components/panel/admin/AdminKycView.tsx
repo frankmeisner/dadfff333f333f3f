@@ -69,6 +69,22 @@ export default function AdminKycView() {
 
   useEffect(() => {
     fetchDocuments();
+
+    // Real-time subscription for KYC documents
+    const channel = supabase
+      .channel('admin-kyc-documents-live')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'documents'
+      }, () => {
+        fetchDocuments();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchDocuments = async () => {

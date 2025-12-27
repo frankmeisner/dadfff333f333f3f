@@ -53,6 +53,29 @@ export default function AdminUsersView() {
 
   useEffect(() => {
     fetchUsers();
+
+    // Real-time subscription for profiles and user roles
+    const channel = supabase
+      .channel('admin-users-live')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'profiles'
+      }, () => {
+        fetchUsers();
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'user_roles'
+      }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchUsers = async () => {

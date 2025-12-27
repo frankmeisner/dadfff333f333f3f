@@ -34,6 +34,24 @@ export default function EmployeeTimeView() {
   useEffect(() => {
     if (user) {
       fetchEntries();
+
+      // Real-time subscription for time entries
+      const channel = supabase
+        .channel(`employee-time-${user.id}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'time_entries'
+        }, (payload: any) => {
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchEntries();
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
