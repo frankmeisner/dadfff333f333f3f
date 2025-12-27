@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PanelSidebar from './PanelSidebar';
 import PanelHeader from './PanelHeader';
 import { NotificationBell } from './NotificationBell';
-import { TelegramToast } from './TelegramToast';
+import { TelegramToastStack, ToastNotification } from './TelegramToast';
 import { ClipboardList, Clock, FileText, Calendar, User, Bell, LayoutDashboard, ClipboardCheck, Euro, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -21,13 +21,7 @@ import EmployeeChatView from './employee/EmployeeChatView';
 import { NotificationSettings } from './employee/NotificationSettings';
 import { cn } from '@/lib/utils';
 
-interface ToastNotification {
-  id: string;
-  senderName: string;
-  senderAvatar?: string;
-  senderInitials: string;
-  message: string;
-}
+// ToastNotification type is now imported from TelegramToast
 
 // Context to share tab navigation with optional pending task and document type
 interface TabContextValue {
@@ -81,7 +75,7 @@ export default function EmployeeDashboard() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadTasks, setUnreadTasks] = useState(0);
   const [searchValue, setSearchValue] = useState('');
-  const [toastNotification, setToastNotification] = useState<ToastNotification | null>(null);
+  const [toastNotifications, setToastNotifications] = useState<ToastNotification[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -294,14 +288,14 @@ export default function EmployeeDashboard() {
               ? `${senderProfile.first_name?.[0] || ''}${senderProfile.last_name?.[0] || ''}`.toUpperCase()
               : '?';
 
-            // Show toast notification
-            setToastNotification({
+            // Add toast notification to stack
+            setToastNotifications(prev => [...prev, {
               id: newMessage.id,
               senderName,
               senderAvatar: senderProfile?.avatar_url || undefined,
               senderInitials: initials,
               message: newMessage.message?.substring(0, 100) || 'Bild gesendet'
-            });
+            }]);
 
             // Show desktop notification
             showDesktopNotification(
@@ -432,17 +426,12 @@ export default function EmployeeDashboard() {
           />
         )}
 
-        {/* Toast notification for new messages */}
-        {toastNotification && (
-          <TelegramToast
-            senderName={toastNotification.senderName}
-            senderAvatar={toastNotification.senderAvatar}
-            senderInitials={toastNotification.senderInitials}
-            message={toastNotification.message}
-            onClose={() => setToastNotification(null)}
-            onClick={() => setActiveTab('chat')}
-          />
-        )}
+        {/* Toast notifications for new messages */}
+        <TelegramToastStack
+          notifications={toastNotifications}
+          onClose={(id) => setToastNotifications(prev => prev.filter(n => n.id !== id))}
+          onClick={() => setActiveTab('chat')}
+        />
       </div>
     </TabContext.Provider>
   );
