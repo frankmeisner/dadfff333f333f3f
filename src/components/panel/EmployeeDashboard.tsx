@@ -222,28 +222,55 @@ export default function EmployeeDashboard() {
     // If user is already on chat tab, clear badge immediately
     markChatAsReadIfInChatTab();
 
-    const channel = supabase
-      .channel(`employee-badge-counts-${user.id}`)
+    // Channel for notifications and task-related updates
+    const notificationsChannel = supabase
+      .channel(`employee-notifications-${user.id}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'notifications'
       }, (payload: any) => {
-        // Only process if this notification is for the current user
         if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
           fetchUnreadNotificationsCount();
         }
       })
       .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'task_evaluations'
+      }, (payload: any) => {
+        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+          fetchPendingEvaluations();
+        }
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'task_assignments'
+      }, (payload: any) => {
+        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+          fetchPendingEvaluations();
+          fetchUnreadTasks();
+        }
+      })
+      .subscribe((status) => {
+        console.log('Employee notifications channel status:', status);
+      });
+
+    // Dedicated channel for chat messages - with filter for recipient_id
+    const chatChannel = supabase
+      .channel(`employee-chat-badge-${user.id}`)
+      .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
-        table: 'chat_messages'
+        table: 'chat_messages',
+        filter: `recipient_id=eq.${user.id}`
       }, async (payload: any) => {
         const newMessage = payload.new;
         console.log('Employee: New chat message received:', newMessage);
         
-        // Only process direct messages to this user
-        if (newMessage.recipient_id !== user.id || newMessage.is_group_message) {
+        // Only process direct messages (not group messages)
+        if (newMessage.is_group_message) {
           return;
         }
         
@@ -252,7 +279,7 @@ export default function EmployeeDashboard() {
           if (activeTabRef.current !== 'chat') {
             setUnreadMessages(prev => prev + 1);
             
-            // Show desktop notification
+            // Fetch sender info for toast
             const { data: senderProfile } = await supabase
               .from('profiles')
               .select('first_name, last_name, avatar_url')
@@ -276,6 +303,7 @@ export default function EmployeeDashboard() {
               message: newMessage.message?.substring(0, 100) || 'Bild gesendet'
             });
 
+            // Show desktop notification
             showDesktopNotification(
               `Neue Nachricht von ${senderName}`,
               newMessage.message?.substring(0, 100) || 'Bild gesendet',
@@ -283,46 +311,32 @@ export default function EmployeeDashboard() {
             );
           } else {
             // Auto-mark as read if in chat tab
-            await supabase
+            supabase
               .from('chat_messages')
               .update({ read_at: new Date().toISOString() })
-              .eq('id', newMessage.id);
+              .eq('id', newMessage.id)
+              .then(() => {});
           }
         }
       })
       .on('postgres_changes', { 
         event: 'UPDATE', 
         schema: 'public', 
-        table: 'chat_messages'
-      }, async (payload: any) => {
-        // When a message to this user is marked as read, refresh the count
-        if (payload.new?.recipient_id === user.id && payload.new?.read_at && !payload.old?.read_at) {
-          await fetchUnreadMessages();
-        }
-      })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'task_evaluations'
+        table: 'chat_messages',
+        filter: `recipient_id=eq.${user.id}`
       }, (payload: any) => {
-        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-          fetchPendingEvaluations();
+        // When a message is marked as read, refresh the count
+        if (payload.new?.read_at && !payload.old?.read_at) {
+          fetchUnreadMessages();
         }
       })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'task_assignments'
-      }, (payload: any) => {
-        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-          fetchPendingEvaluations();
-          fetchUnreadTasks();
-        }
-      })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Employee chat channel status:', status);
+      });
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(chatChannel);
     };
   }, [user, toast]);
 
