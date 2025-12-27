@@ -20,11 +20,13 @@ import EmployeeChatView from './employee/EmployeeChatView';
 import { NotificationSettings } from './employee/NotificationSettings';
 import { cn } from '@/lib/utils';
 
-// Context to share tab navigation with optional pending task
+// Context to share tab navigation with optional pending task and document type
 interface TabContextValue {
   setActiveTab: (tab: string) => void;
   pendingTaskId: string | null;
   setPendingTaskId: (taskId: string | null) => void;
+  pendingDocumentType: string | null;
+  setPendingDocumentType: (docType: string | null) => void;
 }
 export const TabContext = createContext<TabContextValue | null>(null);
 export const useTabContext = () => useContext(TabContext);
@@ -63,6 +65,7 @@ export default function EmployeeDashboard() {
     return sessionStorage.getItem('employeeActiveTab') || 'tasks';
   });
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
+  const [pendingDocumentType, setPendingDocumentType] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pendingEvaluations, setPendingEvaluations] = useState(0);
@@ -309,7 +312,7 @@ export default function EmployeeDashboard() {
   };
 
   return (
-    <TabContext.Provider value={{ setActiveTab, pendingTaskId, setPendingTaskId }}>
+    <TabContext.Provider value={{ setActiveTab, pendingTaskId, setPendingTaskId, pendingDocumentType, setPendingDocumentType }}>
       <div className="min-h-screen bg-background flex w-full">
         <PanelSidebar
           sections={menuSections}

@@ -891,9 +891,10 @@ export default function EmployeeTasksView() {
     }));
   };
 
-  const handleGoToDocuments = (taskId: string) => {
+  const handleGoToDocuments = (taskId: string, documentType?: string) => {
     if (tabContext) {
       tabContext.setPendingTaskId(taskId);
+      tabContext.setPendingDocumentType(documentType || null);
       tabContext.setActiveTab("documents");
     }
   };
@@ -1925,7 +1926,7 @@ export default function EmployeeTasksView() {
                             <div className="grid grid-cols-3 gap-3">
                               <div
                                 className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
-                                onClick={() => handleGoToDocuments(selectedTask.id)}
+                                onClick={() => handleGoToDocuments(selectedTask.id, 'id_card')}
                               >
                                 <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
                                   <div className="text-center">
@@ -1941,7 +1942,7 @@ export default function EmployeeTasksView() {
                               </div>
                               <div
                                 className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
-                                onClick={() => handleGoToDocuments(selectedTask.id)}
+                                onClick={() => handleGoToDocuments(selectedTask.id, 'id_card')}
                               >
                                 <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
                                   <div className="text-center">
@@ -1957,7 +1958,7 @@ export default function EmployeeTasksView() {
                               </div>
                               <div
                                 className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-amber-500/50 transition-all group"
-                                onClick={() => handleGoToDocuments(selectedTask.id)}
+                                onClick={() => handleGoToDocuments(selectedTask.id, 'address_proof')}
                               >
                                 <div className="w-full h-20 rounded-lg bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 flex items-center justify-center mb-2 border-2 border-dashed border-amber-400 dark:border-amber-600 group-hover:border-amber-500 transition-colors">
                                   <div className="text-center">
