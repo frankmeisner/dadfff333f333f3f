@@ -564,13 +564,27 @@ export default function AdminKycView() {
             {/* Preview */}
             {previewUrl && (
               <div className="rounded-lg border overflow-hidden bg-muted/30 h-96">
-                {selectedDocument?.file_type.startsWith('image/') ? (
+                {(selectedDocument?.file_type.startsWith('image/') || 
+                  selectedDocument?.file_name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)) ? (
                   <img
                     src={previewUrl}
                     alt={selectedDocument.file_name}
                     className="w-full h-full object-contain"
+                    onError={(e) => {
+                      // If image fails to load, show fallback
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.parentElement!.innerHTML = `
+                        <div class="flex items-center justify-center h-full text-muted-foreground">
+                          <div class="text-center">
+                            <p>Bild konnte nicht geladen werden</p>
+                          </div>
+                        </div>
+                      `;
+                    }}
                   />
-                ) : selectedDocument?.file_type === 'application/pdf' ? (
+                ) : (selectedDocument?.file_type === 'application/pdf' ||
+                      selectedDocument?.file_name.match(/\.pdf$/i)) ? (
                   <iframe
                     src={previewUrl}
                     className="w-full h-full"
@@ -580,7 +594,8 @@ export default function AdminKycView() {
                   <div className="flex items-center justify-center h-full text-muted-foreground">
                     <div className="text-center">
                       <FileText className="h-12 w-12 mx-auto mb-2" />
-                      <p>Vorschau nicht verfügbar</p>
+                      <p>Vorschau nicht verfügbar für diesen Dateityp</p>
+                      <p className="text-xs mt-1">({selectedDocument?.file_type || 'Unbekannt'})</p>
                       <Button
                         variant="outline"
                         className="mt-3 gap-2"
