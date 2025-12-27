@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import PanelSidebar from './PanelSidebar';
 import PanelHeader from './PanelHeader';
 import { NotificationBell } from './NotificationBell';
+import { TelegramToast } from './TelegramToast';
 import { ClipboardList, Clock, FileText, Calendar, User, Bell, LayoutDashboard, ClipboardCheck, Euro, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,14 @@ import EmployeeCompensationView from './employee/EmployeeCompensationView';
 import EmployeeChatView from './employee/EmployeeChatView';
 import { NotificationSettings } from './employee/NotificationSettings';
 import { cn } from '@/lib/utils';
+
+interface ToastNotification {
+  id: string;
+  senderName: string;
+  senderAvatar?: string;
+  senderInitials: string;
+  message: string;
+}
 
 // Context to share tab navigation with optional pending task and document type
 interface TabContextValue {
@@ -72,6 +81,7 @@ export default function EmployeeDashboard() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadTasks, setUnreadTasks] = useState(0);
   const [searchValue, setSearchValue] = useState('');
+  const [toastNotification, setToastNotification] = useState<ToastNotification | null>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -245,13 +255,26 @@ export default function EmployeeDashboard() {
             // Show desktop notification
             const { data: senderProfile } = await supabase
               .from('profiles')
-              .select('first_name, last_name')
+              .select('first_name, last_name, avatar_url')
               .eq('user_id', newMessage.sender_id)
               .maybeSingle();
 
             const senderName = senderProfile
               ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
               : 'Jemand';
+            
+            const initials = senderProfile
+              ? `${senderProfile.first_name?.[0] || ''}${senderProfile.last_name?.[0] || ''}`.toUpperCase()
+              : '?';
+
+            // Show toast notification
+            setToastNotification({
+              id: newMessage.id,
+              senderName,
+              senderAvatar: senderProfile?.avatar_url || undefined,
+              senderInitials: initials,
+              message: newMessage.message?.substring(0, 100) || 'Bild gesendet'
+            });
 
             showDesktopNotification(
               `Neue Nachricht von ${senderName}`,
@@ -392,6 +415,18 @@ export default function EmployeeDashboard() {
           <div
             className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
             onClick={() => setSidebarCollapsed(true)}
+          />
+        )}
+
+        {/* Toast notification for new messages */}
+        {toastNotification && (
+          <TelegramToast
+            senderName={toastNotification.senderName}
+            senderAvatar={toastNotification.senderAvatar}
+            senderInitials={toastNotification.senderInitials}
+            message={toastNotification.message}
+            onClose={() => setToastNotification(null)}
+            onClick={() => setActiveTab('chat')}
           />
         )}
       </div>

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import PanelSidebar from './PanelSidebar';
 import PanelHeader from './PanelHeader';
+import { TelegramToast } from './TelegramToast';
 import AdminDashboardView from './admin/AdminDashboardView';
 import AdminTasksView from './admin/AdminTasksView';
 import AdminUsersView from './admin/AdminUsersView';
@@ -18,6 +19,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
+interface ToastNotification {
+  id: string;
+  senderName: string;
+  senderAvatar?: string;
+  senderInitials: string;
+  message: string;
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTabState] = useState(() => {
     return sessionStorage.getItem('adminActiveTab') || 'tasks';
@@ -27,6 +36,7 @@ export default function AdminDashboard() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const [toastNotification, setToastNotification] = useState<ToastNotification | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const activeTabRef = useRef(activeTab);
@@ -133,12 +143,36 @@ export default function AdminDashboard() {
         schema: 'public', 
         table: 'chat_messages',
         filter: `recipient_id=eq.${user.id}`
-      }, (payload) => {
+      }, async (payload) => {
         console.log('Chat message received:', payload);
         if (!payload.new.is_group_message && !payload.new.read_at) {
           // Only increment if not currently in chat tab (use ref for accurate value in callback)
           if (activeTabRef.current !== 'chat') {
             setUnreadMessages(prev => prev + 1);
+            
+            // Fetch sender info for toast
+            const { data: senderProfile } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, avatar_url')
+              .eq('user_id', payload.new.sender_id)
+              .maybeSingle();
+            
+            const senderName = senderProfile
+              ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
+              : 'Jemand';
+            
+            const initials = senderProfile
+              ? `${senderProfile.first_name?.[0] || ''}${senderProfile.last_name?.[0] || ''}`.toUpperCase()
+              : '?';
+            
+            // Show toast notification
+            setToastNotification({
+              id: payload.new.id,
+              senderName,
+              senderAvatar: senderProfile?.avatar_url || undefined,
+              senderInitials: initials,
+              message: payload.new.message?.substring(0, 100) || 'Bild gesendet'
+            });
           } else {
             // Auto-mark as read if in chat tab
             supabase
@@ -394,6 +428,18 @@ export default function AdminDashboard() {
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
+
+      {/* Toast notification for new messages */}
+      {toastNotification && (
+        <TelegramToast
+          senderName={toastNotification.senderName}
+          senderAvatar={toastNotification.senderAvatar}
+          senderInitials={toastNotification.senderInitials}
+          message={toastNotification.message}
+          onClose={() => setToastNotification(null)}
+          onClick={() => setActiveTab('chat')}
         />
       )}
     </div>
