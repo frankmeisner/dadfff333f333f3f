@@ -69,13 +69,15 @@ export default function AdminDashboard() {
     fetchPendingKycCount();
     fetchUnreadMessages();
 
+    // SMS code request notifications
     const smsChannel = supabase
-      .channel('admin-sms-notifications')
+      .channel('admin-sms-live')
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'sms_code_requests' 
       }, (payload) => {
+        console.log('SMS request received:', payload);
         if (payload.new?.status === 'pending') {
           setPendingSmsCount(prev => prev + 1);
           toast({
@@ -89,46 +91,67 @@ export default function AdminDashboard() {
         event: 'UPDATE', 
         schema: 'public', 
         table: 'sms_code_requests' 
-      }, () => {
+      }, (payload) => {
+        console.log('SMS request updated:', payload);
         fetchPendingSmsCount();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('SMS channel status:', status);
+      });
 
+    // Task notifications (completed tasks from employees)
     const notificationsChannel = supabase
-      .channel('admin-task-notifications')
+      .channel('admin-notifications-live')
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'notifications'
       }, (payload) => {
-        if (user && payload.new.user_id === user.id && payload.new.type === 'task_completed') {
+        console.log('Notification received:', payload);
+        if (user && payload.new.user_id === user.id) {
           toast({
             title: payload.new.title,
             description: payload.new.message,
           });
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Notifications channel status:', status);
+      });
 
+    // Chat message notifications
     const chatChannel = supabase
-      .channel('admin-chat-notifications')
+      .channel('admin-chat-live')
       .on('postgres_changes', { 
-        event: '*', 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        console.log('Chat message received:', payload);
+        if (user && payload.new.recipient_id === user.id && !payload.new.is_group_message) {
+          setUnreadMessages(prev => prev + 1);
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
         schema: 'public', 
         table: 'chat_messages' 
       }, () => {
         fetchUnreadMessages();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Chat channel status:', status);
+      });
 
     // KYC document notifications
     const documentsChannel = supabase
-      .channel('admin-kyc-notifications')
+      .channel('admin-kyc-live')
       .on('postgres_changes', { 
         event: 'INSERT', 
         schema: 'public', 
         table: 'documents' 
       }, (payload) => {
+        console.log('Document received:', payload);
         if (payload.new?.document_type && ['id_card', 'passport', 'address_proof'].includes(payload.new.document_type)) {
           fetchPendingKycCount();
           toast({
@@ -144,13 +167,50 @@ export default function AdminDashboard() {
       }, () => {
         fetchPendingKycCount();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Documents channel status:', status);
+      });
+
+    // Task status change notifications
+    const tasksChannel = supabase
+      .channel('admin-tasks-live')
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'tasks'
+      }, (payload) => {
+        console.log('Task updated:', payload);
+        const oldStatus = payload.old?.status;
+        const newStatus = payload.new?.status;
+        const title = payload.new?.title || 'Auftrag';
+        
+        if (oldStatus !== newStatus) {
+          const statusLabels: Record<string, string> = {
+            pending: 'Offen',
+            assigned: 'Zugewiesen',
+            in_progress: 'In Bearbeitung',
+            sms_requested: 'SMS angefordert',
+            pending_review: 'In Überprüfung',
+            completed: 'Abgeschlossen',
+            cancelled: 'Storniert'
+          };
+          
+          toast({
+            title: 'Auftragsstatus geändert',
+            description: `"${title}" ist jetzt: ${statusLabels[newStatus] || newStatus}`,
+          });
+        }
+      })
+      .subscribe((status) => {
+        console.log('Tasks channel status:', status);
+      });
 
     return () => {
       supabase.removeChannel(smsChannel);
       supabase.removeChannel(notificationsChannel);
       supabase.removeChannel(chatChannel);
       supabase.removeChannel(documentsChannel);
+      supabase.removeChannel(tasksChannel);
     };
   }, [user, toast]);
 
