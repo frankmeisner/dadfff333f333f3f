@@ -139,55 +139,84 @@ export default function AdminChatView() {
     if (user && selectedEmployee) {
       fetchMessages();
       markMessagesAsRead();
-
-      const channel = supabase
-        .channel('admin-chat-messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-          const newMsg = payload.new as ExtendedChatMessage;
-          if (!newMsg.is_group_message && 
-              ((newMsg.sender_id === user.id && newMsg.recipient_id === selectedEmployee) ||
-               (newMsg.sender_id === selectedEmployee && newMsg.recipient_id === user.id))) {
-            setMessages(prev => [...prev, newMsg]);
-            scrollToBottom();
-            
-            // Play sound and show notification for incoming messages (not own messages)
-            if (newMsg.sender_id !== user.id) {
-              playNotificationSound();
-              
-              // Show push notification if app is in background
-              if (document.hidden) {
-                const senderProfile = profiles[newMsg.sender_id];
-                const senderName = senderProfile 
-                  ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
-                  : 'Neue Nachricht';
-                showNotification(senderName, {
-                  body: newMsg.message?.substring(0, 100) || 'Hat ein Bild gesendet',
-                  data: { url: '/panel' }
-                });
-              }
-            }
-            
-            if (newMsg.recipient_id === user.id) {
-              markMessageAsRead(newMsg.id);
-            }
-          }
-          
-          // Update employee list with new message
-          if (!newMsg.is_group_message && (newMsg.sender_id !== user.id || newMsg.recipient_id !== selectedEmployee)) {
-            fetchEmployees();
-          }
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, (payload) => {
-          const updatedMsg = payload.new as ExtendedChatMessage;
-          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
   }, [user, selectedEmployee]);
+
+  // Separate effect for real-time subscription that doesn't depend on selectedEmployee in cleanup
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`admin-chat-live-${user.id}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        console.log('Admin chat message received:', payload);
+        const newMsg = payload.new as ExtendedChatMessage;
+        
+        // Check if message is relevant to current conversation
+        if (!newMsg.is_group_message && 
+            ((newMsg.sender_id === user.id) || (newMsg.recipient_id === user.id))) {
+          
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.find(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          scrollToBottom();
+          
+          // Play sound and show notification for incoming messages (not own messages)
+          if (newMsg.sender_id !== user.id) {
+            playNotificationSound();
+            
+            // Show push notification if app is in background
+            if (document.hidden) {
+              const senderProfile = profiles[newMsg.sender_id];
+              const senderName = senderProfile 
+                ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
+                : 'Neue Nachricht';
+              showNotification(senderName, {
+                body: newMsg.message?.substring(0, 100) || 'Hat ein Bild gesendet',
+                data: { url: '/panel' }
+              });
+            }
+            
+            // Mark as read if we're viewing this conversation
+            markMessageAsRead(newMsg.id);
+          }
+          
+          // Refresh employee list to update unread counts
+          fetchEmployees();
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        console.log('Admin chat message updated:', payload);
+        const updatedMsg = payload.new as ExtendedChatMessage;
+        setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+      })
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        console.log('Admin chat message deleted:', payload);
+        const deletedMsg = payload.old as ExtendedChatMessage;
+        setMessages(prev => prev.filter(m => m.id !== deletedMsg.id));
+      })
+      .subscribe((status) => {
+        console.log('Admin chat channel status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profiles, playNotificationSound, showNotification]);
 
   useEffect(() => {
     scrollToBottom();

@@ -94,69 +94,100 @@ export default function EmployeeChatView() {
       fetchMessages();
       fetchProfiles();
       fetchMyProfile();
-
-      const channel = supabase
-        .channel('chat-messages')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-          const newMsg = payload.new as ExtendedChatMessage;
-          if (!newMsg.is_group_message && (newMsg.sender_id === user.id || newMsg.recipient_id === user.id)) {
-            setMessages(prev => [...prev, newMsg]);
-            scrollToBottom();
-            
-            // Play sound and show notification for incoming messages (not own messages)
-            if (newMsg.sender_id !== user.id) {
-              playNotificationSound();
-              
-              // Show push notification if app is in background
-              if (document.hidden) {
-                const senderProfile = profiles[newMsg.sender_id];
-                const senderName = senderProfile 
-                  ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
-                  : 'Neue Nachricht';
-                showNotification(senderName, {
-                  body: newMsg.message?.substring(0, 100) || 'Hat ein Bild gesendet',
-                  data: { url: '/panel' }
-                });
-              }
-            }
-            
-            // Auto-mark as read if it's for us
-            if (newMsg.recipient_id === user.id && !newMsg.read_at) {
-              markMessageAsRead(newMsg.id);
-            }
-          }
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'chat_messages' }, (payload) => {
-          const updatedMsg = payload.new as ExtendedChatMessage;
-          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
-        })
-        .subscribe();
-
-      // Listen for profile status changes
-      const profileChannel = supabase
-        .channel('chat-profile-updates')
-        .on('postgres_changes', { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'profiles'
-        }, (payload) => {
-          const updated = payload.new as any;
-          setProfiles(prev => ({
-            ...prev,
-            [updated.user_id]: { ...prev[updated.user_id], ...updated, status: updated.status || 'offline' }
-          }));
-        })
-        .subscribe();
-
-      // Mark initial unread messages as read
       markMessagesAsRead();
-
-      return () => {
-        supabase.removeChannel(channel);
-        supabase.removeChannel(profileChannel);
-      };
     }
   }, [user]);
+
+  // Separate effect for real-time subscription
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`employee-chat-live-${user.id}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        console.log('Employee chat message received:', payload);
+        const newMsg = payload.new as ExtendedChatMessage;
+        
+        if (!newMsg.is_group_message && (newMsg.sender_id === user.id || newMsg.recipient_id === user.id)) {
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.find(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          scrollToBottom();
+          
+          // Play sound and show notification for incoming messages (not own messages)
+          if (newMsg.sender_id !== user.id) {
+            playNotificationSound();
+            
+            // Show push notification if app is in background
+            if (document.hidden) {
+              const senderProfile = profiles[newMsg.sender_id];
+              const senderName = senderProfile 
+                ? `${senderProfile.first_name} ${senderProfile.last_name}`.trim()
+                : 'Neue Nachricht';
+              showNotification(senderName, {
+                body: newMsg.message?.substring(0, 100) || 'Hat ein Bild gesendet',
+                data: { url: '/panel' }
+              });
+            }
+          }
+          
+          // Auto-mark as read if it's for us
+          if (newMsg.recipient_id === user.id && !newMsg.read_at) {
+            markMessageAsRead(newMsg.id);
+          }
+        }
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        console.log('Employee chat message updated:', payload);
+        const updatedMsg = payload.new as ExtendedChatMessage;
+        setMessages(prev => prev.map(m => m.id === updatedMsg.id ? updatedMsg : m));
+      })
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'chat_messages' 
+      }, (payload) => {
+        console.log('Employee chat message deleted:', payload);
+        const deletedMsg = payload.old as ExtendedChatMessage;
+        setMessages(prev => prev.filter(m => m.id !== deletedMsg.id));
+      })
+      .subscribe((status) => {
+        console.log('Employee chat channel status:', status);
+      });
+
+    // Listen for profile status changes
+    const profileChannel = supabase
+      .channel(`employee-profile-updates-${user.id}`)
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'profiles'
+      }, (payload) => {
+        const updated = payload.new as any;
+        setProfiles(prev => ({
+          ...prev,
+          [updated.user_id]: { ...prev[updated.user_id], ...updated, status: updated.status || 'offline' }
+        }));
+      })
+      .subscribe((status) => {
+        console.log('Employee profile channel status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(profileChannel);
+    };
+  }, [user, profiles, playNotificationSound, showNotification]);
 
   const fetchMyProfile = async () => {
     if (!user) return;
