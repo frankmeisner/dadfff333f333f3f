@@ -50,21 +50,24 @@ export default function EmployeeDocumentsView() {
   // Handle pending task and document type from navigation (e.g., from Step 4 or Step 8)
   useEffect(() => {
     if (tabContext?.pendingTaskId) {
-      setSelectedTask(tabContext.pendingTaskId);
-      setLockedTaskId(tabContext.pendingTaskId);
+      const taskId = tabContext.pendingTaskId;
+      const docType = tabContext.pendingDocumentType;
+      
+      setSelectedTask(taskId);
+      setLockedTaskId(taskId);
       
       // Use the pending document type if provided, otherwise default to 'proof'
-      if (tabContext.pendingDocumentType) {
-        setDocumentType(tabContext.pendingDocumentType);
-        tabContext.setPendingDocumentType(null);
+      if (docType) {
+        setDocumentType(docType);
       } else {
         setDocumentType('proof');
       }
       
-      // Clear the pending task after using it
+      // Clear both values after using them
       tabContext.setPendingTaskId(null);
+      tabContext.setPendingDocumentType(null);
     }
-  }, [tabContext?.pendingTaskId, tabContext?.pendingDocumentType]);
+  }, [tabContext?.pendingTaskId]);
 
   const fetchDocuments = async () => {
     if (!user) return;

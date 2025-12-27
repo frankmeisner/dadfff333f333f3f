@@ -1802,10 +1802,9 @@ export default function EmployeeTasksView() {
                         </div>
                       )}
 
-                      {/* Task credentials - Elegant Card for External Site - Only show in steps 5 and 6 */}
+                      {/* Task credentials - Elegant Card for External Site - Only show in step 6 (step 5 has its own demo section) */}
                       {(selectedTask.test_email || selectedTask.test_password) &&
-                        currentStep >= 5 &&
-                        currentStep <= 6 && (
+                        currentStep === 6 && (
                           <div className="rounded-xl border overflow-hidden bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5">
                             {/* Compact Header */}
                             <div className="px-4 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 flex items-center gap-3">
