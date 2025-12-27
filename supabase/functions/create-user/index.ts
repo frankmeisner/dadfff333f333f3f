@@ -75,9 +75,25 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+    console.log("create-user: request received", { method: req.method });
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error("create-user: missing backend env vars", {
+        hasUrl: Boolean(supabaseUrl),
+        hasServiceRole: Boolean(serviceRoleKey),
+      });
+      return new Response(
+        JSON.stringify({ error: "Server-Konfiguration fehlt (Backend-Keys nicht gesetzt)." }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
