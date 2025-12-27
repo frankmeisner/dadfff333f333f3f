@@ -97,7 +97,7 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
       const { data: kycDocs } = await supabase
         .from('documents')
         .select('id, file_name, uploaded_at, document_type, user_id')
-        .in('document_type', ['id_card', 'passport'])
+        .in('document_type', ['id_card', 'passport', 'address_proof'])
         .eq('status', 'pending')
         .order('uploaded_at', { ascending: false })
         .limit(5);
@@ -115,12 +115,18 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
           (profiles || []).map(p => [p.user_id, `${p.first_name} ${p.last_name}`])
         );
 
+        const docTypeLabels: Record<string, string> = {
+          'id_card': 'Personalausweis',
+          'passport': 'Reisepass',
+          'address_proof': 'Adressnachweis'
+        };
+
         kycDocsWithNames = kycDocs.map(doc => ({
           id: doc.id,
           fileName: doc.file_name,
           employeeName: profileMap.get(doc.user_id) || 'Unbekannt',
           uploadedAt: format(new Date(doc.uploaded_at), 'dd.MM.yyyy HH:mm', { locale: de }),
-          documentType: doc.document_type === 'id_card' ? 'Personalausweis' : 'Reisepass'
+          documentType: docTypeLabels[doc.document_type || ''] || doc.document_type || 'Unbekannt'
         }));
       }
 
@@ -128,7 +134,7 @@ export default function AdminDashboardView({ onNavigate }: AdminDashboardViewPro
       const { count: kycCount } = await supabase
         .from('documents')
         .select('*', { count: 'exact', head: true })
-        .in('document_type', ['id_card', 'passport'])
+        .in('document_type', ['id_card', 'passport', 'address_proof'])
         .eq('status', 'pending');
 
       // Fetch recent activity logs
