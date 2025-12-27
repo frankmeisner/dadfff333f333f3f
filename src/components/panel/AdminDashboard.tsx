@@ -12,7 +12,8 @@ import AdminActivityView from './admin/AdminActivityView';
 import AdminChatView from './admin/AdminChatView';
 import AdminEvaluationsView from './admin/AdminEvaluationsView';
 import AdminKycView from './admin/AdminKycView';
-import { ClipboardList, Users, MessageSquare, Calendar, BarChart3, Activity, LayoutDashboard, MessageCircle, Settings, ClipboardCheck, FileSearch } from 'lucide-react';
+import AdminDocumentsView from './admin/AdminDocumentsView';
+import { ClipboardList, Users, MessageSquare, Calendar, BarChart3, Activity, LayoutDashboard, MessageCircle, Settings, ClipboardCheck, FileSearch, Files } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -204,6 +205,7 @@ export default function AdminDashboard() {
         { id: 'sms', label: 'SMS-Codes', icon: MessageSquare, badge: pendingSmsCount > 0 ? pendingSmsCount : undefined },
         { id: 'vacation', label: 'Urlaubsanträge', icon: Calendar },
         { id: 'kyc', label: 'KYC-Prüfung', icon: FileSearch, badge: pendingKycCount > 0 ? pendingKycCount : undefined },
+        { id: 'documents', label: 'Dokumente', icon: Files },
       ],
     },
     {
@@ -243,6 +245,8 @@ export default function AdminDashboard() {
         return <AdminEvaluationsView />;
       case 'kyc':
         return <AdminKycView />;
+      case 'documents':
+        return <AdminDocumentsView />;
       case 'chat':
         return <AdminChatView />;
       case 'settings':
