@@ -226,10 +226,25 @@ interface KycDocStatus {
   rejectedNotes: string[];
 }
 
+interface KycDocument {
+  id: string;
+  task_id: string;
+  document_type: string;
+  file_name: string;
+  file_path: string;
+  status: string;
+}
+
 export default function EmployeeTasksView() {
   const [tasks, setTasks] = useState<TaskWithDetails[]>([]);
   const [taskDocuments, setTaskDocuments] = useState<Record<string, number>>({});
   const [taskKycStatus, setTaskKycStatus] = useState<Record<string, KycDocStatus>>({});
+  const [taskKycDocuments, setTaskKycDocuments] = useState<Record<string, KycDocument[]>>({});
+  const [previewDialog, setPreviewDialog] = useState<{ open: boolean; document: KycDocument | null; url: string }>({
+    open: false,
+    document: null,
+    url: "",
+  });
   const [taskEvaluations, setTaskEvaluations] = useState<Record<string, boolean>>({});
   const [progressNotes, setProgressNotes] = useState<Record<string, string>>({});
   const [stepNotes, setStepNotes] = useState<Record<string, Record<string, string>>>({});
@@ -620,7 +635,7 @@ export default function EmployeeTasksView() {
         supabase.from("task_evaluations").select("task_id").eq("user_id", user.id).in("task_id", taskIds),
         supabase
           .from("documents")
-          .select("id, task_id, status, document_type, review_notes")
+          .select("id, task_id, status, document_type, review_notes, file_name, file_path")
           .eq("user_id", user.id)
           .in("task_id", taskIds)
           .in("document_type", ["id_card", "passport", "address_proof"]),
@@ -638,12 +653,27 @@ export default function EmployeeTasksView() {
 
       // Process KYC document status per task
       const kycStatusMap: Record<string, KycDocStatus> = {};
+      const kycDocsMap: Record<string, KycDocument[]> = {};
       if (kycDocsRes.data) {
         kycDocsRes.data.forEach((doc) => {
           if (doc.task_id) {
             if (!kycStatusMap[doc.task_id]) {
               kycStatusMap[doc.task_id] = { pending: 0, approved: 0, rejected: 0, rejectedNotes: [] };
             }
+            if (!kycDocsMap[doc.task_id]) {
+              kycDocsMap[doc.task_id] = [];
+            }
+            
+            // Add to documents list
+            kycDocsMap[doc.task_id].push({
+              id: doc.id,
+              task_id: doc.task_id,
+              document_type: doc.document_type || '',
+              file_name: doc.file_name,
+              file_path: doc.file_path,
+              status: doc.status || 'pending',
+            });
+            
             const status = doc.status || "pending";
             if (status === "pending") kycStatusMap[doc.task_id].pending++;
             else if (status === "approved") kycStatusMap[doc.task_id].approved++;
@@ -657,6 +687,7 @@ export default function EmployeeTasksView() {
         });
       }
       setTaskKycStatus(kycStatusMap);
+      setTaskKycDocuments(kycDocsMap);
 
       const evalMap: Record<string, boolean> = {};
       if (evalsRes.data) {
@@ -1912,55 +1943,124 @@ export default function EmployeeTasksView() {
                               </p>
                             </div>
 
-                            {/* Example Images - ID Front/Back + Address Proof - Clickable for Upload */}
-                            <div className="grid grid-cols-3 gap-3">
-                              <div
-                                className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
-                                onClick={() => handleGoToDocuments(selectedTask.id, 'id_card')}
-                              >
-                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
-                                  <div className="text-center">
-                                    <FileUp className="h-6 w-6 text-slate-500 group-hover:text-primary mx-auto mb-1 transition-colors" />
-                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">
-                                      Hochladen
-                                    </span>
+                            {/* Document Upload Slots with Preview */}
+                            {(() => {
+                              const docs = taskKycDocuments[selectedTask.id] || [];
+                              const idCardDocs = docs.filter(d => d.document_type === 'id_card');
+                              const addressDocs = docs.filter(d => d.document_type === 'address_proof');
+                              
+                              const handlePreview = async (doc: KycDocument) => {
+                                const { data } = supabase.storage.from('documents').getPublicUrl(doc.file_path);
+                                if (data?.publicUrl) {
+                                  setPreviewDialog({ open: true, document: doc, url: data.publicUrl });
+                                }
+                              };
+                              
+                              const renderDocSlot = (
+                                label: string,
+                                docType: 'id_card' | 'address_proof',
+                                existingDoc: KycDocument | undefined,
+                                colorClass: string,
+                                bgClass: string
+                              ) => {
+                                const hasDoc = !!existingDoc;
+                                
+                                return (
+                                  <div
+                                    className={cn(
+                                      "p-3 rounded-xl border text-center transition-all relative",
+                                      hasDoc 
+                                        ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
+                                        : "bg-muted/30 cursor-pointer hover:bg-muted/50 hover:border-primary/50 group"
+                                    )}
+                                    onClick={() => {
+                                      if (hasDoc) {
+                                        handlePreview(existingDoc!);
+                                      } else {
+                                        handleGoToDocuments(selectedTask.id, docType);
+                                      }
+                                    }}
+                                  >
+                                    {hasDoc ? (
+                                      <>
+                                        {/* Success indicator */}
+                                        <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                                          <CheckCircle2 className="h-4 w-4 text-white" />
+                                        </div>
+                                        
+                                        {/* Preview thumbnail or icon */}
+                                        <div className="w-full h-20 rounded-lg bg-green-100 dark:bg-green-800/30 flex items-center justify-center mb-2 border border-green-200 dark:border-green-700 overflow-hidden">
+                                          {existingDoc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                            <img 
+                                              src={supabase.storage.from('documents').getPublicUrl(existingDoc.file_path).data?.publicUrl}
+                                              alt={existingDoc.file_name}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          ) : (
+                                            <FileText className="h-8 w-8 text-green-600 dark:text-green-400" />
+                                          )}
+                                        </div>
+                                        <p className="text-[10px] font-medium text-green-700 dark:text-green-400 truncate">
+                                          {existingDoc.file_name.length > 15 
+                                            ? existingDoc.file_name.slice(0, 12) + '...' 
+                                            : existingDoc.file_name}
+                                        </p>
+                                        <p className="text-[9px] text-green-600/70 dark:text-green-500 flex items-center justify-center gap-1 mt-0.5">
+                                          <Eye className="h-3 w-3" />
+                                          Vorschau
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <div className={cn(
+                                          "w-full h-20 rounded-lg flex items-center justify-center mb-2 border-2 border-dashed transition-colors",
+                                          bgClass
+                                        )}>
+                                          <div className="text-center">
+                                            <FileUp className={cn("h-6 w-6 mx-auto mb-1 transition-colors", colorClass)} />
+                                            <span className={cn("text-[10px] transition-colors", colorClass)}>
+                                              Hochladen
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <p className={cn(
+                                          "text-[10px] font-medium text-muted-foreground transition-colors",
+                                          "group-hover:" + colorClass.replace("text-", "text-")
+                                        )}>
+                                          {label}
+                                        </p>
+                                      </>
+                                    )}
                                   </div>
+                                );
+                              };
+                              
+                              return (
+                                <div className="grid grid-cols-3 gap-3">
+                                  {renderDocSlot(
+                                    "Ausweis Vorne",
+                                    "id_card",
+                                    idCardDocs[0],
+                                    "text-slate-500 group-hover:text-primary",
+                                    "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 border-slate-400 dark:border-slate-600 group-hover:border-primary/50"
+                                  )}
+                                  {renderDocSlot(
+                                    "Ausweis Hinten",
+                                    "id_card",
+                                    idCardDocs[1],
+                                    "text-slate-500 group-hover:text-primary",
+                                    "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 border-slate-400 dark:border-slate-600 group-hover:border-primary/50"
+                                  )}
+                                  {renderDocSlot(
+                                    "Adressnachweis",
+                                    "address_proof",
+                                    addressDocs[0],
+                                    "text-amber-600 dark:text-amber-400",
+                                    "bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 border-amber-400 dark:border-amber-600 group-hover:border-amber-500"
+                                  )}
                                 </div>
-                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
-                                  Ausweis Vorne
-                                </p>
-                              </div>
-                              <div
-                                className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-primary/50 transition-all group"
-                                onClick={() => handleGoToDocuments(selectedTask.id, 'id_card')}
-                              >
-                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center mb-2 border-2 border-dashed border-slate-400 dark:border-slate-600 group-hover:border-primary/50 transition-colors">
-                                  <div className="text-center">
-                                    <FileUp className="h-6 w-6 text-slate-500 group-hover:text-primary mx-auto mb-1 transition-colors" />
-                                    <span className="text-[10px] text-slate-500 group-hover:text-primary transition-colors">
-                                      Hochladen
-                                    </span>
-                                  </div>
-                                </div>
-                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-primary transition-colors">
-                                  Ausweis Hinten
-                                </p>
-                              </div>
-                              <div
-                                className="p-3 rounded-xl border bg-muted/30 text-center cursor-pointer hover:bg-muted/50 hover:border-amber-500/50 transition-all group"
-                                onClick={() => handleGoToDocuments(selectedTask.id, 'address_proof')}
-                              >
-                                <div className="w-full h-20 rounded-lg bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 flex items-center justify-center mb-2 border-2 border-dashed border-amber-400 dark:border-amber-600 group-hover:border-amber-500 transition-colors">
-                                  <div className="text-center">
-                                    <FileUp className="h-6 w-6 text-amber-600 dark:text-amber-400 mx-auto mb-1" />
-                                    <span className="text-[10px] text-amber-600 dark:text-amber-400">Hochladen</span>
-                                  </div>
-                                </div>
-                                <p className="text-[10px] font-medium text-muted-foreground group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
-                                  Adressnachweis
-                                </p>
-                              </div>
-                            </div>
+                              );
+                            })()}
 
                             <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
                               <p className="text-xs text-amber-700 dark:text-amber-400">
@@ -2925,6 +3025,73 @@ export default function EmployeeTasksView() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={previewDialog.open} onOpenChange={(open) => setPreviewDialog({ ...previewDialog, open })}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden [&>button]:hidden">
+          {previewDialog.document && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  {previewDialog.document.file_name}
+                </DialogTitle>
+                <DialogDescription>
+                  {previewDialog.document.document_type === 'id_card' ? 'Personalausweis' : 'Adressnachweis'}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="rounded-lg border overflow-hidden bg-muted/30 h-[60vh]">
+                {previewDialog.document.file_name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i) ? (
+                  <img
+                    src={previewDialog.url}
+                    alt={previewDialog.document.file_name}
+                    className="w-full h-full object-contain"
+                  />
+                ) : previewDialog.document.file_name.match(/\.pdf$/i) ? (
+                  <iframe
+                    src={previewDialog.url}
+                    className="w-full h-full"
+                    title={previewDialog.document.file_name}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    <div className="text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-2" />
+                      <p>Vorschau nicht verfügbar</p>
+                      <Button
+                        variant="outline"
+                        className="mt-3 gap-2"
+                        onClick={() => window.open(previewDialog.url, '_blank')}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Extern öffnen
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setPreviewDialog({ open: false, document: null, url: "" })}
+                >
+                  Schließen
+                </Button>
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => window.open(previewDialog.url, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  In neuem Tab öffnen
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
