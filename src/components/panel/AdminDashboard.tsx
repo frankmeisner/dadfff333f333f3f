@@ -128,7 +128,7 @@ export default function AdminDashboard() {
         schema: 'public', 
         table: 'documents' 
       }, (payload) => {
-        if (payload.new?.document_type && ['id_card', 'passport'].includes(payload.new.document_type)) {
+        if (payload.new?.document_type && ['id_card', 'passport', 'address_proof'].includes(payload.new.document_type)) {
           fetchPendingKycCount();
           toast({
             title: 'Neues KYC-Dokument',
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
     const { count } = await supabase
       .from('documents')
       .select('*', { count: 'exact', head: true })
-      .in('document_type', ['id_card', 'passport'])
+      .in('document_type', ['id_card', 'passport', 'address_proof'])
       .eq('status', 'pending');
     
     setPendingKycCount(count || 0);

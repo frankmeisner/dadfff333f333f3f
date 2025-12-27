@@ -235,6 +235,7 @@ interface KycDocument {
   file_name: string;
   file_path: string;
   status: string;
+  review_notes?: string;
 }
 
 export default function EmployeeTasksView() {
@@ -246,6 +247,10 @@ export default function EmployeeTasksView() {
     open: false,
     document: null,
     url: "",
+  });
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; document: KycDocument | null }>({
+    open: false,
+    document: null,
   });
   const [taskEvaluations, setTaskEvaluations] = useState<Record<string, boolean>>({});
   const [progressNotes, setProgressNotes] = useState<Record<string, string>>({});
@@ -674,6 +679,7 @@ export default function EmployeeTasksView() {
               file_name: doc.file_name,
               file_path: doc.file_path,
               status: doc.status || 'pending',
+              review_notes: doc.review_notes || undefined,
             });
             
             const status = doc.status || "pending";
@@ -930,6 +936,54 @@ export default function EmployeeTasksView() {
       tabContext.setPendingTaskId(taskId);
       tabContext.setPendingDocumentType(documentType || null);
       tabContext.setActiveTab("documents");
+    }
+  };
+
+  const confirmDeleteDocument = async () => {
+    const doc = deleteDialog.document;
+    if (!doc) return;
+    
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([doc.file_path]);
+      
+      if (storageError) {
+        console.error('Storage delete error:', storageError);
+      }
+      
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', doc.id);
+      
+      if (dbError) {
+        toast({
+          title: "Fehler",
+          description: "Dokument konnte nicht gelöscht werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Gelöscht",
+        description: "Dokument wurde erfolgreich gelöscht.",
+      });
+      
+      // Refresh tasks to update the document list
+      fetchTasks();
+    } catch (err) {
+      console.error('Delete error:', err);
+      toast({
+        title: "Fehler",
+        description: "Dokument konnte nicht gelöscht werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteDialog({ open: false, document: null });
     }
   };
 
@@ -1958,51 +2012,9 @@ export default function EmployeeTasksView() {
                                 }
                               };
                               
-                              const handleDeleteDocument = async (doc: KycDocument, e: React.MouseEvent) => {
-                                e.stopPropagation(); // Prevent triggering the preview
-                                
-                                if (!confirm('Dokument wirklich löschen?')) return;
-                                
-                                try {
-                                  // Delete from storage
-                                  const { error: storageError } = await supabase.storage
-                                    .from('documents')
-                                    .remove([doc.file_path]);
-                                  
-                                  if (storageError) {
-                                    console.error('Storage delete error:', storageError);
-                                  }
-                                  
-                                  // Delete from database
-                                  const { error: dbError } = await supabase
-                                    .from('documents')
-                                    .delete()
-                                    .eq('id', doc.id);
-                                  
-                                  if (dbError) {
-                                    toast({
-                                      title: "Fehler",
-                                      description: "Dokument konnte nicht gelöscht werden.",
-                                      variant: "destructive",
-                                    });
-                                    return;
-                                  }
-                                  
-                                  toast({
-                                    title: "Gelöscht",
-                                    description: "Dokument wurde erfolgreich gelöscht.",
-                                  });
-                                  
-                                  // Refresh tasks to update the document list
-                                  fetchTasks();
-                                } catch (err) {
-                                  console.error('Delete error:', err);
-                                  toast({
-                                    title: "Fehler",
-                                    description: "Dokument konnte nicht gelöscht werden.",
-                                    variant: "destructive",
-                                  });
-                                }
+                              const handleDeleteClick = (doc: KycDocument, e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setDeleteDialog({ open: true, document: doc });
                               };
                               
                               const renderDocSlot = (
@@ -2078,7 +2090,7 @@ export default function EmployeeTasksView() {
                                         {/* Delete button */}
                                         <button
                                           className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg z-10 transition-colors"
-                                          onClick={(e) => handleDeleteDocument(existingDoc, e)}
+                                          onClick={(e) => handleDeleteClick(existingDoc, e)}
                                           title="Dokument löschen"
                                         >
                                           <Trash2 className="h-3 w-3 text-white" />
@@ -2114,6 +2126,12 @@ export default function EmployeeTasksView() {
                                           {existingDoc.status === 'pending' && <Clock className="h-3 w-3" />}
                                           {statusStyles?.label}
                                         </p>
+                                        {/* Rejection reason */}
+                                        {existingDoc.status === 'rejected' && existingDoc.review_notes && (
+                                          <div className="mt-1 p-1.5 bg-red-100 dark:bg-red-900/30 rounded text-[9px] text-red-700 dark:text-red-400 text-left">
+                                            <span className="font-semibold">Grund:</span> {existingDoc.review_notes}
+                                          </div>
+                                        )}
                                       </>
                                     ) : (
                                       <>
@@ -3214,6 +3232,62 @@ export default function EmployeeTasksView() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+        <DialogContent className="max-w-md [&>button]:hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Dokument löschen
+            </DialogTitle>
+            <DialogDescription>
+              Bist du sicher, dass du dieses Dokument löschen möchtest?
+            </DialogDescription>
+          </DialogHeader>
+          
+          {deleteDialog.document && (
+            <div className="p-4 bg-muted/50 rounded-lg border space-y-2">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium truncate">{deleteDialog.document.file_name}</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">Typ: </span>
+                {deleteDialog.document.document_type === 'id_card' ? 'Personalausweis' : 'Adressnachweis'}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">Status: </span>
+                {deleteDialog.document.status === 'approved' ? 'Genehmigt' : 
+                 deleteDialog.document.status === 'rejected' ? 'Abgelehnt' : 'Ausstehend'}
+              </div>
+            </div>
+          )}
+          
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              <strong>Hinweis:</strong> Diese Aktion kann nicht rückgängig gemacht werden. Du kannst danach ein neues Dokument hochladen.
+            </p>
+          </div>
+          
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialog({ open: false, document: null })}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              className="gap-2"
+              onClick={confirmDeleteDocument}
+            >
+              <Trash2 className="h-4 w-4" />
+              Löschen
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
