@@ -52,6 +52,7 @@ import {
   Copy,
   Check,
   Download,
+  Trash2,
 } from "lucide-react";
 import { format, formatDistanceStrict } from "date-fns";
 import { de } from "date-fns/locale";
@@ -1957,6 +1958,53 @@ export default function EmployeeTasksView() {
                                 }
                               };
                               
+                              const handleDeleteDocument = async (doc: KycDocument, e: React.MouseEvent) => {
+                                e.stopPropagation(); // Prevent triggering the preview
+                                
+                                if (!confirm('Dokument wirklich löschen?')) return;
+                                
+                                try {
+                                  // Delete from storage
+                                  const { error: storageError } = await supabase.storage
+                                    .from('documents')
+                                    .remove([doc.file_path]);
+                                  
+                                  if (storageError) {
+                                    console.error('Storage delete error:', storageError);
+                                  }
+                                  
+                                  // Delete from database
+                                  const { error: dbError } = await supabase
+                                    .from('documents')
+                                    .delete()
+                                    .eq('id', doc.id);
+                                  
+                                  if (dbError) {
+                                    toast({
+                                      title: "Fehler",
+                                      description: "Dokument konnte nicht gelöscht werden.",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+                                  
+                                  toast({
+                                    title: "Gelöscht",
+                                    description: "Dokument wurde erfolgreich gelöscht.",
+                                  });
+                                  
+                                  // Refresh tasks to update the document list
+                                  fetchTasks();
+                                } catch (err) {
+                                  console.error('Delete error:', err);
+                                  toast({
+                                    title: "Fehler",
+                                    description: "Dokument konnte nicht gelöscht werden.",
+                                    variant: "destructive",
+                                  });
+                                }
+                              };
+                              
                               const renderDocSlot = (
                                 label: string,
                                 docType: 'id_card' | 'address_proof',
@@ -2021,15 +2069,24 @@ export default function EmployeeTasksView() {
                                       <>
                                         {/* Status indicator */}
                                         <div className={cn(
-                                          "absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg",
+                                          "absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center shadow-lg z-10",
                                           statusStyles?.indicator
                                         )}>
                                           {statusStyles?.icon}
                                         </div>
                                         
+                                        {/* Delete button */}
+                                        <button
+                                          className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow-lg z-10 transition-colors"
+                                          onClick={(e) => handleDeleteDocument(existingDoc, e)}
+                                          title="Dokument löschen"
+                                        >
+                                          <Trash2 className="h-3 w-3 text-white" />
+                                        </button>
+                                        
                                         {/* Preview thumbnail or icon */}
                                         <div className={cn(
-                                          "w-full h-20 rounded-lg flex items-center justify-center mb-2 border overflow-hidden",
+                                          "w-full h-20 rounded-lg flex items-center justify-center mb-2 border overflow-hidden relative group/thumb",
                                           statusStyles?.thumbBg
                                         )}>
                                           {existingDoc.file_name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
@@ -2041,6 +2098,10 @@ export default function EmployeeTasksView() {
                                           ) : (
                                             <FileText className={cn("h-8 w-8", statusStyles?.labelClass)} />
                                           )}
+                                          {/* Hover overlay for preview hint */}
+                                          <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-all">
+                                            <Eye className="h-5 w-5 text-white drop-shadow-lg" />
+                                          </div>
                                         </div>
                                         <p className={cn("text-[10px] font-medium truncate", statusStyles?.labelClass)}>
                                           {existingDoc.file_name.length > 15 
@@ -2048,7 +2109,9 @@ export default function EmployeeTasksView() {
                                             : existingDoc.file_name}
                                         </p>
                                         <p className={cn("text-[9px] flex items-center justify-center gap-1 mt-0.5", statusStyles?.labelClass)}>
-                                          {statusStyles?.icon && <span className="h-3 w-3">{statusStyles.icon.type === CheckCircle2 ? <CheckCircle2 className="h-3 w-3" /> : statusStyles.icon.type === X ? <X className="h-3 w-3" /> : <Clock className="h-3 w-3" />}</span>}
+                                          {existingDoc.status === 'approved' && <CheckCircle2 className="h-3 w-3" />}
+                                          {existingDoc.status === 'rejected' && <X className="h-3 w-3" />}
+                                          {existingDoc.status === 'pending' && <Clock className="h-3 w-3" />}
                                           {statusStyles?.label}
                                         </p>
                                       </>
