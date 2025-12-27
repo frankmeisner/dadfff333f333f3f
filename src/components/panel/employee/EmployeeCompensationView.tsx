@@ -136,6 +136,31 @@ export default function EmployeeCompensationView() {
   useEffect(() => {
     if (user) {
       fetchCompensationData();
+
+      // Real-time subscription for tasks and assignments
+      const channel = supabase
+        .channel(`employee-compensation-${user.id}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tasks'
+        }, () => {
+          fetchCompensationData();
+        })
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'task_assignments'
+        }, (payload: any) => {
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchCompensationData();
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

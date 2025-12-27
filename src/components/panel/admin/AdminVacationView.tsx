@@ -34,6 +34,22 @@ export default function AdminVacationView() {
 
   useEffect(() => {
     fetchRequests();
+
+    // Real-time subscription for vacation requests
+    const channel = supabase
+      .channel('admin-vacation-requests-live')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'vacation_requests'
+      }, () => {
+        fetchRequests();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchRequests = async () => {

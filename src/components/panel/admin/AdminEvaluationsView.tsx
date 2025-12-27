@@ -58,6 +58,22 @@ export default function AdminEvaluationsView() {
 
   useEffect(() => {
     fetchEvaluations();
+
+    // Real-time subscription for evaluations
+    const channel = supabase
+      .channel('admin-evaluations-live')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'task_evaluations'
+      }, () => {
+        fetchEvaluations();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchEvaluations = async () => {

@@ -90,6 +90,22 @@ export default function AdminDocumentsView() {
 
   useEffect(() => {
     fetchDocuments();
+
+    // Real-time subscription for documents
+    const channel = supabase
+      .channel('admin-documents-live')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'documents'
+      }, () => {
+        fetchDocuments();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchDocuments = async () => {

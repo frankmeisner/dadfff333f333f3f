@@ -44,6 +44,40 @@ export default function EmployeeDocumentsView() {
     if (user) {
       fetchDocuments();
       fetchTasks();
+
+      // Real-time subscription for documents and tasks
+      const channel = supabase
+        .channel(`employee-documents-${user.id}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'documents'
+        }, (payload: any) => {
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchDocuments();
+          }
+        })
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'task_assignments'
+        }, (payload: any) => {
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchTasks();
+          }
+        })
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'tasks'
+        }, () => {
+          fetchTasks();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

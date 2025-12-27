@@ -41,6 +41,24 @@ export default function EmployeeVacationView() {
   useEffect(() => {
     if (user) {
       fetchRequests();
+
+      // Real-time subscription for vacation requests
+      const channel = supabase
+        .channel(`employee-vacation-${user.id}`)
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'vacation_requests'
+        }, (payload: any) => {
+          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+            fetchRequests();
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
