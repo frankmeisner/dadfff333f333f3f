@@ -152,7 +152,8 @@ export default function AdminDashboard() {
         table: 'documents' 
       }, (payload) => {
         console.log('Document received:', payload);
-        if (payload.new?.document_type && ['id_card', 'passport', 'address_proof'].includes(payload.new.document_type)) {
+        // KYC view handles only ID card + passport
+        if (payload.new?.document_type && ['id_card', 'passport'].includes(payload.new.document_type)) {
           fetchPendingKycCount();
           toast({
             title: 'Neues KYC-Dokument',
@@ -214,6 +215,25 @@ export default function AdminDashboard() {
     };
   }, [user, toast]);
 
+  useEffect(() => {
+    if (!user) return;
+
+    // When admin opens the chat tab, mark all direct incoming messages as read
+    // so the sidebar badge immediately reflects reality.
+    if (activeTab !== 'chat') return;
+
+    (async () => {
+      await supabase
+        .from('chat_messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('recipient_id', user.id)
+        .eq('is_group_message', false)
+        .is('read_at', null);
+
+      await fetchUnreadMessages();
+    })();
+  }, [activeTab, user]);
+
   const fetchUnreadMessages = async () => {
     if (!user) return;
     const { count } = await supabase
@@ -239,7 +259,7 @@ export default function AdminDashboard() {
     const { count } = await supabase
       .from('documents')
       .select('*', { count: 'exact', head: true })
-      .in('document_type', ['id_card', 'passport', 'address_proof'])
+      .in('document_type', ['id_card', 'passport'])
       .eq('status', 'pending');
     
     setPendingKycCount(count || 0);
