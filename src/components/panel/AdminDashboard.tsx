@@ -162,6 +162,7 @@ export default function AdminDashboard() {
             // Add toast notification to stack
             setToastNotifications(prev => [...prev, {
               id: payload.new.id,
+              senderId: payload.new.sender_id,
               senderName,
               senderAvatar: senderProfile?.avatar_url || undefined,
               senderInitials: initials,

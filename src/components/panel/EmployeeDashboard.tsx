@@ -291,6 +291,7 @@ export default function EmployeeDashboard() {
             // Add toast notification to stack
             setToastNotifications(prev => [...prev, {
               id: newMessage.id,
+              senderId: newMessage.sender_id,
               senderName,
               senderAvatar: senderProfile?.avatar_url || undefined,
               senderInitials: initials,

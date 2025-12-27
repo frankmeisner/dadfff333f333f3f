@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { X } from 'lucide-react';
 
 export interface ToastNotification {
   id: string;
+  senderId: string;
   senderName: string;
   senderAvatar?: string;
   senderInitials: string;
   message: string;
 }
 
+interface GroupedNotification {
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string;
+  senderInitials: string;
+  messages: { id: string; message: string }[];
+}
+
 interface SingleToastProps {
-  notification: ToastNotification;
+  notification: GroupedNotification;
   onClose: () => void;
   onClick?: () => void;
   index: number;
@@ -21,7 +30,6 @@ function SingleToast({ notification, onClose, onClick, index }: SingleToastProps
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Staggered animation
     const showTimer = setTimeout(() => setIsVisible(true), index * 50);
     
     const hideTimer = setTimeout(() => {
@@ -42,6 +50,9 @@ function SingleToast({ notification, onClose, onClick, index }: SingleToastProps
     onClose();
   };
 
+  const messageCount = notification.messages.length;
+  const latestMessage = notification.messages[messageCount - 1]?.message;
+
   return (
     <div
       className={`w-full transition-all duration-300 ease-out cursor-pointer ${
@@ -50,16 +61,30 @@ function SingleToast({ notification, onClose, onClick, index }: SingleToastProps
       onClick={handleClick}
     >
       <div className="backdrop-blur-xl bg-background/80 border border-border/50 rounded-2xl shadow-2xl p-4 flex items-start gap-3">
-        <Avatar className="h-12 w-12 shrink-0 ring-2 ring-primary/20">
-          <AvatarImage src={notification.senderAvatar} />
-          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-            {notification.senderInitials}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-12 w-12 shrink-0 ring-2 ring-primary/20">
+            <AvatarImage src={notification.senderAvatar} />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+              {notification.senderInitials}
+            </AvatarFallback>
+          </Avatar>
+          {messageCount > 1 && (
+            <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+              {messageCount}
+            </span>
+          )}
+        </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm">{notification.senderName}</p>
+          <p className="font-semibold text-sm">
+            {notification.senderName}
+            {messageCount > 1 && (
+              <span className="text-muted-foreground font-normal ml-1">
+                ({messageCount} Nachrichten)
+              </span>
+            )}
+          </p>
           <p className="text-sm text-muted-foreground line-clamp-2 break-words">
-            {notification.message}
+            {latestMessage}
           </p>
         </div>
         <button
@@ -83,15 +108,45 @@ interface TelegramToastStackProps {
 }
 
 export function TelegramToastStack({ notifications, onClose, onClick }: TelegramToastStackProps) {
-  if (notifications.length === 0) return null;
+  // Group notifications by sender
+  const groupedNotifications = useMemo(() => {
+    const groups: Map<string, GroupedNotification> = new Map();
+    
+    for (const notification of notifications) {
+      const existing = groups.get(notification.senderId);
+      if (existing) {
+        existing.messages.push({ id: notification.id, message: notification.message });
+      } else {
+        groups.set(notification.senderId, {
+          senderId: notification.senderId,
+          senderName: notification.senderName,
+          senderAvatar: notification.senderAvatar,
+          senderInitials: notification.senderInitials,
+          messages: [{ id: notification.id, message: notification.message }]
+        });
+      }
+    }
+    
+    return Array.from(groups.values());
+  }, [notifications]);
+
+  if (groupedNotifications.length === 0) return null;
+
+  const handleCloseGroup = (senderId: string) => {
+    // Close all notifications from this sender
+    const group = groupedNotifications.find(g => g.senderId === senderId);
+    if (group) {
+      group.messages.forEach(msg => onClose(msg.id));
+    }
+  };
 
   return (
     <div className="fixed top-4 right-4 z-[100] max-w-sm w-full flex flex-col gap-2">
-      {notifications.slice(0, 5).map((notification, index) => (
+      {groupedNotifications.slice(0, 5).map((group, index) => (
         <SingleToast
-          key={notification.id}
-          notification={notification}
-          onClose={() => onClose(notification.id)}
+          key={group.senderId}
+          notification={group}
+          onClose={() => handleCloseGroup(group.senderId)}
           onClick={onClick}
           index={index}
         />
@@ -120,7 +175,7 @@ export function TelegramToast({
 }: TelegramToastProps) {
   return (
     <TelegramToastStack
-      notifications={[{ id: 'single', senderName, senderAvatar, senderInitials, message }]}
+      notifications={[{ id: 'single', senderId: 'single', senderName, senderAvatar, senderInitials, message }]}
       onClose={onClose}
       onClick={onClick}
     />
