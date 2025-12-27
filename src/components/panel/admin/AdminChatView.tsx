@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Send, MessageCircle, ImagePlus, X, Users, Check, CheckCheck, Search, Reply, CornerDownRight, Pencil, Trash2, MoreVertical, Pin, PinOff } from 'lucide-react';
+import { Send, MessageCircle, ImagePlus, X, Users, Check, CheckCheck, Search, Reply, CornerDownRight, Pencil, Trash2, MoreVertical, Pin, PinOff, MailOpen } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -538,6 +538,25 @@ export default function AdminChatView() {
     return count || 0;
   };
 
+  const handleMarkAllAsRead = async () => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('chat_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('recipient_id', user.id)
+      .eq('is_group_message', false)
+      .is('read_at', null);
+
+    if (error) {
+      toast({ title: 'Fehler', description: 'Konnte Nachrichten nicht als gelesen markieren.', variant: 'destructive' });
+    } else {
+      // Update employees list to reset unread counts
+      setEmployees(prev => prev.map(emp => ({ ...emp, unreadCount: 0 })));
+      toast({ title: 'Erledigt', description: 'Alle Nachrichten als gelesen markiert.' });
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-16rem)]">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-full">
@@ -629,6 +648,16 @@ export default function AdminChatView() {
               {selectedEmployee && (
                 <div className="flex items-center gap-1">
                   <PushNotificationPrompt />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    className="gap-2 text-muted-foreground hover:text-foreground"
+                    title="Alle als gelesen markieren"
+                  >
+                    <MailOpen className="h-4 w-4" />
+                    <span className="hidden sm:inline">Alle gelesen</span>
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
