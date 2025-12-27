@@ -203,7 +203,8 @@ const statusConfig: Record<TaskStatus, { color: string; label: string }> = {
 };
 
 // Total workflow steps constant - MUST be defined before use in functions
-const TOTAL_WORKFLOW_STEPS = 9;
+// Note: Database constraint allows only steps 1-8, step 8 is the final step before completion
+const TOTAL_WORKFLOW_STEPS = 8;
 
 interface StatusRequest {
   id: string;
@@ -1125,29 +1126,19 @@ export default function EmployeeTasksView() {
     }
 
     if (step === 8) {
-      handleGoToDocuments(task.id);
-      if ((taskDocuments[task.id] || 0) > 0) {
-        await setWorkflowStep(task, 9);
-      } else {
-        toast({
-          title: "Nachweis fehlt",
-          description: "Bitte lade zuerst einen Nachweis in „Dokumente“ hoch.",
-          variant: "destructive",
-        });
-      }
-      return;
-    }
-
-    if (step === 9) {
+      // Step 8 is the final step - check for documents and complete task
       if ((taskDocuments[task.id] || 0) <= 0) {
+        handleGoToDocuments(task.id);
         toast({
           title: "Nachweis fehlt",
-          description: "Bitte lade zuerst einen Nachweis hoch, bevor du abschließt.",
+          description: 'Bitte lade zuerst einen Nachweis in "Dokumente" hoch.',
           variant: "destructive",
         });
         return;
       }
+      // Complete the task directly from step 8
       await handleCompleteTask(task);
+      return;
     }
   };
 
