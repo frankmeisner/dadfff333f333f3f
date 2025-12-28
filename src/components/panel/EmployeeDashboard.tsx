@@ -238,14 +238,23 @@ export default function EmployeeDashboard() {
         }
       })
       .on('postgres_changes', { 
-        event: '*', 
+        event: 'INSERT', 
         schema: 'public', 
-        table: 'task_assignments'
+        table: 'task_assignments',
+        filter: `user_id=eq.${user.id}`
       }, (payload: any) => {
-        if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
-          fetchPendingEvaluations();
-          fetchUnreadTasks();
-        }
+        console.log('New task assignment received:', payload);
+        fetchPendingEvaluations();
+        fetchUnreadTasks();
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'task_assignments',
+        filter: `user_id=eq.${user.id}`
+      }, (payload: any) => {
+        fetchPendingEvaluations();
+        fetchUnreadTasks();
       })
       .subscribe((status) => {
         console.log('Employee notifications channel status:', status);
