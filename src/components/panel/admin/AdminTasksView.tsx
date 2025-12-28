@@ -118,6 +118,14 @@ export default function AdminTasksView() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignments' }, () => {
         fetchTasks();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => {
+        // Refresh when documents are uploaded (KYC, etc.) for task detail display
+        fetchTasks();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sms_code_requests' }, () => {
+        // Refresh when SMS code requests change
+        fetchTasks();
+      })
       .subscribe();
 
     return () => {

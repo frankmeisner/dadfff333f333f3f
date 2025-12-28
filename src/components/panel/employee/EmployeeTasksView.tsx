@@ -524,6 +524,15 @@ export default function EmployeeTasksView() {
             checkTimeStatus();
           }
         })
+        .on("postgres_changes", { event: "*", schema: "public", table: "documents" }, (payload) => {
+          const newData = payload.new as Record<string, unknown> | null;
+          const oldData = payload.old as Record<string, unknown> | null;
+          // Refresh tasks when any document related to the user changes (status update from admin)
+          if (newData?.user_id === user.id || oldData?.user_id === user.id) {
+            console.log("EmployeeTasksView realtime: documents change", payload);
+            fetchTasks();
+          }
+        })
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
             realtimeSubscribed.current = true;
