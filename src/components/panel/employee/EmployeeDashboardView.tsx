@@ -70,6 +70,46 @@ export default function EmployeeDashboardView({ onNavigate }: EmployeeDashboardV
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+
+      // Realtime subscriptions for live updates
+      const channel = supabase
+        .channel('employee-dashboard-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'task_assignments' }, (payload) => {
+          const newData = payload.new as Record<string, unknown> | null;
+          const oldData = payload.old as Record<string, unknown> | null;
+          if (newData?.user_id === user.id || oldData?.user_id === user.id) {
+            fetchDashboardData();
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+          fetchDashboardData();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+          const newData = payload.new as Record<string, unknown> | null;
+          const oldData = payload.old as Record<string, unknown> | null;
+          if (newData?.user_id === user.id || oldData?.user_id === user.id) {
+            fetchDashboardData();
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'time_entries' }, (payload) => {
+          const newData = payload.new as Record<string, unknown> | null;
+          const oldData = payload.old as Record<string, unknown> | null;
+          if (newData?.user_id === user.id || oldData?.user_id === user.id) {
+            fetchDashboardData();
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, (payload) => {
+          const newData = payload.new as Record<string, unknown> | null;
+          const oldData = payload.old as Record<string, unknown> | null;
+          if (newData?.user_id === user.id || oldData?.user_id === user.id) {
+            fetchDashboardData();
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

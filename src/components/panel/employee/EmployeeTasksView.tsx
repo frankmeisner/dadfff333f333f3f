@@ -592,8 +592,15 @@ export default function EmployeeTasksView() {
     // Update selectedTask when tasks change (for real-time SMS updates in dialog)
     if (selectedTask) {
       const updatedTask = tasks.find((t) => t.id === selectedTask.id);
-      if (updatedTask && JSON.stringify(updatedTask.smsRequest) !== JSON.stringify(selectedTask.smsRequest)) {
-        setSelectedTask(updatedTask);
+      if (updatedTask) {
+        // Always update if smsRequest changed (code received, status changed, etc.)
+        const smsChanged = JSON.stringify(updatedTask.smsRequest) !== JSON.stringify(selectedTask.smsRequest);
+        const assignmentChanged = JSON.stringify(updatedTask.assignment) !== JSON.stringify(selectedTask.assignment);
+        const taskDataChanged = updatedTask.status !== selectedTask.status;
+        
+        if (smsChanged || assignmentChanged || taskDataChanged) {
+          setSelectedTask(updatedTask);
+        }
       }
     }
   }, [tasks, playNotificationSound, selectedTask]);
@@ -2531,21 +2538,6 @@ export default function EmployeeTasksView() {
                                         style={{ width: `${(smsCountdown / 30) * 100}%` }}
                                       />
                                     </div>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="w-full mt-3 gap-2"
-                                      disabled={isRefreshing}
-                                      onClick={async () => {
-                                        setIsRefreshing(true);
-                                        await fetchTasks();
-                                        setSmsCountdown(30);
-                                        setTimeout(() => setIsRefreshing(false), 500);
-                                      }}
-                                    >
-                                      <RefreshCcw className={cn("h-3 w-3", isRefreshing && "animate-spin")} />
-                                      {isRefreshing ? "Prüfe..." : "Jetzt prüfen"}
-                                    </Button>
                                   </div>
                                 </div>
                               </div>
