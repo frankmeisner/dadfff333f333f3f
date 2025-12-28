@@ -425,33 +425,57 @@ export default function EmployeeTasksView() {
 
       const channel = supabase
         .channel(`employee-tasks-${user.id}`)
-        .on("postgres_changes", { event: "INSERT", schema: "public", table: "task_assignments" }, (payload) => {
-          const newData = payload.new as Record<string, unknown> | null;
-          if (newData?.user_id === user.id && initialLoadComplete.current) {
-            supabase
-              .from("tasks")
-              .select("title")
-              .eq("id", newData.task_id as string)
-              .single()
-              .then(({ data: taskData }) => {
-                notifyNewTask(taskData?.title);
-              });
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "task_assignments",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log("EmployeeTasksView realtime: task_assignments INSERT", payload);
+            const newData = payload.new as Record<string, unknown> | null;
+
+            // Realtime can arrive slightly before the REST read path is consistent.
+            // Do an immediate refresh + a short delayed refresh to ensure the new task shows up.
             fetchTasks();
-          } else if (newData?.user_id === user.id) {
+            window.setTimeout(() => fetchTasks(), 600);
+
+            if (newData?.task_id && initialLoadComplete.current) {
+              supabase
+                .from("tasks")
+                .select("title")
+                .eq("id", newData.task_id as string)
+                .single()
+                .then(({ data: taskData }) => notifyNewTask(taskData?.title));
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "task_assignments",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log("EmployeeTasksView realtime: task_assignments UPDATE", payload);
             fetchTasks();
-          }
-        })
-        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "task_assignments" }, (payload) => {
-          const newData = payload.new as Record<string, unknown> | null;
-          const oldData = payload.old as Record<string, unknown> | null;
-          if (newData?.user_id === user.id || oldData?.user_id === user.id) {
-            fetchTasks();
-          }
-        })
-        .on("postgres_changes", { event: "DELETE", schema: "public", table: "task_assignments" }, (payload) => {
-          const oldData = payload.old as Record<string, unknown> | null;
-          if (oldData?.user_id === user.id) {
-            // Task was revoked - close dialog if this task was selected
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "task_assignments",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            console.log("EmployeeTasksView realtime: task_assignments DELETE", payload);
+            const oldData = payload.old as Record<string, unknown> | null;
             if (oldData?.task_id) {
               setSelectedTask((prev) => {
                 if (prev && prev.id === oldData.task_id) {
@@ -466,8 +490,8 @@ export default function EmployeeTasksView() {
               });
             }
             fetchTasks();
-          }
-        })
+          },
+        )
         .on("postgres_changes", { event: "*", schema: "public", table: "sms_code_requests" }, (payload) => {
           const newData = payload.new as Record<string, unknown> | null;
           const oldData = payload.old as Record<string, unknown> | null;
