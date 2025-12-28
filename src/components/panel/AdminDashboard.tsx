@@ -193,7 +193,7 @@ export default function AdminDashboard() {
         console.log('Chat channel status:', status);
       });
 
-    // KYC document notifications
+    // KYC document notifications (id_card, passport, address_proof)
     const documentsChannel = supabase
       .channel('admin-kyc-live')
       .on('postgres_changes', { 
@@ -202,8 +202,8 @@ export default function AdminDashboard() {
         table: 'documents' 
       }, (payload) => {
         console.log('Document received:', payload);
-        // KYC view handles only ID card + passport
-        if (payload.new?.document_type && ['id_card', 'passport'].includes(payload.new.document_type)) {
+        // KYC view handles id_card, passport, and address_proof
+        if (payload.new?.document_type && ['id_card', 'passport', 'address_proof'].includes(payload.new.document_type)) {
           fetchPendingKycCount();
           toast({
             title: 'Neues KYC-Dokument',
@@ -309,7 +309,7 @@ export default function AdminDashboard() {
     const { count } = await supabase
       .from('documents')
       .select('*', { count: 'exact', head: true })
-      .in('document_type', ['id_card', 'passport'])
+      .in('document_type', ['id_card', 'passport', 'address_proof'])
       .eq('status', 'pending');
     
     setPendingKycCount(count || 0);
