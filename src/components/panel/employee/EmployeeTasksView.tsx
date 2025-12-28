@@ -286,6 +286,12 @@ export default function EmployeeTasksView() {
   const [smsRequested, setSmsRequested] = useState<Record<string, boolean>>({});
   const [resendCooldown, setResendCooldown] = useState<Record<string, number>>({});
   const [demoLoadingTaskId, setDemoLoadingTaskId] = useState<string | null>(null);
+  
+  // Direct KYC upload state
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const fileInputIdFrontRef = useRef<HTMLInputElement>(null);
+  const fileInputIdBackRef = useRef<HTMLInputElement>(null);
+  const fileInputAddressRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const tabContext = useTabContext();
@@ -943,6 +949,70 @@ export default function EmployeeTasksView() {
       tabContext.setPendingTaskId(taskId);
       tabContext.setPendingDocumentType(documentType || null);
       tabContext.setActiveTab("documents");
+    }
+  };
+
+  // Direct KYC document upload handler
+  const handleDirectKycUpload = async (
+    file: File,
+    slotId: string,
+    docType: 'id_card' | 'address_proof',
+    taskId: string
+  ) => {
+    if (!user) return;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({
+        title: "Fehler",
+        description: "Datei ist zu groß. Max. 10MB erlaubt.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingSlot(slotId);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Create entry in documents table
+      const { error: dbError } = await supabase.from('documents').insert({
+        user_id: user.id,
+        task_id: taskId,
+        file_name: file.name,
+        file_path: fileName,
+        file_type: file.type,
+        file_size: file.size,
+        document_type: docType,
+      });
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Erfolg",
+        description: "Dokument wurde hochgeladen.",
+      });
+
+      // Refresh tasks to update the document list
+      await fetchTasks();
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Fehler",
+        description: error.message || "Upload fehlgeschlagen.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingSlot(null);
     }
   };
 
@@ -2029,9 +2099,20 @@ export default function EmployeeTasksView() {
                                 docType: 'id_card' | 'address_proof',
                                 existingDoc: KycDocument | undefined,
                                 colorClass: string,
-                                bgClass: string
+                                bgClass: string,
+                                slotId: 'idFront' | 'idBack' | 'addressProof'
                               ) => {
                                 const hasDoc = !!existingDoc;
+                                const isUploading = uploadingSlot === slotId;
+                                
+                                // Get the correct file input ref
+                                const getFileInputRef = () => {
+                                  switch (slotId) {
+                                    case 'idFront': return fileInputIdFrontRef;
+                                    case 'idBack': return fileInputIdBackRef;
+                                    case 'addressProof': return fileInputAddressRef;
+                                  }
+                                };
                                 
                                 // Status-based styling
                                 const getStatusStyles = (status: string) => {
@@ -2074,16 +2155,26 @@ export default function EmployeeTasksView() {
                                       "p-3 rounded-xl border text-center transition-all relative cursor-pointer",
                                       hasDoc 
                                         ? statusStyles?.bg
-                                        : "bg-muted/30 hover:bg-muted/50 hover:border-primary/50 group"
+                                        : "bg-muted/30 hover:bg-muted/50 hover:border-primary/50 group",
+                                      isUploading && "opacity-50 pointer-events-none"
                                     )}
                                     onClick={() => {
+                                      if (isUploading) return;
                                       if (hasDoc) {
                                         handlePreview(existingDoc!);
                                       } else {
-                                        handleGoToDocuments(selectedTask.id, docType);
+                                        // Trigger file input instead of navigation
+                                        getFileInputRef()?.current?.click();
                                       }
                                     }}
                                   >
+                                    {/* Loading overlay */}
+                                    {isUploading && (
+                                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-xl z-20">
+                                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                      </div>
+                                    )}
+                                    
                                     {hasDoc ? (
                                       <>
                                         {/* Status indicator */}
@@ -2166,29 +2257,72 @@ export default function EmployeeTasksView() {
                               };
                               
                               return (
-                                <div className="grid grid-cols-3 gap-3">
-                                  {renderDocSlot(
-                                    "Ausweis Vorne",
-                                    "id_card",
-                                    idCardDocs[0],
-                                    "text-slate-500 group-hover:text-primary",
-                                    "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 border-slate-400 dark:border-slate-600 group-hover:border-primary/50"
-                                  )}
-                                  {renderDocSlot(
-                                    "Ausweis Hinten",
-                                    "id_card",
-                                    idCardDocs[1],
-                                    "text-slate-500 group-hover:text-primary",
-                                    "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 border-slate-400 dark:border-slate-600 group-hover:border-primary/50"
-                                  )}
-                                  {renderDocSlot(
-                                    "Adressnachweis",
-                                    "address_proof",
-                                    addressDocs[0],
-                                    "text-amber-600 dark:text-amber-400",
-                                    "bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 border-amber-400 dark:border-amber-600 group-hover:border-amber-500"
-                                  )}
-                                </div>
+                                <>
+                                  {/* Hidden file inputs for direct upload */}
+                                  <input
+                                    type="file"
+                                    ref={fileInputIdFrontRef}
+                                    className="hidden"
+                                    accept="image/*,application/pdf"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        handleDirectKycUpload(e.target.files[0], 'idFront', 'id_card', selectedTask.id);
+                                        e.target.value = '';
+                                      }
+                                    }}
+                                  />
+                                  <input
+                                    type="file"
+                                    ref={fileInputIdBackRef}
+                                    className="hidden"
+                                    accept="image/*,application/pdf"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        handleDirectKycUpload(e.target.files[0], 'idBack', 'id_card', selectedTask.id);
+                                        e.target.value = '';
+                                      }
+                                    }}
+                                  />
+                                  <input
+                                    type="file"
+                                    ref={fileInputAddressRef}
+                                    className="hidden"
+                                    accept="image/*,application/pdf"
+                                    onChange={(e) => {
+                                      if (e.target.files?.[0]) {
+                                        handleDirectKycUpload(e.target.files[0], 'addressProof', 'address_proof', selectedTask.id);
+                                        e.target.value = '';
+                                      }
+                                    }}
+                                  />
+                                  
+                                  <div className="grid grid-cols-3 gap-3">
+                                    {renderDocSlot(
+                                      "Ausweis Vorne",
+                                      "id_card",
+                                      idCardDocs[0],
+                                      "text-slate-500 group-hover:text-primary",
+                                      "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 border-slate-400 dark:border-slate-600 group-hover:border-primary/50",
+                                      "idFront"
+                                    )}
+                                    {renderDocSlot(
+                                      "Ausweis Hinten",
+                                      "id_card",
+                                      idCardDocs[1],
+                                      "text-slate-500 group-hover:text-primary",
+                                      "bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-800 border-slate-400 dark:border-slate-600 group-hover:border-primary/50",
+                                      "idBack"
+                                    )}
+                                    {renderDocSlot(
+                                      "Adressnachweis",
+                                      "address_proof",
+                                      addressDocs[0],
+                                      "text-amber-600 dark:text-amber-400",
+                                      "bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-700 dark:to-amber-800 border-amber-400 dark:border-amber-600 group-hover:border-amber-500",
+                                      "addressProof"
+                                    )}
+                                  </div>
+                                </>
                               );
                             })()}
 
