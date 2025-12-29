@@ -252,7 +252,8 @@ export default function EmployeeTasksView() {
     open: false,
     document: null,
   });
-  const [taskEvaluations, setTaskEvaluations] = useState<Record<string, boolean>>({});
+  // Track evaluations with their creation date to compare against assignment date
+  const [taskEvaluations, setTaskEvaluations] = useState<Record<string, { created_at: string }>>({});
   const [progressNotes, setProgressNotes] = useState<Record<string, string>>({});
   const [stepNotes, setStepNotes] = useState<Record<string, Record<string, string>>>({});
   const [statusRequests, setStatusRequests] = useState<StatusRequest[]>([]);
@@ -685,7 +686,7 @@ export default function EmployeeTasksView() {
           .eq("user_id", user.id)
           .order("requested_at", { ascending: false }),
         supabase.from("documents").select("id, task_id").eq("user_id", user.id).in("task_id", taskIds),
-        supabase.from("task_evaluations").select("task_id").eq("user_id", user.id).in("task_id", taskIds),
+        supabase.from("task_evaluations").select("task_id, created_at").eq("user_id", user.id).in("task_id", taskIds),
         supabase
           .from("documents")
           .select("id, task_id, status, document_type, review_notes, file_name, file_path")
@@ -743,10 +744,10 @@ export default function EmployeeTasksView() {
       setTaskKycStatus(kycStatusMap);
       setTaskKycDocuments(kycDocsMap);
 
-      const evalMap: Record<string, boolean> = {};
+      const evalMap: Record<string, { created_at: string }> = {};
       if (evalsRes.data) {
-        evalsRes.data.forEach((ev) => {
-          evalMap[ev.task_id] = true;
+        evalsRes.data.forEach((ev: { task_id: string; created_at: string }) => {
+          evalMap[ev.task_id] = { created_at: ev.created_at };
         });
       }
       setTaskEvaluations(evalMap);
@@ -1225,8 +1226,8 @@ export default function EmployeeTasksView() {
 
     // For skipKycSms tasks, use simplified logic with 4 steps
     if (skipKycSms) {
-      // Validate step notes for step 2+ (but not step 1 or final step)
-      if (step >= 2 && step < 4) {
+      // Validate step notes for step 1 and above (but not final step)
+      if (step >= 1 && step < 4) {
         if (!validateStepNotes(task.id, step)) {
           toast({
             title: "Notiz erforderlich",
@@ -1244,11 +1245,16 @@ export default function EmployeeTasksView() {
       }
 
       if (step === 2) {
-        const hasEvaluation = taskEvaluations[task.id];
-        if (!hasEvaluation) {
+        // Check if evaluation exists AND was created after the task was accepted
+        const evaluationData = taskEvaluations[task.id];
+        const acceptedAt = task.assignment?.accepted_at || task.assignment?.assigned_at;
+        const hasValidEvaluation = evaluationData && acceptedAt && 
+          new Date(evaluationData.created_at) >= new Date(acceptedAt);
+        
+        if (!hasValidEvaluation) {
           toast({
             title: "Bewertungsbogen ausfüllen",
-            description: 'Bitte gehe zum Tab „Bewertungsbögen" und fülle deine Bewertung aus.',
+            description: 'Bitte gehe zum Tab „Bewertungsbögen" und fülle eine neue Bewertung für diesen Auftrag aus.',
             variant: "destructive",
           });
           if (tabContext) {
@@ -1284,8 +1290,8 @@ export default function EmployeeTasksView() {
     }
 
     // Full workflow with KYC/SMS (original logic)
-    // Validate step notes before proceeding (step 2 and above, but not step 1 or final)
-    if (step >= 2 && step < 9) {
+    // Validate step notes before proceeding (step 1 and above, but not final step)
+    if (step >= 1 && step < 9) {
       if (!validateStepNotes(task.id, step)) {
         toast({
           title: "Notiz erforderlich",
@@ -1303,11 +1309,16 @@ export default function EmployeeTasksView() {
     }
 
     if (step === 2) {
-      const hasEvaluation = taskEvaluations[task.id];
-      if (!hasEvaluation) {
+      // Check if evaluation exists AND was created after the task was accepted
+      const evaluationData = taskEvaluations[task.id];
+      const acceptedAt = task.assignment?.accepted_at || task.assignment?.assigned_at;
+      const hasValidEvaluation = evaluationData && acceptedAt && 
+        new Date(evaluationData.created_at) >= new Date(acceptedAt);
+      
+      if (!hasValidEvaluation) {
         toast({
           title: "Bewertungsbogen ausfüllen",
-          description: 'Bitte gehe zum Tab „Bewertungsbögen" und fülle deine Bewertung aus.',
+          description: 'Bitte gehe zum Tab „Bewertungsbögen" und fülle eine neue Bewertung für diesen Auftrag aus.',
           variant: "destructive",
         });
         if (tabContext) {
@@ -2043,33 +2054,41 @@ export default function EmployeeTasksView() {
                       </div>
 
                       {/* Bewertungsbogen Hinweis (Step 2) */}
-                      {currentStep === 2 && (
-                        <div className="p-4 rounded-lg border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30">
-                          <h4 className="font-medium mb-2 text-amber-800 dark:text-amber-300">
-                            Bewertungsbogen ausfüllen
-                          </h4>
-                          <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
-                            {taskEvaluations[selectedTask.id]
-                              ? 'Bewertung wurde ausgefüllt. Schreibe eine Notiz und klicke auf "Speichern & Weiter".'
-                              : 'Bitte gehe zum Tab „Bewertungsbögen", um deine strukturierte Bewertung für diesen Auftrag einzutragen.'}
-                          </p>
-                          <div className="flex gap-2 flex-wrap">
-                            {!taskEvaluations[selectedTask.id] && (
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  if (tabContext) {
-                                    tabContext.setActiveTab("evaluations");
-                                  }
-                                }}
-                                className="gap-2"
-                              >
-                                Zum Bewertungsbogen
-                              </Button>
-                            )}
+                      {currentStep === 2 && (() => {
+                        // Check if evaluation exists AND was created after the task was accepted
+                        const evaluationData = taskEvaluations[selectedTask.id];
+                        const acceptedAt = selectedTask.assignment?.accepted_at || (selectedTask.assignment as any)?.assigned_at;
+                        const hasValidEvaluation = evaluationData && acceptedAt && 
+                          new Date(evaluationData.created_at) >= new Date(acceptedAt);
+                        
+                        return (
+                          <div className="p-4 rounded-lg border bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/30">
+                            <h4 className="font-medium mb-2 text-amber-800 dark:text-amber-300">
+                              Bewertungsbogen ausfüllen
+                            </h4>
+                            <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
+                              {hasValidEvaluation
+                                ? 'Bewertung wurde ausgefüllt. Schreibe eine Notiz und klicke auf "Speichern & Weiter".'
+                                : 'Bitte gehe zum Tab „Bewertungsbögen", um eine neue Bewertung für diesen Auftrag einzutragen.'}
+                            </p>
+                            <div className="flex gap-2 flex-wrap">
+                              {!hasValidEvaluation && (
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (tabContext) {
+                                      tabContext.setActiveTab("evaluations");
+                                    }
+                                  }}
+                                  className="gap-2"
+                                >
+                                  Zum Bewertungsbogen
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Video Chat Status Section - Only show when NOT on step 6 and NOT skip_kyc_sms */}
                       {currentStep !== 6 && (selectedTask as any).skip_kyc_sms !== true && (
