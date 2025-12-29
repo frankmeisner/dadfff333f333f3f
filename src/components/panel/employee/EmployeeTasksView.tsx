@@ -1150,6 +1150,7 @@ export default function EmployeeTasksView() {
     extra?: { workflow_digital?: boolean | null },
   ) => {
     const current = getWorkflowStep(task);
+    const skipKycSms = (task as any).skip_kyc_sms === true;
 
     // Allow going back or forward by 1
     if (nextStep < 1 || nextStep > TOTAL_WORKFLOW_STEPS) {
@@ -1157,13 +1158,17 @@ export default function EmployeeTasksView() {
     }
 
     // Only enforce forward progression for nextStep > current
+    // Exception: For skipKycSms tasks, allow jumping from step 2 to step 7
     if (nextStep > current && nextStep !== current + 1) {
-      toast({
-        title: "Reihenfolge beachten",
-        description: `Bitte bearbeite die Schritte strikt der Reihe nach (1 bis ${TOTAL_WORKFLOW_STEPS}).`,
-        variant: "destructive",
-      });
-      return;
+      // Allow skip from step 2 to step 7 for skipKycSms tasks
+      if (!(skipKycSms && current === 2 && nextStep === 7)) {
+        toast({
+          title: "Reihenfolge beachten",
+          description: `Bitte bearbeite die Schritte strikt der Reihe nach (1 bis ${TOTAL_WORKFLOW_STEPS}).`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     await updateWorkflow(task.id, { workflow_step: nextStep, ...extra });
