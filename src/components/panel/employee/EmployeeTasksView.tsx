@@ -1099,7 +1099,13 @@ export default function EmployeeTasksView() {
 
   const getWorkflowStep = (task: TaskWithDetails) => {
     const step = (task.assignment as any)?.workflow_step;
-    return typeof step === "number" && step >= 1 && step <= TOTAL_WORKFLOW_STEPS ? step : 1;
+    const skipKycSms = (task as any).skip_kyc_sms === true;
+    const maxSteps = skipKycSms ? 4 : TOTAL_WORKFLOW_STEPS;
+    // Clamp step to valid range for this task type
+    if (typeof step === "number" && step >= 1) {
+      return Math.min(step, maxSteps);
+    }
+    return 1;
   };
 
   const updateWorkflow = async (
