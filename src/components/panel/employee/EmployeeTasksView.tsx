@@ -904,11 +904,11 @@ export default function EmployeeTasksView() {
     toast({ title: "Gespeichert", description: "Notizen aktualisiert." });
   };
 
-  const handleSaveStepNote = async (taskId: string, stepNumber: number) => {
-    if (!user) return;
+  const handleSaveStepNote = async (taskId: string, stepNumber: number, showToast: boolean = true): Promise<boolean> => {
+    if (!user) return false;
 
-    const currentStepNotes = stepNotes[taskId] || {};
-    const noteForStep = currentStepNotes[stepNumber.toString()] || "";
+    // Use getStepNote to get the current note (checks both local state and saved notes)
+    const noteForStep = getStepNote(taskId, stepNumber);
 
     // Validate minimum word count (at least 3 words)
     const wordCount = noteForStep
@@ -916,12 +916,14 @@ export default function EmployeeTasksView() {
       .split(/\s+/)
       .filter((word) => word.length > 0).length;
     if (wordCount < 3) {
-      toast({
-        title: "Zu kurz",
-        description: "Bitte schreibe mindestens 3 Wörter in deine Notiz.",
-        variant: "destructive",
-      });
-      return;
+      if (showToast) {
+        toast({
+          title: "Zu kurz",
+          description: "Bitte schreibe mindestens 3 Wörter in deine Notiz.",
+          variant: "destructive",
+        });
+      }
+      return false;
     }
 
     setSavingStepNote(`${taskId}-${stepNumber}`);
@@ -946,15 +948,34 @@ export default function EmployeeTasksView() {
     setSavingStepNote(null);
 
     if (error) {
-      toast({
-        title: "Fehler",
-        description: "Schritt-Notiz konnte nicht gespeichert werden.",
-        variant: "destructive",
-      });
-      return;
+      if (showToast) {
+        toast({
+          title: "Fehler",
+          description: "Schritt-Notiz konnte nicht gespeichert werden.",
+          variant: "destructive",
+        });
+      }
+      return false;
     }
 
-    toast({ title: "Gespeichert", description: `Notiz für Schritt ${stepNumber} gespeichert.` });
+    // Update local task state with the new notes
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId && t.assignment) {
+        return {
+          ...t,
+          assignment: {
+            ...t.assignment,
+            step_notes: updatedNotes
+          } as any
+        };
+      }
+      return t;
+    }));
+
+    if (showToast) {
+      toast({ title: "Gespeichert", description: `Notiz für Schritt ${stepNumber} gespeichert.` });
+    }
+    return true;
   };
 
   const getStepNote = (taskId: string, stepNumber: number): string => {
@@ -1226,17 +1247,10 @@ export default function EmployeeTasksView() {
 
     // For skipKycSms tasks, use simplified logic with 4 steps
     if (skipKycSms) {
-      // Validate step notes for step 1 and above (but not final step)
+      // Save step notes for step 1-3 (not final step)
       if (step >= 1 && step < 4) {
-        if (!validateStepNotes(task.id, step)) {
-          toast({
-            title: "Notiz erforderlich",
-            description: "Bitte schreibe und speichere mindestens 3 Wörter in deine Schritt-Notiz, bevor du fortfährst.",
-            variant: "destructive",
-          });
-          return;
-        }
-        await handleSaveStepNote(task.id, step);
+        const saved = await handleSaveStepNote(task.id, step, true);
+        if (!saved) return; // Validation failed or save error
       }
 
       if (step === 1) {
@@ -1299,17 +1313,10 @@ export default function EmployeeTasksView() {
     }
 
     // Full workflow with KYC/SMS (original logic)
-    // Validate step notes before proceeding (step 1 and above, but not final step)
+    // Save step notes before proceeding (step 1-8, not final step 9)
     if (step >= 1 && step < 9) {
-      if (!validateStepNotes(task.id, step)) {
-        toast({
-          title: "Notiz erforderlich",
-          description: "Bitte schreibe und speichere mindestens 3 Wörter in deine Schritt-Notiz, bevor du fortfährst.",
-          variant: "destructive",
-        });
-        return;
-      }
-      await handleSaveStepNote(task.id, step);
+      const saved = await handleSaveStepNote(task.id, step, true);
+      if (!saved) return; // Validation failed or save error
     }
 
     if (step === 1) {
@@ -2014,10 +2021,9 @@ export default function EmployeeTasksView() {
                       </div>
 
                       {/* Website URL - Show in all steps except step 6 (videochat) for full workflow */}
-                      {selectedTask.web_ident_url && (
+                      {selectedTask.web_ident_url && 
                         // For simplified workflow (4 steps), always show. For full workflow, hide on step 6 (videochat)
-                        ((selectedTask as any).skip_kyc_sms === true || currentStep !== 6)
-                      ) && (
+                        ((selectedTask as any).skip_kyc_sms === true || currentStep !== 6) && (
                         <div className="rounded-xl border overflow-hidden bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5">
                           <div className="p-4 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3 min-w-0">
