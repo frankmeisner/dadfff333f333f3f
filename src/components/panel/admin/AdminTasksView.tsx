@@ -470,10 +470,10 @@ export default function AdminTasksView() {
     // KYC/SMS filter
     switch (kycFilter) {
       case 'with_kyc':
-        filtered = filtered.filter(t => !(t as any).skip_kyc_sms);
+        filtered = filtered.filter(t => !t.skip_kyc_sms);
         break;
       case 'without_kyc':
-        filtered = filtered.filter(t => (t as any).skip_kyc_sms === true);
+        filtered = filtered.filter(t => t.skip_kyc_sms === true);
         break;
     }
     
@@ -796,13 +796,13 @@ export default function AdminTasksView() {
                             +{task.special_compensation.toFixed(0)}€
                           </Badge>
                         )}
-                        {(task as any).skip_kyc_sms && (
+                        {task.skip_kyc_sms && (
                           <Badge className="bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs">
                             Ohne KYC/SMS
                           </Badge>
                         )}
                         {/* Document/KYC Status Badge */}
-                        {!(task as any).skip_kyc_sms && docStatus && (
+                        {!task.skip_kyc_sms && docStatus && (
                           <Badge className={`text-xs gap-1 ${
                             docStatus.rejected > 0 
                               ? 'bg-red-500/20 text-red-700 dark:text-red-400' 
@@ -822,7 +822,7 @@ export default function AdminTasksView() {
                                   : 'Kein Ausweis'}
                           </Badge>
                         )}
-                        {!(task as any).skip_kyc_sms && !docStatus && assignment && (
+                        {!task.skip_kyc_sms && !docStatus && assignment && (
                           <Badge className="bg-muted text-muted-foreground text-xs gap-1">
                             <FileText className="h-3 w-3" />
                             Kein Ausweis
@@ -831,7 +831,7 @@ export default function AdminTasksView() {
                         {/* Workflow Progress Traffic Light */}
                         {assignment && assignment.workflow_step && (
                           (() => {
-                            const isSimplified = (task as any).skip_kyc_sms === true;
+                            const isSimplified = task.skip_kyc_sms === true;
                             const totalSteps = isSimplified ? 4 : 8;
                             const step = assignment.workflow_step;
                             return (
@@ -1244,7 +1244,7 @@ export default function AdminTasksView() {
 
                       {/* Workflow Progress */}
                       {(() => {
-                        const isSimplified = (detailTask as any).skip_kyc_sms === true;
+                        const isSimplified = detailTask.skip_kyc_sms === true;
                         const totalSteps = isSimplified ? 4 : 8;
                         const stepArray = Array.from({ length: totalSteps }, (_, i) => i + 1);
                         return (
