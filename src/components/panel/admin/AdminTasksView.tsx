@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskAssignment, Profile, TaskStatus, TaskPriority } from '@/types/panel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,12 +11,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { taskCreationSchema, validateWithSchema } from '@/lib/validation';
+import { cn } from '@/lib/utils';
 
 const priorityColors: Record<TaskPriority, string> = {
   low: 'bg-slate-500/20 text-slate-700 dark:text-slate-300 border border-slate-500/30 !font-bold',
@@ -87,6 +88,8 @@ export default function AdminTasksView() {
   const [statusRequestDialog, setStatusRequestDialog] = useState<{ open: boolean; task: Task | null; assignee: Profile | null }>({ open: false, task: null, assignee: null });
   const [statusRequestMessage, setStatusRequestMessage] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [recentlyUpdatedNotes, setRecentlyUpdatedNotes] = useState<Set<string>>(new Set());
+  const previousStepNotesRef = useRef<Record<string, Record<string, string>>>({});
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -103,6 +106,41 @@ export default function AdminTasksView() {
     web_ident_url: '',
     skip_kyc_sms: false
   });
+
+  // Track step_notes changes for highlighting
+  useEffect(() => {
+    const newlyUpdated = new Set<string>();
+    
+    assignments.forEach(assignment => {
+      const taskId = assignment.task_id;
+      const currentNotes = assignment.step_notes || {};
+      const previousNotes = previousStepNotesRef.current[taskId] || {};
+      
+      // Check if step_notes changed
+      const currentNotesJson = JSON.stringify(currentNotes);
+      const previousNotesJson = JSON.stringify(previousNotes);
+      
+      if (previousNotesJson !== '{}' && currentNotesJson !== previousNotesJson) {
+        newlyUpdated.add(taskId);
+      }
+      
+      // Update ref for next comparison
+      previousStepNotesRef.current[taskId] = { ...currentNotes };
+    });
+    
+    if (newlyUpdated.size > 0) {
+      setRecentlyUpdatedNotes(prev => new Set([...prev, ...newlyUpdated]));
+      
+      // Clear highlight after 5 seconds
+      setTimeout(() => {
+        setRecentlyUpdatedNotes(prev => {
+          const updated = new Set(prev);
+          newlyUpdated.forEach(id => updated.delete(id));
+          return updated;
+        });
+      }, 5000);
+    }
+  }, [assignments]);
 
   useEffect(() => {
     fetchTasks();
@@ -959,14 +997,34 @@ export default function AdminTasksView() {
                         </div>
                       )}
                       {assignment?.step_notes && Object.keys(assignment.step_notes).length > 0 && (
-                        <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs">
-                          <span className="font-medium text-blue-700 dark:text-blue-400 flex items-center gap-1 mb-1">
-                            <Activity className="h-3 w-3" />
-                            Workflow-Notizen:
+                        <div className={cn(
+                          "p-2 rounded text-xs transition-all duration-500",
+                          recentlyUpdatedNotes.has(task.id) 
+                            ? "bg-emerald-500/20 border-2 border-emerald-500/50 animate-pulse ring-2 ring-emerald-500/30" 
+                            : "bg-blue-500/10 border border-blue-500/20"
+                        )}>
+                          <span className={cn(
+                            "font-medium flex items-center gap-1 mb-1",
+                            recentlyUpdatedNotes.has(task.id) 
+                              ? "text-emerald-700 dark:text-emerald-400" 
+                              : "text-blue-700 dark:text-blue-400"
+                          )}>
+                            {recentlyUpdatedNotes.has(task.id) ? (
+                              <>
+                                <Sparkles className="h-3 w-3 animate-pulse" />
+                                Neue Workflow-Notizen:
+                              </>
+                            ) : (
+                              <>
+                                <Activity className="h-3 w-3" />
+                                Workflow-Notizen:
+                              </>
+                            )}
                           </span>
                           <div className="space-y-1">
                             {Object.entries(assignment.step_notes)
                               .filter(([_, note]) => note && note.trim())
+                              .sort(([a], [b]) => parseInt(a) - parseInt(b))
                               .map(([step, note]) => (
                                 <div key={step} className="flex gap-2">
                                   <span className="text-muted-foreground shrink-0">Schritt {step}:</span>
