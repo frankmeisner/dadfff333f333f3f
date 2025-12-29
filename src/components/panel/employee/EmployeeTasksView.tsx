@@ -1282,7 +1282,16 @@ export default function EmployeeTasksView() {
       }
 
       if (step === 4) {
-        // Final step - complete task
+        // Final step - check for documents before completing
+        if ((taskDocuments[task.id] || 0) <= 0) {
+          handleGoToDocuments(task.id);
+          toast({
+            title: "Nachweis fehlt",
+            description: 'Bitte lade zuerst einen Nachweis in "Dokumente" hoch, bevor du den Auftrag abschließt.',
+            variant: "destructive",
+          });
+          return;
+        }
         await handleCompleteTask(task);
         return;
       }
