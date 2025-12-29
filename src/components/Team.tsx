@@ -25,7 +25,7 @@ const teamMembers = [
   {
     name: "Laura Schreiber",
     role: "HR & People Manager",
-    image: "https://images.unsplash.com/photo-1587614382346-4ec70e388b28?w=400&h=400&fit=crop&crop=face",
+    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face",
     description: "Ihr erster Ansprechpartner für Bewerbungen",
     email: "l.schreiber@fritze-it.solutions",
   },
@@ -39,7 +39,7 @@ const teamMembers = [
   {
     name: "Anna Fischer",
     role: "UX/UI Designerin",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&crop=face",
+    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
     description: "User Experience & Interface Design",
     email: "a.fischer@fritze-it.solutions",
   },
