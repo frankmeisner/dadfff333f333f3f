@@ -1617,7 +1617,7 @@ export default function EmployeeTasksView() {
                             variant="outline"
                             className="bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30"
                           >
-                            Ohne KYC/SMS
+                            Ohne Videochat/SMS
                           </Badge>
                         )}
                       </div>
