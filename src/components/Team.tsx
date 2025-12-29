@@ -27,7 +27,7 @@ const teamMembers = [
   {
     name: "Laura Schreiber",
     role: "HR & People Manager",
-    image: lauraImage,
+    image: annaImage,
     description: "Ihr erster Ansprechpartner für Bewerbungen",
     email: "l.schreiber@fritze-it.solutions",
   },
@@ -41,7 +41,7 @@ const teamMembers = [
   {
     name: "Anna Fischer",
     role: "UX/UI Designerin",
-    image: annaImage,
+    image: lauraImage,
     description: "User Experience & Interface Design",
     email: "a.fischer@fritze-it.solutions",
   },
