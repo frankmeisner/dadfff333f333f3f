@@ -1272,6 +1272,7 @@ export default function EmployeeTasksView() {
             variant: "destructive",
           });
           if (tabContext) {
+            tabContext.setPendingEvaluationTaskId(task.id);
             tabContext.setActiveTab("evaluations");
           }
           return;
@@ -1341,6 +1342,7 @@ export default function EmployeeTasksView() {
           variant: "destructive",
         });
         if (tabContext) {
+          tabContext.setPendingEvaluationTaskId(task.id);
           tabContext.setActiveTab("evaluations");
         }
         return;

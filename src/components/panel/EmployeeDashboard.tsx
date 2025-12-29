@@ -30,6 +30,8 @@ interface TabContextValue {
   setPendingTaskId: (taskId: string | null) => void;
   pendingDocumentType: string | null;
   setPendingDocumentType: (docType: string | null) => void;
+  pendingEvaluationTaskId: string | null;
+  setPendingEvaluationTaskId: (taskId: string | null) => void;
 }
 export const TabContext = createContext<TabContextValue | null>(null);
 export const useTabContext = () => useContext(TabContext);
@@ -69,6 +71,7 @@ export default function EmployeeDashboard() {
   });
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [pendingDocumentType, setPendingDocumentType] = useState<string | null>(null);
+  const [pendingEvaluationTaskId, setPendingEvaluationTaskId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pendingEvaluations, setPendingEvaluations] = useState(0);
@@ -400,7 +403,7 @@ export default function EmployeeDashboard() {
   };
 
   return (
-    <TabContext.Provider value={{ setActiveTab, pendingTaskId, setPendingTaskId, pendingDocumentType, setPendingDocumentType }}>
+    <TabContext.Provider value={{ setActiveTab, pendingTaskId, setPendingTaskId, pendingDocumentType, setPendingDocumentType, pendingEvaluationTaskId, setPendingEvaluationTaskId }}>
       <div className="min-h-screen bg-background flex w-full">
         <PanelSidebar
           sections={menuSections}
