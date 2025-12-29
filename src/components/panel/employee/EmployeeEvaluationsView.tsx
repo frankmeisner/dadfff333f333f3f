@@ -33,13 +33,17 @@ interface Task {
   status: string;
 }
 
+interface PendingTask extends Task {
+  hasStaleEvaluation: boolean; // True if an old evaluation exists but is outdated
+}
+
 interface EvaluationWithTask extends TaskEvaluation {
   task: Task;
 }
 
 export default function EmployeeEvaluationsView() {
   const [evaluations, setEvaluations] = useState<EvaluationWithTask[]>([]);
-  const [pendingTasks, setPendingTasks] = useState<Task[]>([]);
+  const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
     design_rating: string;
@@ -164,21 +168,29 @@ export default function EmployeeEvaluationsView() {
     // A task needs a new evaluation if:
     // 1. It has no evaluation at all, OR
     // 2. The latest evaluation was created BEFORE the task was accepted (stale evaluation)
-    const pendingTaskIds = taskIds.filter((taskId) => {
+    const pendingTasksWithStaleInfo: { taskId: string; hasStaleEvaluation: boolean }[] = [];
+    
+    taskIds.forEach((taskId) => {
       const latestEvalDate = evalsByTask.get(taskId);
       const acceptedAt = acceptedAtByTask.get(taskId);
       
-      if (!latestEvalDate) return true; // No evaluation exists
-      if (!acceptedAt) return true; // Edge case: should always have accepted_at
-      
-      // If the evaluation was created before the task was accepted, it's stale
-      return new Date(latestEvalDate) < new Date(acceptedAt);
+      if (!latestEvalDate) {
+        // No evaluation exists
+        pendingTasksWithStaleInfo.push({ taskId, hasStaleEvaluation: false });
+      } else if (acceptedAt && new Date(latestEvalDate) < new Date(acceptedAt)) {
+        // Stale evaluation - was created before task was accepted
+        pendingTasksWithStaleInfo.push({ taskId, hasStaleEvaluation: true });
+      }
+      // Otherwise, task has a valid recent evaluation - skip
     });
 
-    if (pendingTaskIds.length === 0) {
+    if (pendingTasksWithStaleInfo.length === 0) {
       setPendingTasks([]);
       return;
     }
+
+    const pendingTaskIds = pendingTasksWithStaleInfo.map(p => p.taskId);
+    const staleMap = new Map(pendingTasksWithStaleInfo.map(p => [p.taskId, p.hasStaleEvaluation]));
 
     const { data: tasks } = await supabase
       .from('tasks')
@@ -187,7 +199,12 @@ export default function EmployeeEvaluationsView() {
       .neq('status', 'completed')
       .neq('status', 'cancelled');
 
-    setPendingTasks(tasks || []);
+    const enrichedTasks: PendingTask[] = (tasks || []).map(t => ({
+      ...t,
+      hasStaleEvaluation: staleMap.get(t.id) || false
+    }));
+
+    setPendingTasks(enrichedTasks);
   };
 
   const handleSaveNew = async () => {
@@ -307,7 +324,11 @@ export default function EmployeeEvaluationsView() {
               <AlertCircle className="h-5 w-5" />
               Offene Bewertungen
             </CardTitle>
-            <CardDescription>Diese Aufträge haben noch keine Bewertung.</CardDescription>
+            <CardDescription>
+              {pendingTasks.some(t => t.hasStaleEvaluation) 
+                ? 'Für diese Aufträge wird eine neue Bewertung benötigt.'
+                : 'Diese Aufträge haben noch keine Bewertung.'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -316,21 +337,43 @@ export default function EmployeeEvaluationsView() {
                   key={t.id}
                   variant={newEvalTaskId === t.id ? 'default' : 'outline'}
                   size="sm"
+                  className={cn(
+                    t.hasStaleEvaluation && newEvalTaskId !== t.id && 'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
+                  )}
                   onClick={() => {
                     setNewEvalTaskId(t.id);
                     setNewEvalForm({ design_rating: '', usability_rating: '', overall_rating: '', comment: '' });
                   }}
                 >
+                  {t.hasStaleEvaluation && <Edit2 className="h-3 w-3 mr-1" />}
                   {t.title}
+                  {t.hasStaleEvaluation && (
+                    <Badge variant="secondary" className="ml-2 text-[10px] px-1 py-0 bg-orange-200 dark:bg-orange-800 text-orange-700 dark:text-orange-300">
+                      Neue nötig
+                    </Badge>
+                  )}
                 </Button>
               ))}
             </div>
 
-            {newEvalTaskId && (
-              <div className="mt-4 p-4 border rounded-lg bg-background space-y-4">
-                <h4 className="font-medium">
-                  Neue Bewertung für: {pendingTasks.find((t) => t.id === newEvalTaskId)?.title}
-                </h4>
+            {newEvalTaskId && (() => {
+              const selectedTask = pendingTasks.find((t) => t.id === newEvalTaskId);
+              return (
+                <div className="mt-4 p-4 border rounded-lg bg-background space-y-4">
+                  {selectedTask?.hasStaleEvaluation && (
+                    <div className="p-3 rounded-lg bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 text-sm text-orange-800 dark:text-orange-300 flex items-start gap-2">
+                      <Edit2 className="h-4 w-4 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="font-medium">Neue Bewertung erforderlich</p>
+                        <p className="text-orange-700 dark:text-orange-400">
+                          Du hast diesen Auftrag bereits früher bewertet. Da du ihn erneut bearbeitest, ist eine aktuelle Bewertung nötig.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <h4 className="font-medium">
+                    Neue Bewertung für: {selectedTask?.title}
+                  </h4>
 
                 <RatingRadioGroup
                   label="Design (1–5)"
@@ -368,7 +411,8 @@ export default function EmployeeEvaluationsView() {
                   </Button>
                 </div>
               </div>
-            )}
+              );
+            })()}
           </CardContent>
         </Card>
       )}
