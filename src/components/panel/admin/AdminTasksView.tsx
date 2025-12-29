@@ -830,14 +830,21 @@ export default function AdminTasksView() {
                         )}
                         {/* Workflow Progress Traffic Light */}
                         {assignment && assignment.workflow_step && (
-                          <div className="flex items-center gap-1 ml-1" title={`Schritt ${assignment.workflow_step}/9`}>
-                            <CircleDot className={`h-4 w-4 ${
-                              assignment.workflow_step <= 2 ? 'text-red-500' :
-                              assignment.workflow_step <= 5 ? 'text-yellow-500' :
-                              'text-green-500'
-                            }`} />
-                            <span className="text-xs text-muted-foreground">{assignment.workflow_step}/9</span>
-                          </div>
+                          (() => {
+                            const isSimplified = (task as any).skip_kyc_sms === true;
+                            const totalSteps = isSimplified ? 4 : 8;
+                            const step = assignment.workflow_step;
+                            return (
+                              <div className="flex items-center gap-1 ml-1" title={`Schritt ${step}/${totalSteps}`}>
+                                <CircleDot className={`h-4 w-4 ${
+                                  isSimplified 
+                                    ? (step <= 1 ? 'text-red-500' : step <= 2 ? 'text-yellow-500' : 'text-green-500')
+                                    : (step <= 2 ? 'text-red-500' : step <= 5 ? 'text-yellow-500' : 'text-green-500')
+                                }`} />
+                                <span className="text-xs text-muted-foreground">{step}/{totalSteps}</span>
+                              </div>
+                            );
+                          })()
                         )}
                       </div>
                     </div>
@@ -1236,22 +1243,29 @@ export default function AdminTasksView() {
                       </div>
 
                       {/* Workflow Progress */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Workflow-Fortschritt</span>
-                          <span className="font-medium">Schritt {workflowStep} / 8</span>
-                        </div>
-                        <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5, 6, 7, 8].map((step) => (
-                            <div
-                              key={step}
-                              className={`flex-1 h-2 rounded-full ${
-                                step < workflowStep ? 'bg-emerald-500' : step === workflowStep ? 'bg-emerald-500/60' : 'bg-muted'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      {(() => {
+                        const isSimplified = (detailTask as any).skip_kyc_sms === true;
+                        const totalSteps = isSimplified ? 4 : 8;
+                        const stepArray = Array.from({ length: totalSteps }, (_, i) => i + 1);
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Workflow-Fortschritt</span>
+                              <span className="font-medium">Schritt {workflowStep} / {totalSteps}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              {stepArray.map((step) => (
+                                <div
+                                  key={step}
+                                  className={`flex-1 h-2 rounded-full ${
+                                    step < workflowStep ? 'bg-emerald-500' : step === workflowStep ? 'bg-emerald-500/60' : 'bg-muted'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Video Chat Decision */}
                       <div className="flex items-center gap-3 p-3 bg-background/50 rounded-lg">
