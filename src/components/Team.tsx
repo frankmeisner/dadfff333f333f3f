@@ -1,4 +1,6 @@
 import { Linkedin, Mail } from "lucide-react";
+import annaImage from "@/assets/team/anna-fischer.jpg";
+import lauraImage from "@/assets/team/laura-schreiber.png";
 
 const teamMembers = [
   {
@@ -25,7 +27,7 @@ const teamMembers = [
   {
     name: "Laura Schreiber",
     role: "HR & People Manager",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face",
+    image: lauraImage,
     description: "Ihr erster Ansprechpartner für Bewerbungen",
     email: "l.schreiber@fritze-it.solutions",
   },
@@ -39,7 +41,7 @@ const teamMembers = [
   {
     name: "Anna Fischer",
     role: "UX/UI Designerin",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face",
+    image: annaImage,
     description: "User Experience & Interface Design",
     email: "a.fischer@fritze-it.solutions",
   },
