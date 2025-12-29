@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { CheckCircle2, Circle, Sparkles } from 'lucide-react';
+import { forwardRef } from 'react';
 
 // Import workflow step images
 import step1Image from '@/assets/workflow/step-1-website.jpg';
@@ -12,9 +13,8 @@ import step7Image from '@/assets/workflow/step-6-documents.jpg';
 import step8Image from '@/assets/workflow/step-7-upload.jpg';
 import step9Image from '@/assets/workflow/step-8-complete.jpg';
 
-const TOTAL_STEPS = 9;
-
-const stepImages: Record<number, string> = {
+// Step images for full workflow (9 steps)
+const stepImagesForFull: Record<number, string> = {
   1: step1Image,
   2: step2Image,
   3: step3Image,
@@ -24,6 +24,14 @@ const stepImages: Record<number, string> = {
   7: step7Image,
   8: step8Image,
   9: step9Image,
+};
+
+// Step images for simplified workflow (4 steps - without KYC/SMS)
+const stepImagesForSimplified: Record<number, string> = {
+  1: step1Image,  // Webseite erkunden
+  2: step2Image,  // Deine Meinung abgeben
+  3: step8Image,  // Nachweis hochladen (was step 8)
+  4: step9Image,  // Fertig! (was step 9)
 };
 
 const stepColors: Record<number, { bg: string; accent: string; glow: string }> = {
@@ -38,7 +46,8 @@ const stepColors: Record<number, { bg: string; accent: string; glow: string }> =
   9: { bg: 'from-green-500/10 to-green-600/5', accent: 'text-green-500', glow: 'shadow-green-500/20' },
 };
 
-const motivationalMessages: Record<number, string> = {
+// Motivational messages for full workflow
+const motivationalMessagesFull: Record<number, string> = {
   1: 'Los geht\'s! Nimm dir Zeit für eine gründliche Analyse.',
   2: 'Deine Meinung zählt! Teile deine ehrliche Einschätzung.',
   3: 'Fast geschafft mit der Vorarbeit! Nur noch die Entscheidung.',
@@ -50,6 +59,14 @@ const motivationalMessages: Record<number, string> = {
   9: 'Fantastisch! Du hast es fast geschafft! 🎉',
 };
 
+// Motivational messages for simplified workflow (4 steps)
+const motivationalMessagesSimplified: Record<number, string> = {
+  1: 'Los geht\'s! Nimm dir Zeit für eine gründliche Analyse.',
+  2: 'Deine Meinung zählt! Teile deine ehrliche Einschätzung.',
+  3: 'Letzter Schritt! Lade deine Nachweise hoch.',
+  4: 'Fantastisch! Du hast es fast geschafft! 🎉',
+};
+
 interface WorkflowStepCardProps {
   step: {
     number: number;
@@ -57,23 +74,30 @@ interface WorkflowStepCardProps {
     description: string;
   };
   currentStep: number;
+  totalSteps: number;
+  isSimplified?: boolean;
   isExpanded?: boolean;
   onClick?: () => void;
 }
 
-export default function WorkflowStepCard({ 
+const WorkflowStepCard = forwardRef<HTMLDivElement, WorkflowStepCardProps>(({ 
   step, 
-  currentStep, 
+  currentStep,
+  totalSteps,
+  isSimplified = false,
   isExpanded = false,
   onClick 
-}: WorkflowStepCardProps) {
+}, ref) => {
   const isDone = step.number < currentStep;
   const isActive = step.number === currentStep;
   const colors = stepColors[step.number] || stepColors[1];
+  const stepImages = isSimplified ? stepImagesForSimplified : stepImagesForFull;
   const stepImage = stepImages[step.number];
+  const motivationalMessages = isSimplified ? motivationalMessagesSimplified : motivationalMessagesFull;
 
   return (
     <div
+      ref={ref}
       onClick={onClick}
       className={cn(
         'relative rounded-2xl border transition-all duration-500 cursor-pointer overflow-hidden group',
@@ -160,14 +184,14 @@ export default function WorkflowStepCard({
               className="w-full h-32 object-cover opacity-90 group-hover:opacity-100 transition-opacity"
             />
             <div className="absolute bottom-4 right-4 px-2 py-1 bg-background/80 backdrop-blur-sm rounded-lg text-xs font-medium text-muted-foreground">
-              Schritt {step.number} von {TOTAL_STEPS}
+              Schritt {step.number} von {totalSteps}
             </div>
           </div>
         )}
       </div>
 
       {/* Progress line connector */}
-      {step.number < TOTAL_STEPS && (
+      {step.number < totalSteps && (
         <div className={cn(
           'absolute left-9 top-[4.5rem] w-0.5 h-6 -translate-x-1/2',
           isDone ? 'bg-primary' : 'bg-border'
@@ -175,4 +199,8 @@ export default function WorkflowStepCard({
       )}
     </div>
   );
-}
+});
+
+WorkflowStepCard.displayName = 'WorkflowStepCard';
+
+export default WorkflowStepCard;
