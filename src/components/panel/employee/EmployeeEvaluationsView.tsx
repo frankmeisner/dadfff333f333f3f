@@ -59,6 +59,7 @@ export default function EmployeeEvaluationsView() {
     overall_rating: string;
     comment: string;
   }>({ design_rating: '', usability_rating: '', overall_rating: '', comment: '' });
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const tabContext = useTabContext();
@@ -244,10 +245,20 @@ export default function EmployeeEvaluationsView() {
       return;
     }
 
-    toast({ title: 'Gespeichert', description: 'Bewertung erfolgreich gespeichert.' });
+    // Show success animation
+    setShowSuccessAnimation(true);
     setNewEvalTaskId(null);
     setNewEvalForm({ design_rating: '', usability_rating: '', overall_rating: '', comment: '' });
     fetchEvaluations();
+    fetchPendingTasks();
+
+    // Redirect back to tasks after animation
+    setTimeout(() => {
+      setShowSuccessAnimation(false);
+      if (tabContext) {
+        tabContext.setActiveTab("tasks");
+      }
+    }, 2000);
     fetchPendingTasks();
   };
 
@@ -325,7 +336,22 @@ export default function EmployeeEvaluationsView() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Success Animation Overlay */}
+      {showSuccessAnimation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+          <div className="flex flex-col items-center gap-4 animate-scale-in">
+            <div className="rounded-full bg-green-500 p-6 shadow-lg shadow-green-500/30">
+              <CheckCircle2 className="h-16 w-16 text-white animate-[pulse_1s_ease-in-out_infinite]" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-green-600 dark:text-green-400">Bewertung gespeichert!</h3>
+              <p className="text-muted-foreground mt-1">Du wirst zum Auftrag weitergeleitet...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Bewertungsbögen</h2>
         <p className="text-muted-foreground">Hier findest du alle deine strukturierten Auftragsbewertungen.</p>
