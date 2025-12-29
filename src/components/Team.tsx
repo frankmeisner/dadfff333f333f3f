@@ -16,11 +16,11 @@ const teamMembers = [
     email: "s.weber@fritze-it.solutions",
   },
   {
-    name: "Kevin Nguyen",
+    name: "Felix Hartmann",
     role: "Lead Developer",
     image: "https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?w=400&h=500&fit=crop&crop=face&facepad=2",
     description: "Full-Stack Entwicklung & Cloud-Architektur",
-    email: "k.nguyen@fritze-it.solutions",
+    email: "f.hartmann@fritze-it.solutions",
   },
   {
     name: "Lisa Hoffmann",
