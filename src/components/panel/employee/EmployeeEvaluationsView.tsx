@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useTabContext } from '@/components/panel/EmployeeDashboard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -60,6 +61,7 @@ export default function EmployeeEvaluationsView() {
   }>({ design_rating: '', usability_rating: '', overall_rating: '', comment: '' });
   const { user } = useAuth();
   const { toast } = useToast();
+  const tabContext = useTabContext();
 
   useEffect(() => {
     if (user) {
@@ -102,6 +104,19 @@ export default function EmployeeEvaluationsView() {
       };
     }
   }, [user]);
+
+  // Auto-select task when coming from workflow redirect
+  useEffect(() => {
+    if (tabContext?.pendingEvaluationTaskId && pendingTasks.length > 0) {
+      const targetTask = pendingTasks.find(t => t.id === tabContext.pendingEvaluationTaskId);
+      if (targetTask) {
+        setNewEvalTaskId(targetTask.id);
+        setNewEvalForm({ design_rating: '', usability_rating: '', overall_rating: '', comment: '' });
+      }
+      // Clear the pending evaluation task ID after processing
+      tabContext.setPendingEvaluationTaskId(null);
+    }
+  }, [tabContext?.pendingEvaluationTaskId, pendingTasks]);
 
   const fetchEvaluations = async () => {
     if (!user) return;
