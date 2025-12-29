@@ -1151,24 +1151,21 @@ export default function EmployeeTasksView() {
   ) => {
     const current = getWorkflowStep(task);
     const skipKycSms = (task as any).skip_kyc_sms === true;
+    const maxSteps = skipKycSms ? 4 : TOTAL_WORKFLOW_STEPS;
 
     // Allow going back or forward by 1
-    if (nextStep < 1 || nextStep > TOTAL_WORKFLOW_STEPS) {
+    if (nextStep < 1 || nextStep > maxSteps) {
       return;
     }
 
     // Only enforce forward progression for nextStep > current
-    // Exception: For skipKycSms tasks, allow jumping from step 2 to step 7
     if (nextStep > current && nextStep !== current + 1) {
-      // Allow skip from step 2 to step 7 for skipKycSms tasks
-      if (!(skipKycSms && current === 2 && nextStep === 7)) {
-        toast({
-          title: "Reihenfolge beachten",
-          description: `Bitte bearbeite die Schritte strikt der Reihe nach (1 bis ${TOTAL_WORKFLOW_STEPS}).`,
-          variant: "destructive",
-        });
-        return;
-      }
+      toast({
+        title: "Reihenfolge beachten",
+        description: `Bitte bearbeite die Schritte strikt der Reihe nach (1 bis ${maxSteps}).`,
+        variant: "destructive",
+      });
+      return;
     }
 
     await updateWorkflow(task.id, { workflow_step: nextStep, ...extra });
@@ -1184,15 +1181,9 @@ export default function EmployeeTasksView() {
 
   const handleGoBackStep = async (task: TaskWithDetails) => {
     const currentStep = getWorkflowStep(task);
-    const skipKycSms = (task as any).skip_kyc_sms === true;
     
     if (currentStep > 1) {
-      // For skip_kyc_sms tasks, when going back from step 7, go to step 2 instead of step 6
-      if (skipKycSms && currentStep === 7) {
-        await updateWorkflow(task.id, { workflow_step: 2 });
-      } else {
-        await updateWorkflow(task.id, { workflow_step: currentStep - 1 });
-      }
+      await updateWorkflow(task.id, { workflow_step: currentStep - 1 });
     }
   };
 
@@ -1224,9 +1215,70 @@ export default function EmployeeTasksView() {
   const handlePrimaryStepAction = async (task: TaskWithDetails) => {
     const step = getWorkflowStep(task);
     const skipKycSms = (task as any).skip_kyc_sms === true;
+    const totalSteps = getTotalStepsForTask(task);
 
-    // Validate step notes before proceeding (step 2 and above, but not step 1)
-    // For step 2, always require note validation before proceeding
+    // For skipKycSms tasks, use simplified logic with 4 steps
+    if (skipKycSms) {
+      // Validate step notes for step 2+ (but not step 1 or final step)
+      if (step >= 2 && step < 4) {
+        if (!validateStepNotes(task.id, step)) {
+          toast({
+            title: "Notiz erforderlich",
+            description: "Bitte schreibe und speichere mindestens 3 Wörter in deine Schritt-Notiz, bevor du fortfährst.",
+            variant: "destructive",
+          });
+          return;
+        }
+        await handleSaveStepNote(task.id, step);
+      }
+
+      if (step === 1) {
+        await setWorkflowStep(task, 2);
+        return;
+      }
+
+      if (step === 2) {
+        const hasEvaluation = taskEvaluations[task.id];
+        if (!hasEvaluation) {
+          toast({
+            title: "Bewertungsbogen ausfüllen",
+            description: 'Bitte gehe zum Tab „Bewertungsbögen" und fülle deine Bewertung aus.',
+            variant: "destructive",
+          });
+          if (tabContext) {
+            tabContext.setActiveTab("evaluations");
+          }
+          return;
+        }
+        await setWorkflowStep(task, 3);
+        return;
+      }
+
+      if (step === 3) {
+        // Step 3 for skipKycSms: Upload proof - check for documents
+        if ((taskDocuments[task.id] || 0) <= 0) {
+          handleGoToDocuments(task.id);
+          toast({
+            title: "Nachweis fehlt",
+            description: 'Bitte lade zuerst einen Nachweis in "Dokumente" hoch.',
+            variant: "destructive",
+          });
+          return;
+        }
+        await setWorkflowStep(task, 4);
+        return;
+      }
+
+      if (step === 4) {
+        // Final step - complete task
+        await handleCompleteTask(task);
+        return;
+      }
+      return;
+    }
+
+    // Full workflow with KYC/SMS (original logic)
+    // Validate step notes before proceeding (step 2 and above, but not step 1 or final)
     if (step >= 2 && step < 9) {
       if (!validateStepNotes(task.id, step)) {
         toast({
@@ -1236,7 +1288,6 @@ export default function EmployeeTasksView() {
         });
         return;
       }
-      // Save the note before proceeding
       await handleSaveStepNote(task.id, step);
     }
 
@@ -1256,11 +1307,6 @@ export default function EmployeeTasksView() {
         if (tabContext) {
           tabContext.setActiveTab("evaluations");
         }
-        return;
-      }
-      // If skip_kyc_sms, go directly to step 7 (Unterlagen abwarten) - NO toast message
-      if (skipKycSms) {
-        await setWorkflowStep(task, 7);
         return;
       }
       await setWorkflowStep(task, 3);
@@ -1363,62 +1409,109 @@ export default function EmployeeTasksView() {
 
   // Task workflow steps based on images
 
-  const getTaskSteps = (task: TaskWithDetails) => [
-    {
-      number: 1,
-      title: "Webseite erkunden",
-      description:
-        "Schau dir die Internetseite in Ruhe an. Achte auf den ersten Eindruck, wie übersichtlich alles ist und wie dir das Design gefällt. Nimm dir ruhig ein paar Minuten Zeit dafür.",
-    },
-    {
-      number: 2,
-      title: "Deine Meinung abgeben",
-      description:
-        "Jetzt kannst du deine ehrliche Meinung zur Webseite abgeben. Fülle den kurzen Fragebogen aus - es geht um Design, Übersichtlichkeit und deinen Gesamteindruck.",
-    },
-    {
-      number: 3,
-      title: "Videochat: Ja oder Nein?",
-      description:
-        "Möchtest du den digitalen Ablauf mit einem kurzen Videochat testen? Das dauert nur wenige Minuten und ist komplett anonym. Du entscheidest selbst!",
-    },
-    {
-      number: 4,
-      title: "Ausweis fotografieren",
-      description:
-        "Mach ein Foto von Vorder- und Rückseite deines Ausweises. Achte darauf, dass alles gut lesbar ist. Die Bilder werden nur intern geprüft.",
-    },
-    {
-      number: 5,
-      title: "Zugangsdaten erhalten",
-      description:
-        "Super! Die Demo-Zugangsdaten erscheinen gleich hier. Werktags zwischen 9-18 Uhr bekommst du sie meist innerhalb von 30 Minuten.",
-    },
-    {
-      number: 6,
-      title: "Videochat starten",
-      description:
-        "Jetzt geht's los! Starte den Videochat auf der externen Seite. Der Vorgang dauert etwa 5 Minuten und lässt sich problemlos über Laptop oder Smartphone durchführen.",
-    },
-    {
-      number: 7,
-      title: "Abschluss & Eindruck",
-      description:
-        "Geschafft! Fasse kurz deinen Eindruck vom gesamten Ablauf zusammen. Was hat dir gefallen? Was könnte besser sein?",
-    },
-    {
-      number: 8,
-      title: "Nachweis hochladen",
-      description:
-        "Fast fertig! Lade noch einen Nachweis (Screenshot oder Foto) hoch, damit wir sehen können, dass alles geklappt hat.",
-    },
-    {
-      number: 9,
-      title: "Fertig! 🎉",
-      description:
-        "Herzlichen Glückwunsch! Du kannst den Auftrag jetzt abschließen. Die Arbeitszeit wird dir gutgeschrieben.",
-    },
-  ];
+  const getTaskSteps = (task: TaskWithDetails) => {
+    const skipKycSms = (task as any).skip_kyc_sms === true;
+    
+    if (skipKycSms) {
+      // Simplified workflow for tasks without KYC/SMS - only 4 steps
+      return [
+        {
+          number: 1,
+          title: "Webseite erkunden",
+          description:
+            "Schau dir die Internetseite in Ruhe an. Achte auf den ersten Eindruck, wie übersichtlich alles ist und wie dir das Design gefällt. Nimm dir ruhig ein paar Minuten Zeit dafür.",
+        },
+        {
+          number: 2,
+          title: "Deine Meinung abgeben",
+          description:
+            "Jetzt kannst du deine ehrliche Meinung zur Webseite abgeben. Fülle den kurzen Fragebogen aus - es geht um Design, Übersichtlichkeit und deinen Gesamteindruck.",
+        },
+        {
+          number: 3,
+          title: "Nachweis hochladen",
+          description:
+            "Fast fertig! Lade noch einen Nachweis (Screenshot oder Foto) hoch, damit wir sehen können, dass alles geklappt hat.",
+        },
+        {
+          number: 4,
+          title: "Fertig! 🎉",
+          description:
+            "Herzlichen Glückwunsch! Du kannst den Auftrag jetzt abschließen. Die Arbeitszeit wird dir gutgeschrieben.",
+        },
+      ];
+    }
+    
+    // Full workflow with KYC/SMS - 9 steps
+    return [
+      {
+        number: 1,
+        title: "Webseite erkunden",
+        description:
+          "Schau dir die Internetseite in Ruhe an. Achte auf den ersten Eindruck, wie übersichtlich alles ist und wie dir das Design gefällt. Nimm dir ruhig ein paar Minuten Zeit dafür.",
+      },
+      {
+        number: 2,
+        title: "Deine Meinung abgeben",
+        description:
+          "Jetzt kannst du deine ehrliche Meinung zur Webseite abgeben. Fülle den kurzen Fragebogen aus - es geht um Design, Übersichtlichkeit und deinen Gesamteindruck.",
+      },
+      {
+        number: 3,
+        title: "Videochat: Ja oder Nein?",
+        description:
+          "Möchtest du den digitalen Ablauf mit einem kurzen Videochat testen? Das dauert nur wenige Minuten und ist komplett anonym. Du entscheidest selbst!",
+      },
+      {
+        number: 4,
+        title: "Ausweis fotografieren",
+        description:
+          "Mach ein Foto von Vorder- und Rückseite deines Ausweises. Achte darauf, dass alles gut lesbar ist. Die Bilder werden nur intern geprüft.",
+      },
+      {
+        number: 5,
+        title: "Zugangsdaten erhalten",
+        description:
+          "Super! Die Demo-Zugangsdaten erscheinen gleich hier. Werktags zwischen 9-18 Uhr bekommst du sie meist innerhalb von 30 Minuten.",
+      },
+      {
+        number: 6,
+        title: "Videochat starten",
+        description:
+          "Jetzt geht's los! Starte den Videochat auf der externen Seite. Der Vorgang dauert etwa 5 Minuten und lässt sich problemlos über Laptop oder Smartphone durchführen.",
+      },
+      {
+        number: 7,
+        title: "Abschluss & Eindruck",
+        description:
+          "Geschafft! Fasse kurz deinen Eindruck vom gesamten Ablauf zusammen. Was hat dir gefallen? Was könnte besser sein?",
+      },
+      {
+        number: 8,
+        title: "Nachweis hochladen",
+        description:
+          "Fast fertig! Lade noch einen Nachweis (Screenshot oder Foto) hoch, damit wir sehen können, dass alles geklappt hat.",
+      },
+      {
+        number: 9,
+        title: "Fertig! 🎉",
+        description:
+          "Herzlichen Glückwunsch! Du kannst den Auftrag jetzt abschließen. Die Arbeitszeit wird dir gutgeschrieben.",
+      },
+    ];
+  };
+  
+  // Get total steps for a task (depends on skipKycSms)
+  const getTotalStepsForTask = (task: TaskWithDetails) => {
+    const skipKycSms = (task as any).skip_kyc_sms === true;
+    return skipKycSms ? 3 : TOTAL_WORKFLOW_STEPS; // 3 for simplified (step 4 is completion), 8 for full
+  };
+  
+  // Get estimated time for a task
+  const getEstimatedTime = (task: TaskWithDetails) => {
+    const skipKycSms = (task as any).skip_kyc_sms === true;
+    return skipKycSms ? "30 Min." : "2h";
+  };
 
   return (
     <div className="space-y-6">
@@ -1605,7 +1698,7 @@ export default function EmployeeTasksView() {
                   <div className="px-4 py-2">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      <span>Geschätzt: 5h</span>
+                      <span>Geschätzt: {getEstimatedTime(task)}</span>
                     </div>
                   </div>
 
@@ -1928,7 +2021,13 @@ export default function EmployeeTasksView() {
 
                           return (
                             <div id={`workflow-step-${currentStep}`} className="space-y-4">
-                              <WorkflowStepCard step={currentStepData} currentStep={currentStep} isExpanded={true} />
+                              <WorkflowStepCard 
+                                step={currentStepData} 
+                                currentStep={currentStep} 
+                                totalSteps={getTaskSteps(selectedTask).length}
+                                isSimplified={(selectedTask as any).skip_kyc_sms === true}
+                                isExpanded={true} 
+                              />
                             </div>
                           );
                         })()}
