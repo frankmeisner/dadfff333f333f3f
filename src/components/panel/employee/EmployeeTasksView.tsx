@@ -1296,7 +1296,10 @@ export default function EmployeeTasksView() {
       }
 
       if (step === 4) {
-        // Final step - check for documents before completing
+        // Final step - require a saved note AND documents before completing
+        const saved = await handleSaveStepNote(task.id, 4, true);
+        if (!saved) return;
+
         if ((taskDocuments[task.id] || 0) <= 0) {
           handleGoToDocuments(task.id);
           toast({
