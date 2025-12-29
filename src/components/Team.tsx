@@ -25,7 +25,7 @@ const teamMembers = [
   {
     name: "Mei Lin Chen",
     role: "HR & People Manager",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face",
+    image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face",
     description: "Ihr erster Ansprechpartner für Bewerbungen",
     email: "m.chen@fritze-it.solutions",
   },
@@ -39,7 +39,7 @@ const teamMembers = [
   {
     name: "Anna Fischer",
     role: "UX/UI Designerin",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face",
+    image: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&h=400&fit=crop&crop=face",
     description: "User Experience & Interface Design",
     email: "a.fischer@fritze-it.solutions",
   },
