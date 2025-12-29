@@ -1179,8 +1179,15 @@ export default function EmployeeTasksView() {
 
   const handleGoBackStep = async (task: TaskWithDetails) => {
     const currentStep = getWorkflowStep(task);
+    const skipKycSms = (task as any).skip_kyc_sms === true;
+    
     if (currentStep > 1) {
-      await updateWorkflow(task.id, { workflow_step: currentStep - 1 });
+      // For skip_kyc_sms tasks, when going back from step 7, go to step 2 instead of step 6
+      if (skipKycSms && currentStep === 7) {
+        await updateWorkflow(task.id, { workflow_step: 2 });
+      } else {
+        await updateWorkflow(task.id, { workflow_step: currentStep - 1 });
+      }
     }
   };
 
@@ -1213,8 +1220,9 @@ export default function EmployeeTasksView() {
     const step = getWorkflowStep(task);
     const skipKycSms = (task as any).skip_kyc_sms === true;
 
-    // Validate step notes before proceeding (except for step 1 as it's the first step)
-    if (step > 1 && step < 9) {
+    // Validate step notes before proceeding (step 2 and above, but not step 1)
+    // For step 2, always require note validation before proceeding
+    if (step >= 2 && step < 9) {
       if (!validateStepNotes(task.id, step)) {
         toast({
           title: "Notiz erforderlich",
@@ -1223,6 +1231,8 @@ export default function EmployeeTasksView() {
         });
         return;
       }
+      // Save the note before proceeding
+      await handleSaveStepNote(task.id, step);
     }
 
     if (step === 1) {
@@ -1243,13 +1253,9 @@ export default function EmployeeTasksView() {
         }
         return;
       }
-      // If skip_kyc_sms, go directly to step 7 (Unterlagen abwarten)
+      // If skip_kyc_sms, go directly to step 7 (Unterlagen abwarten) - NO toast message
       if (skipKycSms) {
         await setWorkflowStep(task, 7);
-        toast({
-          title: "Vereinfachter Ablauf",
-          description: "Dieser Auftrag erfordert kein KYC/SMS. Du kannst direkt fortfahren.",
-        });
         return;
       }
       await setWorkflowStep(task, 3);
@@ -1931,7 +1937,7 @@ export default function EmployeeTasksView() {
                           </h4>
                           <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
                             {taskEvaluations[selectedTask.id]
-                              ? "Bewertung wurde ausgefüllt. Du kannst jetzt zum nächsten Schritt."
+                              ? 'Bewertung wurde ausgefüllt. Schreibe eine Notiz und klicke auf "Speichern & Weiter".'
                               : 'Bitte gehe zum Tab „Bewertungsbögen", um deine strukturierte Bewertung für diesen Auftrag einzutragen.'}
                           </p>
                           <div className="flex gap-2 flex-wrap">
@@ -1948,18 +1954,12 @@ export default function EmployeeTasksView() {
                                 Zum Bewertungsbogen
                               </Button>
                             )}
-                            {taskEvaluations[selectedTask.id] && (
-                              <Button onClick={() => setWorkflowStep(selectedTask, 3)} className="gap-2">
-                                <CheckCircle2 className="h-4 w-4" />
-                                Bewertung ausgefüllt → Weiter
-                              </Button>
-                            )}
                           </div>
                         </div>
                       )}
 
-                      {/* Video Chat Status Section - Only show when NOT on step 6 */}
-                      {currentStep !== 6 && (
+                      {/* Video Chat Status Section - Only show when NOT on step 6 and NOT skip_kyc_sms */}
+                      {currentStep !== 6 && (selectedTask as any).skip_kyc_sms !== true && (
                         <div className="p-4 bg-muted/30 rounded-lg border">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -2869,6 +2869,68 @@ export default function EmployeeTasksView() {
                                 Gesamteindruck zusammen.
                               </p>
                             </div>
+
+                            {/* Demo Credentials for skip_kyc_sms tasks */}
+                            {(selectedTask as any).skip_kyc_sms === true && (selectedTask.test_email || selectedTask.test_password) && (
+                              <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 space-y-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Key className="h-4 w-4 text-primary" />
+                                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">
+                                    Demo-Zugangsdaten
+                                  </span>
+                                </div>
+
+                                {selectedTask.test_email && (
+                                  <div
+                                    className="flex items-center gap-3 p-3 bg-background/80 rounded-lg cursor-pointer hover:bg-background transition-colors group"
+                                    onClick={async () => {
+                                      await navigator.clipboard.writeText(selectedTask.test_email!);
+                                      toast({
+                                        title: "Kopiert!",
+                                        description: "E-Mail in Zwischenablage kopiert.",
+                                      });
+                                    }}
+                                  >
+                                    <Mail className="h-4 w-4 text-primary" />
+                                    <span className="font-mono text-sm flex-1">{selectedTask.test_email}</span>
+                                    <Copy className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                  </div>
+                                )}
+
+                                {selectedTask.test_password && (
+                                  <div
+                                    className="flex items-center gap-3 p-3 bg-background/80 rounded-lg cursor-pointer hover:bg-background transition-colors group"
+                                    onClick={async () => {
+                                      await navigator.clipboard.writeText(selectedTask.test_password!);
+                                      toast({
+                                        title: "Kopiert!",
+                                        description: "Passwort in Zwischenablage kopiert.",
+                                      });
+                                    }}
+                                  >
+                                    <Key className="h-4 w-4 text-primary" />
+                                    <span className="font-mono text-sm flex-1">{selectedTask.test_password}</span>
+                                    <Copy className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                                  </div>
+                                )}
+
+                                {selectedTask.test_email && selectedTask.test_password && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full gap-2 mt-2"
+                                    onClick={async () => {
+                                      const text = `E-Mail: ${selectedTask.test_email}\nPasswort: ${selectedTask.test_password}`;
+                                      await navigator.clipboard.writeText(text);
+                                      toast({ title: "Kopiert!", description: "Alle Zugangsdaten kopiert." });
+                                    }}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                    Alle Zugangsdaten kopieren
+                                  </Button>
+                                )}
+                              </div>
+                            )}
 
                             <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/30">
                               <h4 className="font-medium text-emerald-800 dark:text-emerald-300 mb-3">
