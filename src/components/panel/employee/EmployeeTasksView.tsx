@@ -1504,7 +1504,7 @@ export default function EmployeeTasksView() {
   // Get total steps for a task (depends on skipKycSms)
   const getTotalStepsForTask = (task: TaskWithDetails) => {
     const skipKycSms = (task as any).skip_kyc_sms === true;
-    return skipKycSms ? 3 : TOTAL_WORKFLOW_STEPS; // 3 for simplified (step 4 is completion), 8 for full
+    return skipKycSms ? 4 : TOTAL_WORKFLOW_STEPS; // 4 for simplified, 8 for full
   };
   
   // Get estimated time for a task
@@ -1671,11 +1671,11 @@ export default function EmployeeTasksView() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-muted-foreground">Fortschritt</span>
                         <span className="text-xs font-semibold text-primary">
-                          Schritt {(task.assignment as any)?.workflow_step || 1} / {TOTAL_WORKFLOW_STEPS}
+                          Schritt {(task.assignment as any)?.workflow_step || 1} / {getTotalStepsForTask(task)}
                         </span>
                       </div>
                       <div className="flex gap-1">
-                        {Array.from({ length: TOTAL_WORKFLOW_STEPS }, (_, i) => i + 1).map((step) => {
+                        {Array.from({ length: getTotalStepsForTask(task) }, (_, i) => i + 1).map((step) => {
                           const currentStep = (task.assignment as any)?.workflow_step || 1;
                           const isDone = step < currentStep;
                           const isActive = step === currentStep;
