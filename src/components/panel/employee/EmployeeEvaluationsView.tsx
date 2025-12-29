@@ -126,10 +126,10 @@ export default function EmployeeEvaluationsView() {
   const fetchPendingTasks = async () => {
     if (!user) return;
 
-    // Get assigned tasks that don't have an evaluation yet
+    // Get assigned tasks with their accepted_at timestamp
     const { data: assignments } = await supabase
       .from('task_assignments')
-      .select('task_id')
+      .select('task_id, accepted_at, assigned_at')
       .eq('user_id', user.id);
 
     if (!assignments || assignments.length === 0) {
@@ -139,14 +139,41 @@ export default function EmployeeEvaluationsView() {
 
     const taskIds = assignments.map((a) => a.task_id);
 
+    // Get all evaluations for these tasks
     const { data: existingEvals } = await supabase
       .from('task_evaluations')
-      .select('task_id')
+      .select('task_id, created_at')
       .eq('user_id', user.id)
       .in('task_id', taskIds);
 
-    const evaluatedTaskIds = new Set(existingEvals?.map((e) => e.task_id) || []);
-    const pendingTaskIds = taskIds.filter((id) => !evaluatedTaskIds.has(id));
+    // Build a map of task_id -> latest evaluation created_at
+    const evalsByTask = new Map<string, string>();
+    existingEvals?.forEach((e) => {
+      const existing = evalsByTask.get(e.task_id);
+      if (!existing || new Date(e.created_at) > new Date(existing)) {
+        evalsByTask.set(e.task_id, e.created_at);
+      }
+    });
+
+    // Build a map of task_id -> accepted_at timestamp
+    const acceptedAtByTask = new Map<string, string>();
+    assignments.forEach((a) => {
+      acceptedAtByTask.set(a.task_id, a.accepted_at || a.assigned_at);
+    });
+
+    // A task needs a new evaluation if:
+    // 1. It has no evaluation at all, OR
+    // 2. The latest evaluation was created BEFORE the task was accepted (stale evaluation)
+    const pendingTaskIds = taskIds.filter((taskId) => {
+      const latestEvalDate = evalsByTask.get(taskId);
+      const acceptedAt = acceptedAtByTask.get(taskId);
+      
+      if (!latestEvalDate) return true; // No evaluation exists
+      if (!acceptedAt) return true; // Edge case: should always have accepted_at
+      
+      // If the evaluation was created before the task was accepted, it's stale
+      return new Date(latestEvalDate) < new Date(acceptedAt);
+    });
 
     if (pendingTaskIds.length === 0) {
       setPendingTasks([]);
