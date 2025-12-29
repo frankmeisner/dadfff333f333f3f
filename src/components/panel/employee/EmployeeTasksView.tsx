@@ -1971,14 +1971,14 @@ export default function EmployeeTasksView() {
                         <DialogTitle className="text-xl">{selectedTask.title}</DialogTitle>
                         <DialogDescription className="flex items-center gap-2">
                           <span className="flex items-center gap-1">
-                            Schritt {currentStep} von {TOTAL_WORKFLOW_STEPS}
+                            Schritt {currentStep} von {steps.length}
                           </span>
                         </DialogDescription>
                       </DialogHeader>
 
                       {/* Progress indicator */}
                       <div className="flex gap-1 mb-6">
-                        {Array.from({ length: TOTAL_WORKFLOW_STEPS }, (_, i) => i + 1).map((step) => {
+                        {Array.from({ length: steps.length }, (_, i) => i + 1).map((step) => {
                           const isDone = step < currentStep;
                           const isActive = step === currentStep;
                           return (
@@ -1993,8 +1993,11 @@ export default function EmployeeTasksView() {
                         })}
                       </div>
 
-                      {/* Website URL - Show in all steps except step 6 (videochat) */}
-                      {selectedTask.web_ident_url && currentStep !== 6 && (
+                      {/* Website URL - Show in all steps except step 6 (videochat) for full workflow */}
+                      {selectedTask.web_ident_url && (
+                        // For simplified workflow (4 steps), always show. For full workflow, hide on step 6 (videochat)
+                        ((selectedTask as any).skip_kyc_sms === true || currentStep !== 6)
+                      ) && (
                         <div className="rounded-xl border overflow-hidden bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5">
                           <div className="p-4 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3 min-w-0">
