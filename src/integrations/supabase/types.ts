@@ -613,6 +613,10 @@ export type Database = {
         Args: { _review_notes?: string; _task_id: string }
         Returns: undefined
       }
+      can_view_profile: {
+        Args: { _target_user_id: string; _viewer_id: string }
+        Returns: boolean
+      }
       complete_task: {
         Args: { _progress_notes?: string; _task_id: string }
         Returns: undefined
