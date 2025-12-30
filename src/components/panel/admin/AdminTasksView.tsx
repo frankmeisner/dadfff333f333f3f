@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -349,6 +349,28 @@ export default function AdminTasksView() {
     await supabase.from('task_templates').delete().eq('id', templateId);
     fetchTemplates();
     toast({ title: 'Vorlage gelöscht' });
+  };
+
+  const handleDuplicateTemplate = async (template: TaskTemplate) => {
+    const { error } = await supabase.from('task_templates').insert({
+      title: `${template.title} (Kopie)`,
+      description: template.description,
+      customer_name: template.customer_name,
+      tag: template.tag,
+      priority: template.priority,
+      special_compensation: template.special_compensation,
+      test_email: template.test_email,
+      test_password: template.test_password,
+      notes: template.notes,
+      created_by: user?.id
+    });
+    
+    if (error) {
+      toast({ title: 'Fehler', description: 'Vorlage konnte nicht dupliziert werden.', variant: 'destructive' });
+    } else {
+      fetchTemplates();
+      toast({ title: 'Vorlage dupliziert', description: `"${template.title}" wurde kopiert.` });
+    }
   };
 
   const handleEditTemplate = (template: TaskTemplate) => {
@@ -1749,6 +1771,15 @@ export default function AdminTasksView() {
                         title="Als neuen Auftrag verwenden"
                       >
                         <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => handleDuplicateTemplate(template)}
+                        title="Vorlage duplizieren"
+                      >
+                        <Copy className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
