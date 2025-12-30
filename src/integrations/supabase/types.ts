@@ -415,6 +415,7 @@ export type Database = {
           customer_name: string | null
           description: string | null
           id: string
+          is_favorite: boolean
           notes: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           sort_order: number | null
@@ -431,6 +432,7 @@ export type Database = {
           customer_name?: string | null
           description?: string | null
           id?: string
+          is_favorite?: boolean
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           sort_order?: number | null
@@ -447,6 +449,7 @@ export type Database = {
           customer_name?: string | null
           description?: string | null
           id?: string
+          is_favorite?: boolean
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           sort_order?: number | null
