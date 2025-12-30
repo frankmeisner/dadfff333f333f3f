@@ -158,12 +158,9 @@ export const Footer = () => {
                 <Phone className="w-4 h-4 text-primary shrink-0" />
                 <span>Telefon auf Anfrage</span>
               </div>
-              <div className="flex items-start gap-2.5 text-white/70">
-                <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <div>
-                  <p>Mo-Fr: 8:00 - 17:00 Uhr</p>
-                  <p>Sa: 9:00 - 12:00 Uhr</p>
-                </div>
+              <div className="flex items-center gap-2.5 text-white/70">
+                <Clock className="w-4 h-4 text-primary shrink-0" />
+                <span>Mo-Fr: 8:00 - 17:00 Uhr</span>
               </div>
               
               {/* Application Email Block */}
