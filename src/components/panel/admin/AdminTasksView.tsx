@@ -1698,19 +1698,24 @@ export default function AdminTasksView() {
 
       {/* Template Management Dialog */}
       <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-4 border-b">
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Vorlagen verwalten
-              </DialogTitle>
+              <div>
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <BookOpen className="h-6 w-6 text-primary" />
+                  Vorlagen verwalten
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Verwalte, importiere und exportiere deine Auftragsvorlagen
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => document.getElementById('import-templates-input')?.click()}
-                  className="h-8 gap-1"
+                  className="h-9 gap-2"
                 >
                   <Upload className="h-4 w-4" />
                   Import
@@ -1727,7 +1732,7 @@ export default function AdminTasksView() {
                     variant="outline"
                     size="sm"
                     onClick={handleExportTemplates}
-                    className="h-8 gap-1"
+                    className="h-9 gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Export
@@ -1739,48 +1744,52 @@ export default function AdminTasksView() {
           
           {/* Search, Filter & Sort */}
           {templates.length > 0 && (
-            <div className="space-y-3 pb-3 border-b">
+            <div className="py-4 space-y-3 border-b bg-muted/30 -mx-6 px-6">
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={templateSearch}
                   onChange={(e) => setTemplateSearch(e.target.value)}
-                  placeholder="Vorlage suchen..."
-                  className="pl-9 h-9"
+                  placeholder="Vorlagen durchsuchen..."
+                  className="pl-10 h-10 bg-background"
                 />
               </div>
               
               {/* Tag Filter & Sort */}
-              <div className="flex items-center gap-2">
-                <Select value={templateTagFilter} onValueChange={setTemplateTagFilter}>
-                  <SelectTrigger className="h-8 flex-1">
-                    <SelectValue placeholder="Alle Tags" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Tags</SelectItem>
-                    <SelectItem value="untagged">Ohne Tag</SelectItem>
-                    {[...new Set(templates.filter(t => t.tag).map(t => t.tag!))].sort().map(tag => (
-                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <Select value={templateTagFilter} onValueChange={setTemplateTagFilter}>
+                    <SelectTrigger className="h-9 bg-background">
+                      <SelectValue placeholder="Alle Tags" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Tags</SelectItem>
+                      <SelectItem value="untagged">Ohne Tag</SelectItem>
+                      {[...new Set(templates.filter(t => t.tag).map(t => t.tag!))].sort().map(tag => (
+                        <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 
-                <Select value={templateSort} onValueChange={(v: 'alpha' | 'newest' | 'oldest') => setTemplateSort(v)}>
-                  <SelectTrigger className="h-8 w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="alpha">A-Z</SelectItem>
-                    <SelectItem value="newest">Neueste zuerst</SelectItem>
-                    <SelectItem value="oldest">Älteste zuerst</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex-1">
+                  <Select value={templateSort} onValueChange={(v: 'alpha' | 'newest' | 'oldest') => setTemplateSort(v)}>
+                    <SelectTrigger className="h-9 bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="alpha">Alphabetisch (A-Z)</SelectItem>
+                      <SelectItem value="newest">Neueste zuerst</SelectItem>
+                      <SelectItem value="oldest">Älteste zuerst</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           )}
           
-          <div className="space-y-3">
+          <div className="flex-1 overflow-y-auto py-4 space-y-3">
             {(() => {
               const filteredTemplates = templates
                 .filter(t => {
@@ -1811,136 +1820,148 @@ export default function AdminTasksView() {
               
               if (templates.length === 0) {
                 return (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bookmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p>Keine Vorlagen vorhanden.</p>
-                    <p className="text-sm mt-1">Erstelle einen Auftrag und aktiviere "Als Vorlage speichern".</p>
+                  <div className="text-center py-16 text-muted-foreground">
+                    <Bookmark className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg font-medium">Keine Vorlagen vorhanden</p>
+                    <p className="text-sm mt-2">Erstelle einen Auftrag und aktiviere "Als Vorlage speichern".</p>
                   </div>
                 );
               }
               
               if (filteredTemplates.length === 0) {
                 return (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bookmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                    <p>Keine Vorlagen gefunden.</p>
+                  <div className="text-center py-16 text-muted-foreground">
+                    <Search className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                    <p className="text-lg font-medium">Keine Vorlagen gefunden</p>
+                    <p className="text-sm mt-2">Versuche andere Suchbegriffe oder Filter.</p>
                   </div>
                 );
               }
               
               return (
                 <>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground pb-2">
-                    <span>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground pb-2 px-1">
+                    <span className="font-medium">
                       {filteredTemplates.length === templates.length 
                         ? `${templates.length} Vorlage${templates.length !== 1 ? 'n' : ''}`
                         : `${filteredTemplates.length} von ${templates.length} Vorlage${templates.length !== 1 ? 'n' : ''}`
                       }
                     </span>
                   </div>
-                  {filteredTemplates.map((template) => (
-                <div key={template.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{template.title}</h4>
-                      {template.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{template.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <Badge className={priorityColors[template.priority]} variant="secondary">
-                          {template.priority === 'low' ? 'Niedrig' : template.priority === 'medium' ? 'Mittel' : template.priority === 'high' ? 'Hoch' : 'Dringend'}
-                        </Badge>
-                        {template.special_compensation && (
-                          <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
-                            {template.special_compensation}€
-                          </Badge>
-                        )}
-                        {template.test_email && (
-                          <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-400">
-                            Test-Daten
-                          </Badge>
-                        )}
-                        {template.tag && (
-                          <Badge variant="outline" className="bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30">
-                            {template.tag}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => setPreviewTemplate(template)}
-                        title="Vorschau anzeigen"
+                  <div className="grid gap-3">
+                    {filteredTemplates.map((template) => (
+                      <div 
+                        key={template.id} 
+                        className="group p-4 border rounded-xl hover:border-primary/30 hover:bg-muted/30 transition-all duration-200 hover:shadow-sm"
                       >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => {
-                          handleLoadTemplate(template);
-                          setIsTemplateDialogOpen(false);
-                          setIsDialogOpen(true);
-                        }}
-                        title="Als neuen Auftrag verwenden"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                        onClick={() => handleDuplicateTemplate(template)}
-                        title="Vorlage duplizieren"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
-                        onClick={() => handleEditTemplate(template)}
-                        title="Vorlage bearbeiten"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" title="Vorlage löschen">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Vorlage löschen?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Die Vorlage "{template.title}" wird dauerhaft gelöscht.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteTemplate(template.id)}
-                              className="bg-destructive text-destructive-foreground"
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-base truncate">{template.title}</h4>
+                              {template.customer_name && (
+                                <span className="text-xs text-muted-foreground">• {template.customer_name}</span>
+                              )}
+                            </div>
+                            {template.description && (
+                              <p className="text-sm text-muted-foreground line-clamp-2 mt-1.5">{template.description}</p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2 mt-3">
+                              <Badge className={cn(priorityColors[template.priority], "text-xs")} variant="secondary">
+                                {template.priority === 'low' ? 'Niedrig' : template.priority === 'medium' ? 'Mittel' : template.priority === 'high' ? 'Hoch' : 'Dringend'}
+                              </Badge>
+                              {template.special_compensation && (
+                                <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs">
+                                  {template.special_compensation}€
+                                </Badge>
+                              )}
+                              {template.test_email && (
+                                <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-400 text-xs">
+                                  Test-Daten
+                                </Badge>
+                              )}
+                              {template.tag && (
+                                <Badge variant="outline" className="bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30 text-xs">
+                                  {template.tag}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => setPreviewTemplate(template)}
+                              title="Vorschau anzeigen"
                             >
-                              Löschen
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 p-0 text-primary hover:bg-primary/10"
+                              onClick={() => {
+                                handleLoadTemplate(template);
+                                setIsTemplateDialogOpen(false);
+                                setIsDialogOpen(true);
+                              }}
+                              title="Als neuen Auftrag verwenden"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleDuplicateTemplate(template)}
+                              title="Vorlage duplizieren"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleEditTemplate(template)}
+                              title="Vorlage bearbeiten"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10" title="Vorlage löschen">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Vorlage löschen?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Die Vorlage "{template.title}" wird dauerhaft gelöscht.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteTemplate(template.id)}
+                                    className="bg-destructive text-destructive-foreground"
+                                  >
+                                    Löschen
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              ))}
                 </>
               );
             })()}
           </div>
-          <div className="flex justify-end pt-4 border-t">
+          
+          <div className="flex justify-end pt-4 border-t mt-auto">
             <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
               Schließen
             </Button>
