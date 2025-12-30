@@ -91,6 +91,7 @@ export default function AdminTasksView() {
   const [statusRequestMessage, setStatusRequestMessage] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateTag, setTemplateTag] = useState('');
+  const [templateTagFilter, setTemplateTagFilter] = useState<string>('all');
   const [recentlyUpdatedNotes, setRecentlyUpdatedNotes] = useState<Set<string>>(new Set());
   const previousStepNotesRef = useRef<Record<string, Record<string, string>>>({});
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
@@ -1602,6 +1603,26 @@ export default function AdminTasksView() {
               Vorlagen verwalten
             </DialogTitle>
           </DialogHeader>
+          
+          {/* Tag Filter */}
+          {templates.length > 0 && (
+            <div className="flex items-center gap-2 pb-2 border-b">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">Tag:</Label>
+              <Select value={templateTagFilter} onValueChange={setTemplateTagFilter}>
+                <SelectTrigger className="h-8 flex-1">
+                  <SelectValue placeholder="Alle Tags" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Tags</SelectItem>
+                  <SelectItem value="untagged">Ohne Tag</SelectItem>
+                  {[...new Set(templates.filter(t => t.tag).map(t => t.tag!))].sort().map(tag => (
+                    <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          
           <div className="space-y-3">
             {templates.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -1609,8 +1630,21 @@ export default function AdminTasksView() {
                 <p>Keine Vorlagen vorhanden.</p>
                 <p className="text-sm mt-1">Erstelle einen Auftrag und aktiviere "Als Vorlage speichern".</p>
               </div>
+            ) : templates.filter(t => 
+                templateTagFilter === 'all' ? true : 
+                templateTagFilter === 'untagged' ? !t.tag : 
+                t.tag === templateTagFilter
+              ).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Bookmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>Keine Vorlagen mit diesem Tag.</p>
+              </div>
             ) : (
-              templates.map((template) => (
+              templates.filter(t => 
+                templateTagFilter === 'all' ? true : 
+                templateTagFilter === 'untagged' ? !t.tag : 
+                t.tag === templateTagFilter
+              ).map((template) => (
                 <div key={template.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
