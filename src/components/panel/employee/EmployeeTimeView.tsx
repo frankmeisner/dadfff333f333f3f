@@ -229,9 +229,9 @@ export default function EmployeeTimeView() {
 
             <div className="flex flex-wrap justify-center gap-3">
               {currentStatus === 'out' && (
-                <Button size="lg" onClick={() => handleTimeEntry('check_in')} className="gap-2 bg-green-600 hover:bg-green-700">
+                <Button size="lg" onClick={() => handleTimeEntry('check_in')} className="gap-2 bg-foreground hover:bg-foreground/90 text-background">
                   <Play className="h-5 w-5" />
-                  Einstempeln
+                  Du musst einstempeln
                 </Button>
               )}
               {currentStatus === 'in' && (

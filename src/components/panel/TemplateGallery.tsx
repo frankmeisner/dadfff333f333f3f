@@ -276,9 +276,9 @@ export function TemplateGallery({
       </div>
 
       {/* Main Content - Split View */}
-      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden" style={{ maxHeight: 'calc(100% - 140px)' }}>
+      <div className="flex-1 flex gap-4 min-h-0 overflow-auto" style={{ maxHeight: '400px' }}>
         {/* Template List */}
-        <div className="w-1/2 flex flex-col min-h-0">
+        <div className="w-1/2 flex flex-col min-h-0 overflow-hidden">
           <div className="flex items-center justify-between mb-2 shrink-0">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               {filteredTemplates.length} Vorlage{filteredTemplates.length !== 1 ? 'n' : ''}
@@ -295,7 +295,7 @@ export function TemplateGallery({
             </Button>
           </div>
           
-          <ScrollArea className="flex-1 -mx-1 px-1">
+          <div className="flex-1 overflow-y-auto -mx-1 px-1" style={{ maxHeight: '340px' }}>
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -332,7 +332,7 @@ export function TemplateGallery({
                 <p className="text-sm font-medium">Keine Vorlagen gefunden</p>
               </div>
             )}
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Preview Panel */}
