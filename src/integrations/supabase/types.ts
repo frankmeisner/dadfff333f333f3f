@@ -417,6 +417,7 @@ export type Database = {
           id: string
           notes: string | null
           priority: Database["public"]["Enums"]["task_priority"]
+          sort_order: number | null
           special_compensation: number | null
           tag: string | null
           test_email: string | null
@@ -432,6 +433,7 @@ export type Database = {
           id?: string
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          sort_order?: number | null
           special_compensation?: number | null
           tag?: string | null
           test_email?: string | null
@@ -447,6 +449,7 @@ export type Database = {
           id?: string
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          sort_order?: number | null
           special_compensation?: number | null
           tag?: string | null
           test_email?: string | null

@@ -61,6 +61,7 @@ interface TaskTemplate {
   notes: string | null;
   created_by: string;
   created_at: string;
+  sort_order?: number;
 }
 
 // Document status for task KYC
@@ -197,8 +198,20 @@ export default function AdminTasksView() {
     const { data } = await supabase
       .from('task_templates')
       .select('*')
-      .order('title');
+      .order('sort_order', { ascending: true });
     if (data) setTemplates(data as TaskTemplate[]);
+  };
+
+  const handleReorderTemplates = async (reorderedIds: string[]) => {
+    // Update sort_order in database
+    for (let i = 0; i < reorderedIds.length; i++) {
+      await supabase
+        .from('task_templates')
+        .update({ sort_order: i + 1 })
+        .eq('id', reorderedIds[i]);
+    }
+    // Refresh templates to sync
+    fetchTemplates();
   };
 
   const fetchTasks = async () => {
@@ -774,6 +787,7 @@ export default function AdminTasksView() {
                     setIsTemplateDialogOpen(true);
                   }}
                   onCreateNew={() => setDialogMode('form')}
+                  onReorderTemplates={handleReorderTemplates}
                 />
               </div>
             ) : (
