@@ -11,9 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download, Upload, Tag, ChevronRight } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download, Upload, Tag, ChevronRight, Zap } from 'lucide-react';
 import { TagInput, TagBadge, stringToTags, tagsToString } from '@/components/panel/TagInput';
 import { TemplateGallery } from '@/components/panel/TemplateGallery';
+import { DeadlineQuickPicker } from '@/components/panel/DeadlineQuickPicker';
+import { DurationPicker } from '@/components/panel/DurationPicker';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -63,6 +66,7 @@ interface TaskTemplate {
   created_at: string;
   sort_order?: number;
   is_favorite?: boolean;
+  estimated_duration?: number | null;
 }
 
 // Document status for task KYC
@@ -117,7 +121,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
     special_compensation: '',
     test_email: '',
     test_password: '',
-    notes: ''
+    notes: '',
+    estimated_duration: null as number | null
   });
   const { toast } = useToast();
   const { user } = useAuth();
@@ -505,7 +510,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
       special_compensation: template.special_compensation?.toString() || '',
       test_email: template.test_email || '',
       test_password: template.test_password || '',
-      notes: template.notes || ''
+      notes: template.notes || '',
+      estimated_duration: template.estimated_duration || null
     });
   };
 
@@ -528,7 +534,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
         special_compensation: editTemplateData.special_compensation ? parseFloat(editTemplateData.special_compensation) : null,
         test_email: editTemplateData.test_email.trim() || null,
         test_password: editTemplateData.test_password || null,
-        notes: editTemplateData.notes.trim() || null
+        notes: editTemplateData.notes.trim() || null,
+        estimated_duration: editTemplateData.estimated_duration
       })
       .eq('id', editingTemplate.id);
 
@@ -819,120 +826,216 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                 />
               </div>
             ) : (
-              /* Form View */
-              <div className="space-y-4 overflow-y-auto flex-1 pt-4 pr-2 -mr-2">
-              <div className="space-y-2">
-                <Label>Titel *</Label>
-                <Input value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} placeholder="Auftragstitel" />
-              </div>
-              <div className="space-y-2">
-                <Label>Beschreibung</Label>
-                <Textarea 
-                  value={newTask.description} 
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} 
-                  placeholder="Auftragsdetails..." 
-                  className="min-h-[120px] whitespace-pre-wrap"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+              /* Form View - Elegant Design */
+              <div className="space-y-5 overflow-y-auto flex-1 pt-4 pr-2 -mr-2">
+                {/* Header info about empty fields */}
+                {dialogMode === 'form' && (
+                  <div className={cn(
+                    'flex items-center gap-2 text-xs p-2 rounded-lg transition-all duration-300',
+                    (!newTask.title || !newTask.customer_name)
+                      ? 'bg-primary/5 text-primary border border-primary/20'
+                      : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                  )}>
+                    {(!newTask.title || !newTask.customer_name) ? (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                        <span>Fülle die hervorgehobenen Pflichtfelder aus</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-3.5 w-3.5" />
+                        <span>Alle Pflichtfelder ausgefüllt</span>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Title Field - Highlighted if empty */}
                 <div className="space-y-2">
-                  <Label>Kundenname *</Label>
-                  <Input value={newTask.customer_name} onChange={(e) => setNewTask({ ...newTask, customer_name: e.target.value })} placeholder="Max Mustermann" />
+                  <Label className="flex items-center gap-1.5">
+                    Titel
+                    <span className="text-primary">*</span>
+                  </Label>
+                  <Input 
+                    value={newTask.title} 
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} 
+                    placeholder="Auftragstitel" 
+                    className={cn(
+                      'transition-all duration-200',
+                      !newTask.title && 'ring-2 ring-primary/30 bg-primary/5 placeholder:text-primary/50'
+                    )}
+                  />
                 </div>
+
+                {/* Description */}
                 <div className="space-y-2">
-                  <Label>Telefon</Label>
-                  <Input value={newTask.customer_phone} onChange={(e) => setNewTask({ ...newTask, customer_phone: e.target.value })} placeholder="+49 123 456789" />
+                  <Label>Beschreibung</Label>
+                  <Textarea 
+                    value={newTask.description} 
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })} 
+                    placeholder="Auftragsdetails..." 
+                    className="min-h-[100px] whitespace-pre-wrap resize-none"
+                  />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Deadline</Label>
-                  <Input type="datetime-local" value={newTask.deadline} onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Priorität</Label>
-                  <Select value={newTask.priority} onValueChange={(v) => setNewTask({ ...newTask, priority: v as TaskPriority })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Niedrig</SelectItem>
-                      <SelectItem value="medium">Mittel</SelectItem>
-                      <SelectItem value="high">Hoch</SelectItem>
-                      <SelectItem value="urgent">Dringend</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Sondervergütung (€)</Label>
-                <Input type="number" step="0.01" value={newTask.special_compensation} onChange={(e) => setNewTask({ ...newTask, special_compensation: e.target.value })} placeholder="0.00" />
-              </div>
-              <div className="border-t pt-4 mt-4">
-                <p className="text-sm font-medium mb-3 text-muted-foreground">Test-Zugangsdaten (Optional)</p>
+
+                {/* Customer Info */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Test E-Mail</Label>
-                    <Input type="email" value={newTask.test_email} onChange={(e) => setNewTask({ ...newTask, test_email: e.target.value })} placeholder="test@example.com" />
+                    <Label className="flex items-center gap-1.5">
+                      Kundenname
+                      <span className="text-primary">*</span>
+                    </Label>
+                    <Input 
+                      value={newTask.customer_name} 
+                      onChange={(e) => setNewTask({ ...newTask, customer_name: e.target.value })} 
+                      placeholder="Max Mustermann" 
+                      className={cn(
+                        'transition-all duration-200',
+                        !newTask.customer_name && 'ring-2 ring-primary/30 bg-primary/5 placeholder:text-primary/50'
+                      )}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Test Passwort</Label>
-                    <Input type="text" value={newTask.test_password} onChange={(e) => setNewTask({ ...newTask, test_password: e.target.value })} placeholder="Passwort123" />
+                    <Label>Telefon</Label>
+                    <Input 
+                      value={newTask.customer_phone} 
+                      onChange={(e) => setNewTask({ ...newTask, customer_phone: e.target.value })} 
+                      placeholder="+49 123 456789" 
+                    />
                   </div>
                 </div>
-              </div>
-              <div className="border-t pt-4 mt-4">
-                <p className="text-sm font-medium mb-3 text-muted-foreground flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Web-Ident (Optional)
-                </p>
+
+                {/* Deadline & Priority */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                      Deadline
+                    </Label>
+                    <DeadlineQuickPicker 
+                      value={newTask.deadline} 
+                      onChange={(v) => setNewTask({ ...newTask, deadline: v })} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Zap className="h-3.5 w-3.5 text-muted-foreground" />
+                      Priorität
+                    </Label>
+                    <Select value={newTask.priority} onValueChange={(v) => setNewTask({ ...newTask, priority: v as TaskPriority })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Niedrig</SelectItem>
+                        <SelectItem value="medium">Mittel</SelectItem>
+                        <SelectItem value="high">Hoch</SelectItem>
+                        <SelectItem value="urgent">Dringend</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Compensation */}
                 <div className="space-y-2">
-                  <Label>Web-Ident Link</Label>
-                  <Input 
-                    type="url" 
-                    value={newTask.web_ident_url} 
-                    onChange={(e) => setNewTask({ ...newTask, web_ident_url: e.target.value })} 
-                    placeholder="https://webident.example.com/verify/..." 
-                  />
-                  <p className="text-xs text-muted-foreground">Link zur Web-Ident-Verifizierung, falls erforderlich</p>
-                </div>
-              </div>
-
-              {/* Skip KYC/SMS Checkbox */}
-              <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/30">
-                <input
-                  type="checkbox"
-                  id="skipKycSms"
-                  checked={newTask.skip_kyc_sms}
-                  onChange={(e) => setNewTask({ ...newTask, skip_kyc_sms: e.target.checked })}
-                  className="h-4 w-4 rounded border-muted-foreground"
-                />
-                <Label htmlFor="skipKycSms" className="text-sm cursor-pointer flex items-center gap-2 text-amber-800 dark:text-amber-300">
-                  <FileText className="h-4 w-4" />
-                  Ohne KYC / SMS-Code (vereinfachter Ablauf)
-                </Label>
-              </div>
-
-              {/* Save as Template Checkbox */}
-              <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="saveAsTemplate"
-                    checked={saveAsTemplate}
-                    onChange={(e) => setSaveAsTemplate(e.target.checked)}
-                    className="h-4 w-4 rounded border-muted-foreground"
-                  />
-                  <Label htmlFor="saveAsTemplate" className="text-sm cursor-pointer flex items-center gap-2">
-                    <Save className="h-4 w-4" />
-                    Als Vorlage speichern
+                  <Label className="flex items-center gap-1.5">
+                    <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+                    Sondervergütung
                   </Label>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    value={newTask.special_compensation} 
+                    onChange={(e) => setNewTask({ ...newTask, special_compensation: e.target.value })} 
+                    placeholder="0.00" 
+                    className="max-w-[160px]"
+                  />
                 </div>
+
+                {/* Test Credentials - Collapsible Section */}
+                <div className="rounded-xl border bg-muted/20 overflow-hidden">
+                  <div className="px-4 py-3 bg-muted/30 border-b">
+                    <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                      <Key className="h-4 w-4" />
+                      Test-Zugangsdaten
+                      <span className="text-xs opacity-60">(Optional)</span>
+                    </p>
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Test E-Mail</Label>
+                        <Input 
+                          type="email" 
+                          value={newTask.test_email} 
+                          onChange={(e) => setNewTask({ ...newTask, test_email: e.target.value })} 
+                          placeholder="test@example.com" 
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Test Passwort</Label>
+                        <Input 
+                          type="text" 
+                          value={newTask.test_password} 
+                          onChange={(e) => setNewTask({ ...newTask, test_password: e.target.value })} 
+                          placeholder="Passwort123" 
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Web Ident */}
+                <div className="rounded-xl border bg-muted/20 overflow-hidden">
+                  <div className="px-4 py-3 bg-muted/30 border-b">
+                    <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                      <Globe className="h-4 w-4" />
+                      Web-Ident
+                      <span className="text-xs opacity-60">(Optional)</span>
+                    </p>
+                  </div>
+                  <div className="p-4">
+                    <Input 
+                      type="url" 
+                      value={newTask.web_ident_url} 
+                      onChange={(e) => setNewTask({ ...newTask, web_ident_url: e.target.value })} 
+                      placeholder="https://webident.example.com/verify/..." 
+                      className="h-9 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Options Footer - Subtle Checkboxes */}
+                <div className="flex items-center gap-6 py-3 border-t border-dashed">
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <Checkbox 
+                      checked={newTask.skip_kyc_sms}
+                      onCheckedChange={(checked) => setNewTask({ ...newTask, skip_kyc_sms: checked === true })}
+                    />
+                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                      Ohne KYC/SMS
+                    </span>
+                  </label>
+                  
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <Checkbox 
+                      checked={saveAsTemplate}
+                      onCheckedChange={(checked) => setSaveAsTemplate(checked === true)}
+                    />
+                    <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                      Als Vorlage speichern
+                    </span>
+                  </label>
+                </div>
+
+                {/* Template Tags - Only show when saveAsTemplate is checked */}
                 {saveAsTemplate && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/10 animate-fade-in">
                     <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                       <Tag className="h-3 w-3" />
-                      Vorlagen-Tags (optional)
+                      Vorlagen-Tags
                     </Label>
                     <TagInput
                       tags={templateTags}
@@ -942,9 +1045,16 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                     />
                   </div>
                 )}
-              </div>
 
-              <Button onClick={handleCreateTask} className="w-full">Auftrag erstellen</Button>
+                {/* Submit Button */}
+                <Button 
+                  onClick={handleCreateTask} 
+                  className="w-full h-11 text-base font-semibold shadow-lg shadow-primary/20"
+                  disabled={!newTask.title || !newTask.customer_name}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Auftrag erstellen
+                </Button>
               </div>
             )}
           </DialogContent>

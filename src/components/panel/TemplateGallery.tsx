@@ -40,6 +40,7 @@ interface TaskTemplate {
   created_at: string;
   sort_order?: number;
   is_favorite?: boolean;
+  estimated_duration?: number | null;
 }
 
 interface TemplateGalleryProps {
