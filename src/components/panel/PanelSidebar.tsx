@@ -128,7 +128,7 @@ export default function PanelSidebar({
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 overflow-y-auto">
+        <nav className="flex-1 py-4 overflow-y-auto scrollbar-none">
           {sections.map((section) => (
             <div key={section.title} className="mb-4">
               {!collapsed && (
