@@ -16,6 +16,7 @@ const defaultConfigs: Record<string, RateLimitConfig> = {
   login: { maxAttempts: 5, windowMs: 15 * 60 * 1000 }, // 5 attempts per 15 minutes
   smsRequest: { maxAttempts: 1, windowMs: 5 * 60 * 1000 }, // 1 request per 5 minutes per task
   userCreation: { maxAttempts: 10, windowMs: 60 * 60 * 1000 }, // 10 per hour
+  newsletter: { maxAttempts: 3, windowMs: 60 * 1000 }, // 3 attempts per minute
 };
 
 export function checkRateLimit(
