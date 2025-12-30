@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Plus, Clock, Tag, Euro, Mail, Key, FileText, ChevronRight, Sparkles, Briefcase, Building2, UserCheck, CreditCard, ShieldCheck, Smartphone, Globe, FileCheck, Users, Zap } from 'lucide-react';
+import { Search, Plus, Clock, Tag, Euro, Mail, Key, FileText, ChevronRight, Sparkles, Briefcase, Building2, UserCheck, CreditCard, ShieldCheck, Smartphone, Globe, FileCheck, Users, Zap, GripVertical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,23 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TagBadge, stringToTags } from './TagInput';
 import { cn } from '@/lib/utils';
 import { TaskPriority } from '@/types/panel';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface TaskTemplate {
   id: string;
@@ -21,6 +38,7 @@ interface TaskTemplate {
   notes: string | null;
   created_by: string;
   created_at: string;
+  sort_order?: number;
 }
 
 interface TemplateGalleryProps {
@@ -28,6 +46,7 @@ interface TemplateGalleryProps {
   onSelectTemplate: (template: TaskTemplate) => void;
   onManageTemplates: () => void;
   onCreateNew: () => void;
+  onReorderTemplates?: (reorderedIds: string[]) => void;
 }
 
 const priorityConfig: Record<TaskPriority, { label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -98,23 +117,42 @@ export function TemplateGallery({
   onSelectTemplate,
   onManageTemplates,
   onCreateNew,
+  onReorderTemplates,
 }: TemplateGalleryProps) {
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [hoveredTemplate, setHoveredTemplate] = useState<TaskTemplate | null>(null);
+  const [localTemplates, setLocalTemplates] = useState<TaskTemplate[]>(templates);
+
+  // Update local templates when props change
+  useMemo(() => {
+    setLocalTemplates(templates);
+  }, [templates]);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Get all unique tags
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
-    templates.forEach((t) => {
+    localTemplates.forEach((t) => {
       stringToTags(t.tag).forEach((tag) => tagSet.add(tag));
     });
     return Array.from(tagSet).sort();
-  }, [templates]);
+  }, [localTemplates]);
 
   // Filter templates
   const filteredTemplates = useMemo(() => {
-    return templates.filter((t) => {
+    return localTemplates.filter((t) => {
       const searchLower = search.toLowerCase();
       const matchesSearch =
         !search ||
@@ -127,21 +165,33 @@ export function TemplateGallery({
 
       return matchesSearch && matchesTag;
     });
-  }, [templates, search, selectedTag]);
-
-  // Get recent templates (last 5)
-  const recentTemplates = useMemo(() => {
-    return [...templates]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 5);
-  }, [templates]);
+  }, [localTemplates, search, selectedTag]);
 
   // Display template = hovered or first filtered
   const displayTemplate = hoveredTemplate || (filteredTemplates.length > 0 ? filteredTemplates[0] : null);
 
+  // Can drag only when not searching/filtering
+  const canDrag = !search && !selectedTag;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = localTemplates.findIndex((t) => t.id === active.id);
+      const newIndex = localTemplates.findIndex((t) => t.id === over.id);
+      
+      const newOrder = arrayMove(localTemplates, oldIndex, newIndex);
+      setLocalTemplates(newOrder);
+      
+      if (onReorderTemplates) {
+        onReorderTemplates(newOrder.map(t => t.id));
+      }
+    }
+  };
+
   if (templates.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center animate-fade-in">
         <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 shadow-lg shadow-primary/10">
           <Briefcase className="h-10 w-10 text-primary/70" />
         </div>
@@ -160,7 +210,7 @@ export function TemplateGallery({
   return (
     <div className="flex flex-col h-full">
       {/* Search & Filters */}
-      <div className="space-y-4 pb-5">
+      <div className="space-y-4 pb-5 animate-fade-in">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -186,12 +236,13 @@ export function TemplateGallery({
             >
               Alle
             </button>
-            {allTags.slice(0, 6).map((tag) => (
+            {allTags.slice(0, 6).map((tag, index) => (
               <button
                 key={tag}
                 type="button"
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
                 className="transition-transform duration-200 hover:scale-105"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <TagBadge
                   tag={tag}
@@ -218,6 +269,7 @@ export function TemplateGallery({
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {filteredTemplates.length} Vorlage{filteredTemplates.length !== 1 ? 'n' : ''}
+              {canDrag && <span className="ml-2 opacity-60">• Ziehen zum Sortieren</span>}
             </span>
             <Button
               variant="ghost"
@@ -231,60 +283,47 @@ export function TemplateGallery({
           </div>
           
           <ScrollArea className="flex-1 -mx-2 px-2">
-            <div className="space-y-2 pb-4">
-              {/* Recent Templates Section */}
-              {!search && !selectedTag && recentTemplates.length > 0 && (
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 mb-3 px-1">
-                    <div className="w-5 h-5 rounded-md bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                      <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                    </div>
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Zuletzt verwendet</span>
-                  </div>
-                  <div className="space-y-2">
-                    {recentTemplates.slice(0, 3).map((template) => (
-                      <TemplateListItem
-                        key={`recent-${template.id}`}
-                        template={template}
-                        isHovered={hoveredTemplate?.id === template.id}
-                        onHover={() => setHoveredTemplate(template)}
-                        onLeave={() => setHoveredTemplate(null)}
-                        onSelect={() => onSelectTemplate(template)}
-                      />
-                    ))}
-                  </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={filteredTemplates.map(t => t.id)}
+                strategy={verticalListSortingStrategy}
+                disabled={!canDrag}
+              >
+                <div className="space-y-2 pb-4">
+                  {filteredTemplates.map((template, index) => (
+                    <SortableTemplateItem
+                      key={template.id}
+                      template={template}
+                      index={index}
+                      isHovered={hoveredTemplate?.id === template.id}
+                      onHover={() => setHoveredTemplate(template)}
+                      onLeave={() => setHoveredTemplate(null)}
+                      onSelect={() => onSelectTemplate(template)}
+                      canDrag={canDrag}
+                    />
+                  ))}
                 </div>
-              )}
+              </SortableContext>
+            </DndContext>
 
-              {/* All Templates */}
-              <div className="space-y-2">
-                {filteredTemplates.map((template) => (
-                  <TemplateListItem
-                    key={template.id}
-                    template={template}
-                    isHovered={hoveredTemplate?.id === template.id}
-                    onHover={() => setHoveredTemplate(template)}
-                    onLeave={() => setHoveredTemplate(null)}
-                    onSelect={() => onSelectTemplate(template)}
-                  />
-                ))}
+            {filteredTemplates.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground animate-fade-in">
+                <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-6 w-6 opacity-40" />
+                </div>
+                <p className="text-sm font-medium">Keine Vorlagen gefunden</p>
+                <p className="text-xs mt-1 opacity-70">Versuche andere Suchbegriffe</p>
               </div>
-
-              {filteredTemplates.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                    <Search className="h-6 w-6 opacity-40" />
-                  </div>
-                  <p className="text-sm font-medium">Keine Vorlagen gefunden</p>
-                  <p className="text-xs mt-1 opacity-70">Versuche andere Suchbegriffe</p>
-                </div>
-              )}
-            </div>
+            )}
           </ScrollArea>
         </div>
 
         {/* Preview Panel */}
-        <div className="w-1/2 rounded-2xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/50 overflow-hidden flex flex-col shadow-inner">
+        <div className="w-1/2 rounded-2xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/50 overflow-hidden flex flex-col shadow-inner animate-fade-in">
           {displayTemplate ? (
             <TemplatePreview
               template={displayTemplate}
@@ -309,7 +348,7 @@ export function TemplateGallery({
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-5 mt-5 border-t border-border/50 flex items-center justify-between">
+      <div className="pt-5 mt-5 border-t border-border/50 flex items-center justify-between animate-fade-in">
         <Button
           variant="ghost"
           onClick={onCreateNew}
@@ -323,81 +362,126 @@ export function TemplateGallery({
   );
 }
 
-// Template List Item Component
-function TemplateListItem({
+// Sortable Template List Item Component
+function SortableTemplateItem({
   template,
+  index,
   isHovered,
   onHover,
   onLeave,
   onSelect,
+  canDrag,
 }: {
   template: TaskTemplate;
+  index: number;
   isHovered: boolean;
   onHover: () => void;
   onLeave: () => void;
   onSelect: () => void;
+  canDrag: boolean;
 }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: template.id, disabled: !canDrag });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    animationDelay: `${index * 60}ms`,
+  };
+
   const tags = stringToTags(template.tag);
   const priority = priorityConfig[template.priority];
   const Icon = getTemplateIcon(template);
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      onMouseEnter={onHover}
-      onMouseLeave={onLeave}
+    <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
-        'w-full text-left p-4 rounded-xl border-2 transition-all duration-300',
-        'hover:shadow-lg hover:shadow-primary/5',
-        isHovered
-          ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10 scale-[1.01]'
-          : 'border-transparent bg-background/60 hover:bg-background/80'
+        'animate-fade-in',
+        isDragging && 'z-50 relative'
       )}
     >
-      <div className="flex items-start gap-4">
-        <div className={cn(
-          'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300',
-          'shadow-sm',
-          isHovered 
-            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
-            : cn(priority.bgColor, priority.color, 'border', priority.borderColor)
-        )}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm truncate">{template.title}</p>
-          {template.customer_name && (
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {template.customer_name}
-            </p>
+      <div
+        onClick={onSelect}
+        onMouseEnter={onHover}
+        onMouseLeave={onLeave}
+        className={cn(
+          'w-full text-left p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer',
+          'hover:shadow-lg hover:shadow-primary/5',
+          isDragging 
+            ? 'shadow-2xl shadow-primary/20 border-primary bg-background scale-105 opacity-90'
+            : isHovered
+              ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10 scale-[1.01]'
+              : 'border-transparent bg-background/60 hover:bg-background/80'
+        )}
+      >
+        <div className="flex items-start gap-3">
+          {/* Drag Handle */}
+          {canDrag && (
+            <div
+              {...attributes}
+              {...listeners}
+              className={cn(
+                'shrink-0 p-1.5 -ml-1 rounded-lg cursor-grab active:cursor-grabbing transition-all',
+                'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50',
+                isDragging && 'text-primary'
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-4 w-4" />
+            </div>
           )}
-          <div className="flex items-center gap-2 mt-2.5 flex-wrap">
-            <span className={cn(
-              'text-[10px] font-semibold px-2 py-0.5 rounded-md border',
-              priority.bgColor, priority.color, priority.borderColor
-            )}>
-              {priority.label}
-            </span>
-            {template.special_compensation && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                {template.special_compensation}€
-              </span>
-            )}
-            {tags.slice(0, 1).map((tag) => (
-              <TagBadge key={tag} tag={tag} size="sm" />
-            ))}
-            {tags.length > 1 && (
-              <span className="text-[10px] text-muted-foreground font-medium">+{tags.length - 1}</span>
-            )}
+          
+          <div className={cn(
+            'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300',
+            'shadow-sm',
+            isHovered || isDragging
+              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
+              : cn(priority.bgColor, priority.color, 'border', priority.borderColor)
+          )}>
+            <Icon className="h-5 w-5" />
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate">{template.title}</p>
+            {template.customer_name && (
+              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                {template.customer_name}
+              </p>
+            )}
+            <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+              <span className={cn(
+                'text-[10px] font-semibold px-2 py-0.5 rounded-md border',
+                priority.bgColor, priority.color, priority.borderColor
+              )}>
+                {priority.label}
+              </span>
+              {template.special_compensation && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                  {template.special_compensation}€
+                </span>
+              )}
+              {tags.slice(0, 1).map((tag) => (
+                <TagBadge key={tag} tag={tag} size="sm" />
+              ))}
+              {tags.length > 1 && (
+                <span className="text-[10px] text-muted-foreground font-medium">+{tags.length - 1}</span>
+              )}
+            </div>
+          </div>
+          <ChevronRight className={cn(
+            'h-5 w-5 shrink-0 transition-all duration-300',
+            isHovered ? 'text-primary opacity-100 translate-x-0.5' : 'text-muted-foreground/30 opacity-0'
+          )} />
         </div>
-        <ChevronRight className={cn(
-          'h-5 w-5 shrink-0 transition-all duration-300',
-          isHovered ? 'text-primary opacity-100 translate-x-0.5' : 'text-muted-foreground/30 opacity-0'
-        )} />
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -414,7 +498,7 @@ function TemplatePreview({
   const Icon = getTemplateIcon(template);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full animate-fade-in">
       {/* Header with Gradient */}
       <div className={cn(
         'p-5 border-b relative overflow-hidden',
