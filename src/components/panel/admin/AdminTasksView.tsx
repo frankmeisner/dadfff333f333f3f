@@ -138,7 +138,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
     test_email: '',
     test_password: '',
     web_ident_url: '',
-    skip_kyc_sms: false
+    skip_kyc_sms: false,
+    estimated_duration: null as number | null
   });
 
   // Track step_notes changes for highlighting
@@ -369,7 +370,7 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
       }
       toast({ title: 'Erfolg', description: 'Auftrag wurde erstellt.' });
       setIsDialogOpen(false);
-      setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '', skip_kyc_sms: false });
+      setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '', skip_kyc_sms: false, estimated_duration: null });
       setSaveAsTemplate(false);
       setTemplateTags([]);
       fetchTasks();
@@ -388,7 +389,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
       test_email: template.test_email || '',
       test_password: template.test_password || '',
       web_ident_url: '',
-      skip_kyc_sms: false
+      skip_kyc_sms: false,
+      estimated_duration: template.estimated_duration || null
     });
     setIsTemplateDialogOpen(false);
     toast({ title: 'Vorlage geladen', description: `"${template.title}" wurde geladen.` });
@@ -809,7 +811,7 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
             
             {/* Template Gallery View */}
             {dialogMode === 'templates' && templates.length > 0 ? (
-              <div className="flex-1 min-h-[500px] overflow-hidden pt-4">
+              <div className="flex-1 min-h-[400px] max-h-[60vh] overflow-hidden pt-4">
                 <TemplateGallery
                   templates={templates}
                   onSelectTemplate={(template) => {
@@ -905,8 +907,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                   </div>
                 </div>
 
-                {/* Deadline & Priority */}
-                <div className="grid grid-cols-2 gap-4">
+                {/* Deadline & Priority & Duration */}
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
@@ -923,16 +925,30 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                       Priorität
                     </Label>
                     <Select value={newTask.priority} onValueChange={(v) => setNewTask({ ...newTask, priority: v as TaskPriority })}>
-                      <SelectTrigger>
+                      <SelectTrigger className={cn(
+                        newTask.priority === 'high' && 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20',
+                        newTask.priority === 'urgent' && 'border-red-400 bg-red-100 dark:border-red-600 dark:bg-red-900/40'
+                      )}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="low">Niedrig</SelectItem>
                         <SelectItem value="medium">Mittel</SelectItem>
-                        <SelectItem value="high">Hoch</SelectItem>
-                        <SelectItem value="urgent">Dringend</SelectItem>
+                        <SelectItem value="high" className="text-red-600 dark:text-red-400">Hoch</SelectItem>
+                        <SelectItem value="urgent" className="text-red-700 dark:text-red-300 font-semibold">Dringend</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      Geschätzte Dauer
+                    </Label>
+                    <DurationPicker 
+                      value={newTask.estimated_duration}
+                      onChange={(v) => setNewTask({ ...newTask, estimated_duration: v })}
+                      className="w-full"
+                    />
                   </div>
                 </div>
 
@@ -2215,14 +2231,17 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                   value={editTemplateData.priority} 
                   onValueChange={(value: TaskPriority) => setEditTemplateData({ ...editTemplateData, priority: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={cn(
+                    editTemplateData.priority === 'high' && 'border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-900/20',
+                    editTemplateData.priority === 'urgent' && 'border-red-400 bg-red-100 dark:border-red-600 dark:bg-red-900/40'
+                  )}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Niedrig</SelectItem>
                     <SelectItem value="medium">Mittel</SelectItem>
-                    <SelectItem value="high">Hoch</SelectItem>
-                    <SelectItem value="urgent">Dringend</SelectItem>
+                    <SelectItem value="high" className="text-red-600 dark:text-red-400">Hoch</SelectItem>
+                    <SelectItem value="urgent" className="text-red-700 dark:text-red-300 font-semibold">Dringend</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2239,6 +2258,18 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                   placeholder="0.00"
                 />
               </div>
+            </div>
+
+            {/* Geschätzte Bearbeitungsdauer */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                Geschätzte Bearbeitungsdauer
+              </Label>
+              <DurationPicker
+                value={editTemplateData.estimated_duration}
+                onChange={(value) => setEditTemplateData({ ...editTemplateData, estimated_duration: value })}
+              />
             </div>
 
             <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-3">

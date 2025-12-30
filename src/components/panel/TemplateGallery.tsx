@@ -67,15 +67,15 @@ const priorityConfig: Record<TaskPriority, { label: string; color: string; bgCol
   },
   high: { 
     label: 'Hoch', 
-    color: 'text-amber-600 dark:text-amber-400', 
-    bgColor: 'bg-amber-50 dark:bg-amber-900/20',
-    borderColor: 'border-amber-200 dark:border-amber-800'
+    color: 'text-red-600 dark:text-red-400', 
+    bgColor: 'bg-red-50 dark:bg-red-900/20',
+    borderColor: 'border-red-200 dark:border-red-800'
   },
   urgent: { 
     label: 'Dringend', 
-    color: 'text-rose-600 dark:text-rose-400', 
-    bgColor: 'bg-rose-50 dark:bg-rose-900/20',
-    borderColor: 'border-rose-200 dark:border-rose-800'
+    color: 'text-red-700 dark:text-red-300', 
+    bgColor: 'bg-red-100 dark:bg-red-900/40',
+    borderColor: 'border-red-300 dark:border-red-700'
   },
 };
 
@@ -276,7 +276,7 @@ export function TemplateGallery({
       </div>
 
       {/* Main Content - Split View */}
-      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
+      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden" style={{ maxHeight: 'calc(100% - 140px)' }}>
         {/* Template List */}
         <div className="w-1/2 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-2 shrink-0">
