@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Plus, Clock, Tag, Euro, Mail, Key, FileText, ChevronRight, Sparkles, Briefcase, Building2, UserCheck, CreditCard, ShieldCheck, Smartphone, Globe, FileCheck, Users, Zap, GripVertical } from 'lucide-react';
+import { Search, Plus, Clock, Tag, Euro, Mail, Key, FileText, ChevronRight, Sparkles, Briefcase, Building2, UserCheck, CreditCard, ShieldCheck, Smartphone, Globe, FileCheck, Users, Zap, GripVertical, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,7 @@ interface TaskTemplate {
   created_by: string;
   created_at: string;
   sort_order?: number;
+  is_favorite?: boolean;
 }
 
 interface TemplateGalleryProps {
@@ -47,6 +48,7 @@ interface TemplateGalleryProps {
   onManageTemplates: () => void;
   onCreateNew: () => void;
   onReorderTemplates?: (reorderedIds: string[]) => void;
+  onToggleFavorite?: (templateId: string, isFavorite: boolean) => void;
 }
 
 const priorityConfig: Record<TaskPriority, { label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -118,6 +120,7 @@ export function TemplateGallery({
   onManageTemplates,
   onCreateNew,
   onReorderTemplates,
+  onToggleFavorite,
 }: TemplateGalleryProps) {
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -150,9 +153,16 @@ export function TemplateGallery({
     return Array.from(tagSet).sort();
   }, [localTemplates]);
 
+  // Separate favorites and sort templates
+  const sortedTemplates = useMemo(() => {
+    const favorites = localTemplates.filter(t => t.is_favorite);
+    const regular = localTemplates.filter(t => !t.is_favorite);
+    return [...favorites, ...regular];
+  }, [localTemplates]);
+
   // Filter templates
   const filteredTemplates = useMemo(() => {
-    return localTemplates.filter((t) => {
+    return sortedTemplates.filter((t) => {
       const searchLower = search.toLowerCase();
       const matchesSearch =
         !search ||
@@ -165,7 +175,7 @@ export function TemplateGallery({
 
       return matchesSearch && matchesTag;
     });
-  }, [localTemplates, search, selectedTag]);
+  }, [sortedTemplates, search, selectedTag]);
 
   // Display template = hovered or first filtered
   const displayTemplate = hoveredTemplate || (filteredTemplates.length > 0 ? filteredTemplates[0] : null);
@@ -207,17 +217,19 @@ export function TemplateGallery({
     );
   }
 
+  const favoriteCount = filteredTemplates.filter(t => t.is_favorite).length;
+
   return (
     <div className="flex flex-col h-full">
       {/* Search & Filters */}
-      <div className="space-y-4 pb-5 animate-fade-in">
+      <div className="space-y-4 pb-4 shrink-0">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Vorlagen durchsuchen..."
-            className="pl-11 h-12 bg-muted/30 border-0 rounded-xl text-base focus-visible:ring-2 focus-visible:ring-primary/20"
+            className="pl-11 h-11 bg-muted/30 border-0 rounded-xl text-sm focus-visible:ring-2 focus-visible:ring-primary/20"
           />
         </div>
         
@@ -228,7 +240,7 @@ export function TemplateGallery({
               type="button"
               onClick={() => setSelectedTag(null)}
               className={cn(
-                'px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200',
+                'px-3 py-1 text-xs font-medium rounded-full transition-all duration-200',
                 !selectedTag
                   ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
                   : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -236,26 +248,26 @@ export function TemplateGallery({
             >
               Alle
             </button>
-            {allTags.slice(0, 6).map((tag, index) => (
+            {allTags.slice(0, 5).map((tag) => (
               <button
                 key={tag}
                 type="button"
                 onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
                 className="transition-transform duration-200 hover:scale-105"
-                style={{ animationDelay: `${index * 50}ms` }}
               >
                 <TagBadge
                   tag={tag}
+                  size="sm"
                   className={cn(
-                    'cursor-pointer transition-all duration-200 px-3 py-1',
-                    selectedTag === tag && 'ring-2 ring-primary ring-offset-2 ring-offset-background shadow-lg'
+                    'cursor-pointer transition-all duration-200',
+                    selectedTag === tag && 'ring-2 ring-primary ring-offset-1 ring-offset-background shadow-lg'
                   )}
                 />
               </button>
             ))}
-            {allTags.length > 6 && (
-              <span className="px-3 py-1.5 text-sm text-muted-foreground font-medium">
-                +{allTags.length - 6} mehr
+            {allTags.length > 5 && (
+              <span className="px-2 py-1 text-xs text-muted-foreground font-medium">
+                +{allTags.length - 5}
               </span>
             )}
           </div>
@@ -263,26 +275,26 @@ export function TemplateGallery({
       </div>
 
       {/* Main Content - Split View */}
-      <div className="flex-1 flex gap-5 min-h-0">
+      <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
         {/* Template List */}
-        <div className="w-1/2 flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="w-1/2 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-2 shrink-0">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               {filteredTemplates.length} Vorlage{filteredTemplates.length !== 1 ? 'n' : ''}
-              {canDrag && <span className="ml-2 opacity-60">• Ziehen zum Sortieren</span>}
+              {favoriteCount > 0 && <span className="ml-1 text-amber-500">• {favoriteCount} ★</span>}
             </span>
             <Button
               variant="ghost"
               size="sm"
               onClick={onManageTemplates}
-              className="h-8 text-xs text-muted-foreground hover:text-primary gap-1.5 font-medium"
+              className="h-7 text-[10px] text-muted-foreground hover:text-primary gap-1 font-medium"
             >
               Verwalten
               <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
           
-          <ScrollArea className="flex-1 -mx-2 px-2">
+          <ScrollArea className="flex-1 -mx-1 px-1">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
@@ -293,7 +305,7 @@ export function TemplateGallery({
                 strategy={verticalListSortingStrategy}
                 disabled={!canDrag}
               >
-                <div className="space-y-2 pb-4">
+                <div className="space-y-1.5 pb-4">
                   {filteredTemplates.map((template, index) => (
                     <SortableTemplateItem
                       key={template.id}
@@ -303,6 +315,7 @@ export function TemplateGallery({
                       onHover={() => setHoveredTemplate(template)}
                       onLeave={() => setHoveredTemplate(null)}
                       onSelect={() => onSelectTemplate(template)}
+                      onToggleFavorite={onToggleFavorite}
                       canDrag={canDrag}
                     />
                   ))}
@@ -312,34 +325,31 @@ export function TemplateGallery({
 
             {filteredTemplates.length === 0 && (
               <div className="text-center py-12 text-muted-foreground animate-fade-in">
-                <div className="w-14 h-14 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-6 w-6 opacity-40" />
+                <div className="w-12 h-12 rounded-xl bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                  <Search className="h-5 w-5 opacity-40" />
                 </div>
                 <p className="text-sm font-medium">Keine Vorlagen gefunden</p>
-                <p className="text-xs mt-1 opacity-70">Versuche andere Suchbegriffe</p>
               </div>
             )}
           </ScrollArea>
         </div>
 
         {/* Preview Panel */}
-        <div className="w-1/2 rounded-2xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/50 overflow-hidden flex flex-col shadow-inner animate-fade-in">
+        <div className="w-1/2 rounded-2xl bg-gradient-to-br from-muted/40 to-muted/20 border border-border/40 overflow-hidden flex flex-col">
           {displayTemplate ? (
             <TemplatePreview
               template={displayTemplate}
               onSelect={() => onSelectTemplate(displayTemplate)}
+              onToggleFavorite={onToggleFavorite}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center text-center p-8">
+            <div className="flex-1 flex items-center justify-center text-center p-6">
               <div>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="h-8 w-8 text-primary/40" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-transparent flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="h-7 w-7 text-primary/40" />
                 </div>
                 <p className="text-sm text-muted-foreground font-medium">
-                  Wähle eine Vorlage aus
-                </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  um die Vorschau zu sehen
+                  Vorlage auswählen
                 </p>
               </div>
             </div>
@@ -348,11 +358,11 @@ export function TemplateGallery({
       </div>
 
       {/* Footer Actions */}
-      <div className="pt-5 mt-5 border-t border-border/50 flex items-center justify-between animate-fade-in">
+      <div className="pt-4 mt-4 border-t border-border/40 flex items-center justify-between shrink-0">
         <Button
           variant="ghost"
           onClick={onCreateNew}
-          className="gap-2 text-muted-foreground hover:text-foreground font-medium"
+          className="gap-2 text-muted-foreground hover:text-foreground text-sm font-medium"
         >
           <Plus className="h-4 w-4" />
           Ohne Vorlage erstellen
@@ -370,6 +380,7 @@ function SortableTemplateItem({
   onHover,
   onLeave,
   onSelect,
+  onToggleFavorite,
   canDrag,
 }: {
   template: TaskTemplate;
@@ -378,6 +389,7 @@ function SortableTemplateItem({
   onHover: () => void;
   onLeave: () => void;
   onSelect: () => void;
+  onToggleFavorite?: (templateId: string, isFavorite: boolean) => void;
   canDrag: boolean;
 }) {
   const {
@@ -392,7 +404,7 @@ function SortableTemplateItem({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    animationDelay: `${index * 60}ms`,
+    animationDelay: `${index * 40}ms`,
   };
 
   const tags = stringToTags(template.tag);
@@ -409,61 +421,78 @@ function SortableTemplateItem({
       )}
     >
       <div
-        onClick={onSelect}
         onMouseEnter={onHover}
         onMouseLeave={onLeave}
         className={cn(
-          'w-full text-left p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer',
-          'hover:shadow-lg hover:shadow-primary/5',
+          'w-full text-left p-3 rounded-xl border transition-all duration-200 cursor-pointer group',
           isDragging 
             ? 'shadow-2xl shadow-primary/20 border-primary bg-background scale-105 opacity-90'
             : isHovered
-              ? 'border-primary/40 bg-primary/5 shadow-lg shadow-primary/10 scale-[1.01]'
-              : 'border-transparent bg-background/60 hover:bg-background/80'
+              ? 'border-primary/30 bg-primary/5 shadow-md'
+              : 'border-transparent bg-background/70 hover:bg-background'
         )}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2.5">
           {/* Drag Handle */}
           {canDrag && (
             <div
               {...attributes}
               {...listeners}
               className={cn(
-                'shrink-0 p-1.5 -ml-1 rounded-lg cursor-grab active:cursor-grabbing transition-all',
-                'text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/50',
+                'shrink-0 p-1 -ml-0.5 rounded cursor-grab active:cursor-grabbing transition-all',
+                'text-muted-foreground/30 hover:text-muted-foreground/60',
                 isDragging && 'text-primary'
               )}
               onClick={(e) => e.stopPropagation()}
             >
-              <GripVertical className="h-4 w-4" />
+              <GripVertical className="h-3.5 w-3.5" />
             </div>
           )}
           
-          <div className={cn(
-            'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300',
-            'shadow-sm',
-            isHovered || isDragging
-              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
-              : cn(priority.bgColor, priority.color, 'border', priority.borderColor)
-          )}>
-            <Icon className="h-5 w-5" />
+          {/* Favorite Star */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite?.(template.id, !template.is_favorite);
+            }}
+            className={cn(
+              'shrink-0 p-1 -ml-0.5 rounded transition-all duration-200',
+              template.is_favorite 
+                ? 'text-amber-500 hover:text-amber-600' 
+                : 'text-muted-foreground/30 hover:text-amber-400 opacity-0 group-hover:opacity-100'
+            )}
+          >
+            <Star className={cn('h-3.5 w-3.5', template.is_favorite && 'fill-current')} />
+          </button>
+          
+          <div 
+            className={cn(
+              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200',
+              isHovered || isDragging
+                ? 'bg-primary text-primary-foreground shadow-md' 
+                : cn(priority.bgColor, priority.color)
+            )}
+            onClick={onSelect}
+          >
+            <Icon className="h-4 w-4" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{template.title}</p>
+          <div className="flex-1 min-w-0" onClick={onSelect}>
+            <p className="font-medium text-sm truncate leading-tight">{template.title}</p>
             {template.customer_name && (
-              <p className="text-xs text-muted-foreground truncate mt-0.5">
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                 {template.customer_name}
               </p>
             )}
-            <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
               <span className={cn(
-                'text-[10px] font-semibold px-2 py-0.5 rounded-md border',
-                priority.bgColor, priority.color, priority.borderColor
+                'text-[9px] font-semibold px-1.5 py-0.5 rounded',
+                priority.bgColor, priority.color
               )}>
                 {priority.label}
               </span>
               {template.special_compensation && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400">
                   {template.special_compensation}€
                 </span>
               )}
@@ -471,13 +500,13 @@ function SortableTemplateItem({
                 <TagBadge key={tag} tag={tag} size="sm" />
               ))}
               {tags.length > 1 && (
-                <span className="text-[10px] text-muted-foreground font-medium">+{tags.length - 1}</span>
+                <span className="text-[9px] text-muted-foreground">+{tags.length - 1}</span>
               )}
             </div>
           </div>
           <ChevronRight className={cn(
-            'h-5 w-5 shrink-0 transition-all duration-300',
-            isHovered ? 'text-primary opacity-100 translate-x-0.5' : 'text-muted-foreground/30 opacity-0'
+            'h-4 w-4 shrink-0 transition-all duration-200 self-center',
+            isHovered ? 'text-primary opacity-100' : 'opacity-0'
           )} />
         </div>
       </div>
@@ -489,9 +518,11 @@ function SortableTemplateItem({
 function TemplatePreview({
   template,
   onSelect,
+  onToggleFavorite,
 }: {
   template: TaskTemplate;
   onSelect: () => void;
+  onToggleFavorite?: (templateId: string, isFavorite: boolean) => void;
 }) {
   const tags = stringToTags(template.tag);
   const priority = priorityConfig[template.priority];
@@ -499,45 +530,55 @@ function TemplatePreview({
 
   return (
     <div className="flex flex-col h-full animate-fade-in">
-      {/* Header with Gradient */}
+      {/* Header */}
       <div className={cn(
-        'p-5 border-b relative overflow-hidden',
+        'p-4 border-b relative overflow-hidden shrink-0',
         priority.bgColor
       )}>
         {/* Decorative Elements */}
-        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-gradient-to-br from-primary/10 to-transparent -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-gradient-to-tr from-primary/5 to-transparent translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-transparent -translate-y-1/2 translate-x-1/2" />
         
-        <div className="flex items-start gap-4 relative">
+        <div className="flex items-start gap-3 relative">
           <div className={cn(
-            'w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg',
-            'bg-white dark:bg-background border-2',
+            'w-12 h-12 rounded-xl flex items-center justify-center shadow-md',
+            'bg-white dark:bg-background border',
             priority.borderColor
           )}>
-            <Icon className={cn('h-7 w-7', priority.color)} />
+            <Icon className={cn('h-6 w-6', priority.color)} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-lg leading-tight">{template.title}</h3>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-bold text-base leading-tight">{template.title}</h3>
+              <button
+                type="button"
+                onClick={() => onToggleFavorite?.(template.id, !template.is_favorite)}
+                className={cn(
+                  'shrink-0 p-1.5 rounded-lg transition-all duration-200',
+                  template.is_favorite 
+                    ? 'text-amber-500 bg-amber-100 dark:bg-amber-900/30' 
+                    : 'text-muted-foreground/50 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                )}
+              >
+                <Star className={cn('h-4 w-4', template.is_favorite && 'fill-current')} />
+              </button>
+            </div>
             {template.customer_name && (
-              <p className="text-sm text-muted-foreground mt-1">{template.customer_name}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{template.customer_name}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1 p-5">
-        <div className="space-y-5">
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
           {/* Priority & Compensation */}
           <div className="flex flex-wrap gap-2">
-            <Badge className={cn(
-              'font-semibold border',
-              priority.bgColor, priority.color, priority.borderColor
-            )}>
+            <Badge className={cn('font-medium text-xs', priority.bgColor, priority.color)}>
               {priority.label}
             </Badge>
             {template.special_compensation && (
-              <Badge className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-semibold gap-1.5">
+              <Badge className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-medium text-xs gap-1">
                 <Euro className="h-3 w-3" />
                 {template.special_compensation}€
               </Badge>
@@ -546,12 +587,12 @@ function TemplatePreview({
 
           {/* Description */}
           {template.description && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <FileText className="h-3.5 w-3.5" />
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="h-3 w-3" />
                 Beschreibung
               </p>
-              <div className="text-sm leading-relaxed whitespace-pre-wrap bg-background/80 rounded-xl p-4 border shadow-sm">
+              <div className="text-sm leading-relaxed whitespace-pre-wrap bg-background/80 rounded-lg p-3 border">
                 {template.description}
               </div>
             </div>
@@ -559,26 +600,22 @@ function TemplatePreview({
 
           {/* Test Credentials */}
           {(template.test_email || template.test_password) && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Key className="h-3.5 w-3.5" />
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Key className="h-3 w-3" />
                 Test-Zugangsdaten
               </p>
-              <div className="grid gap-2 bg-sky-50 dark:bg-sky-900/20 rounded-xl p-4 border border-sky-200 dark:border-sky-800 shadow-sm">
+              <div className="grid gap-2 bg-sky-50 dark:bg-sky-900/20 rounded-lg p-3 border border-sky-200/50 dark:border-sky-800/50">
                 {template.test_email && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-800/50 flex items-center justify-center">
-                      <Mail className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                    </div>
-                    <span className="font-mono text-xs bg-background/60 px-2 py-1 rounded">{template.test_email}</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-3.5 w-3.5 text-sky-500" />
+                    <span className="font-mono text-xs">{template.test_email}</span>
                   </div>
                 )}
                 {template.test_password && (
-                  <div className="flex items-center gap-3 text-sm">
-                    <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-800/50 flex items-center justify-center">
-                      <Key className="h-4 w-4 text-sky-600 dark:text-sky-400" />
-                    </div>
-                    <span className="font-mono text-xs bg-background/60 px-2 py-1 rounded">{template.test_password}</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Key className="h-3.5 w-3.5 text-sky-500" />
+                    <span className="font-mono text-xs">{template.test_password}</span>
                   </div>
                 )}
               </div>
@@ -587,14 +624,14 @@ function TemplatePreview({
 
           {/* Tags */}
           {tags.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Tag className="h-3.5 w-3.5" />
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Tag className="h-3 w-3" />
                 Tags
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {tags.map((tag) => (
-                  <TagBadge key={tag} tag={tag} className="px-3 py-1" />
+                  <TagBadge key={tag} tag={tag} size="sm" />
                 ))}
               </div>
             </div>
@@ -602,9 +639,9 @@ function TemplatePreview({
 
           {/* Notes */}
           {template.notes && (
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notizen</p>
-              <p className="text-sm bg-background/80 rounded-xl p-4 border whitespace-pre-wrap shadow-sm">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Notizen</p>
+              <p className="text-sm bg-background/80 rounded-lg p-3 border whitespace-pre-wrap">
                 {template.notes}
               </p>
             </div>
@@ -613,9 +650,9 @@ function TemplatePreview({
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-5 border-t bg-background/50">
-        <Button onClick={onSelect} size="lg" className="w-full gap-2 h-12 text-base font-semibold shadow-lg shadow-primary/20">
-          <Plus className="h-5 w-5" />
+      <div className="p-4 border-t bg-background/50 shrink-0">
+        <Button onClick={onSelect} className="w-full gap-2 h-10 font-semibold shadow-md shadow-primary/15">
+          <Plus className="h-4 w-4" />
           Vorlage verwenden
         </Button>
       </div>

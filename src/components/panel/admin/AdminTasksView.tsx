@@ -62,6 +62,7 @@ interface TaskTemplate {
   created_by: string;
   created_at: string;
   sort_order?: number;
+  is_favorite?: boolean;
 }
 
 // Document status for task KYC
@@ -72,7 +73,12 @@ interface TaskDocStatus {
   rejected: number;
 }
 
-export default function AdminTasksView() {
+interface AdminTasksViewProps {
+  externalOpenDialog?: boolean;
+  onDialogOpened?: () => void;
+}
+
+export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: AdminTasksViewProps = {}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assignments, setAssignments] = useState<(TaskAssignment & { progress_notes?: string; workflow_step?: number; workflow_digital?: boolean | null; step_notes?: Record<string, string>; demo_viewed_at?: string | null })[]>([]);
   const [employees, setEmployees] = useState<Profile[]>([]);
@@ -194,6 +200,15 @@ export default function AdminTasksView() {
     };
   }, []);
 
+  // Handle external dialog trigger (Ctrl+N shortcut)
+  useEffect(() => {
+    if (externalOpenDialog) {
+      setIsDialogOpen(true);
+      setDialogMode('form'); // Open directly in form mode
+      onDialogOpened?.();
+    }
+  }, [externalOpenDialog, onDialogOpened]);
+
   const fetchTemplates = async () => {
     const { data } = await supabase
       .from('task_templates')
@@ -212,6 +227,18 @@ export default function AdminTasksView() {
     }
     // Refresh templates to sync
     fetchTemplates();
+  };
+
+  const handleToggleFavorite = async (templateId: string, isFavorite: boolean) => {
+    await supabase
+      .from('task_templates')
+      .update({ is_favorite: isFavorite })
+      .eq('id', templateId);
+    
+    // Optimistic update
+    setTemplates(prev => prev.map(t => 
+      t.id === templateId ? { ...t, is_favorite: isFavorite } : t
+    ));
   };
 
   const fetchTasks = async () => {
@@ -788,6 +815,7 @@ export default function AdminTasksView() {
                   }}
                   onCreateNew={() => setDialogMode('form')}
                   onReorderTemplates={handleReorderTemplates}
+                  onToggleFavorite={handleToggleFavorite}
                 />
               </div>
             ) : (

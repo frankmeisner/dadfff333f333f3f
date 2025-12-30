@@ -4,18 +4,20 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
-// Predefined color palette for tags
+// Elegant gradient-based color palette for tags
 const TAG_COLORS = [
-  { bg: 'bg-rose-500/20', text: 'text-rose-700 dark:text-rose-400', border: 'border-rose-500/30' },
-  { bg: 'bg-sky-500/20', text: 'text-sky-700 dark:text-sky-400', border: 'border-sky-500/30' },
-  { bg: 'bg-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-500/30' },
-  { bg: 'bg-violet-500/20', text: 'text-violet-700 dark:text-violet-400', border: 'border-violet-500/30' },
-  { bg: 'bg-amber-500/20', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-500/30' },
-  { bg: 'bg-cyan-500/20', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-cyan-500/30' },
-  { bg: 'bg-fuchsia-500/20', text: 'text-fuchsia-700 dark:text-fuchsia-400', border: 'border-fuchsia-500/30' },
-  { bg: 'bg-orange-500/20', text: 'text-orange-700 dark:text-orange-400', border: 'border-orange-500/30' },
-  { bg: 'bg-indigo-500/20', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-indigo-500/30' },
-  { bg: 'bg-teal-500/20', text: 'text-teal-700 dark:text-teal-400', border: 'border-teal-500/30' },
+  { bg: 'bg-gradient-to-r from-rose-500/15 to-pink-500/15', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-400/40 dark:border-rose-500/30' },
+  { bg: 'bg-gradient-to-r from-sky-500/15 to-cyan-500/15', text: 'text-sky-600 dark:text-sky-400', border: 'border-sky-400/40 dark:border-sky-500/30' },
+  { bg: 'bg-gradient-to-r from-emerald-500/15 to-teal-500/15', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-400/40 dark:border-emerald-500/30' },
+  { bg: 'bg-gradient-to-r from-violet-500/15 to-purple-500/15', text: 'text-violet-600 dark:text-violet-400', border: 'border-violet-400/40 dark:border-violet-500/30' },
+  { bg: 'bg-gradient-to-r from-amber-500/15 to-orange-500/15', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-400/40 dark:border-amber-500/30' },
+  { bg: 'bg-gradient-to-r from-cyan-500/15 to-blue-500/15', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-400/40 dark:border-cyan-500/30' },
+  { bg: 'bg-gradient-to-r from-fuchsia-500/15 to-pink-500/15', text: 'text-fuchsia-600 dark:text-fuchsia-400', border: 'border-fuchsia-400/40 dark:border-fuchsia-500/30' },
+  { bg: 'bg-gradient-to-r from-orange-500/15 to-red-500/15', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-400/40 dark:border-orange-500/30' },
+  { bg: 'bg-gradient-to-r from-indigo-500/15 to-violet-500/15', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-400/40 dark:border-indigo-500/30' },
+  { bg: 'bg-gradient-to-r from-teal-500/15 to-emerald-500/15', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-400/40 dark:border-teal-500/30' },
+  { bg: 'bg-gradient-to-r from-lime-500/15 to-green-500/15', text: 'text-lime-600 dark:text-lime-400', border: 'border-lime-400/40 dark:border-lime-500/30' },
+  { bg: 'bg-gradient-to-r from-blue-500/15 to-indigo-500/15', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-400/40 dark:border-blue-500/30' },
 ];
 
 // Get a consistent color for a tag based on its hash
@@ -47,13 +49,15 @@ export function TagBadge({ tag, onRemove, className, size = 'default' }: TagBadg
         color.bg,
         color.text,
         color.border,
-        'border transition-all duration-200',
-        size === 'sm' ? 'text-xs px-2 py-0' : 'text-xs px-2.5 py-0.5',
-        onRemove && 'pr-1 gap-1 hover:opacity-80',
+        'border font-medium shadow-sm backdrop-blur-sm transition-all duration-200 hover:shadow-md',
+        size === 'sm' ? 'text-[10px] px-2 py-0.5 rounded-md' : 'text-xs px-3 py-1 rounded-lg',
+        onRemove && 'pr-1.5 gap-1 hover:opacity-90',
         className
       )}
     >
-      {tag}
+      <span className="relative">
+        {tag}
+      </span>
       {onRemove && (
         <button
           type="button"
@@ -62,7 +66,7 @@ export function TagBadge({ tag, onRemove, className, size = 'default' }: TagBadg
             onRemove();
           }}
           className={cn(
-            'ml-1 rounded-full p-0.5 hover:bg-foreground/10 transition-colors',
+            'ml-0.5 rounded-full p-0.5 hover:bg-foreground/10 transition-colors',
             size === 'sm' ? 'h-3 w-3' : 'h-4 w-4'
           )}
         >

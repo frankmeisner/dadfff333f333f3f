@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import PanelSidebar from './PanelSidebar';
 import PanelHeader from './PanelHeader';
@@ -31,6 +31,7 @@ export default function AdminDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const [toastNotifications, setToastNotifications] = useState<ToastNotification[]>([]);
+  const [openNewTaskDialog, setOpenNewTaskDialog] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const activeTabRef = useRef(activeTab);
@@ -44,6 +45,22 @@ export default function AdminDashboard() {
     sessionStorage.setItem('adminActiveTab', tab);
     setActiveTabState(tab);
   };
+
+  // Keyboard shortcut: Ctrl+N to open new task dialog
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+N or Cmd+N (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        // Navigate to tasks and trigger dialog
+        setActiveTab('tasks');
+        setOpenNewTaskDialog(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Save scroll position continuously and restore on mount/visibility change
   useEffect(() => {
@@ -360,7 +377,7 @@ export default function AdminDashboard() {
       case 'dashboard':
         return <AdminDashboardView onNavigate={setActiveTab} />;
       case 'tasks':
-        return <AdminTasksView />;
+        return <AdminTasksView externalOpenDialog={openNewTaskDialog} onDialogOpened={() => setOpenNewTaskDialog(false)} />;
       case 'users':
         return <AdminUsersView />;
       case 'activity':
