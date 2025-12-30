@@ -860,7 +860,7 @@ export default function AdminChatView() {
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                               onClick={() => setDeleteMessageId(msg.id)}
-                                              className="text-destructive focus:text-destructive"
+                                              className="text-foreground focus:text-foreground"
                                             >
                                               <Trash2 className="h-4 w-4 mr-2" />
                                               Löschen
@@ -931,7 +931,7 @@ export default function AdminChatView() {
                       />
                       <button
                         onClick={clearImage}
-                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
+                        className="absolute -top-2 -right-2 bg-foreground text-background rounded-full p-1"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -994,7 +994,7 @@ export default function AdminChatView() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMessage} className="bg-destructive hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDeleteMessage} className="bg-foreground text-background hover:bg-foreground/90">
               Löschen
             </AlertDialogAction>
           </AlertDialogFooter>

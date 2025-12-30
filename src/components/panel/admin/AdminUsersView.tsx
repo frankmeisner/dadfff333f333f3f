@@ -360,7 +360,7 @@ export default function AdminUsersView() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-foreground hover:text-foreground hover:bg-foreground/10"
                       onClick={(e) => handleDeleteUser(user.user_id, e)}
                       disabled={deletingUserId === user.user_id}
                     >
@@ -429,7 +429,7 @@ export default function AdminUsersView() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-foreground hover:text-foreground hover:bg-foreground/10"
                       onClick={(e) => handleDeleteUser(user.user_id, e)}
                       disabled={deletingUserId === user.user_id}
                     >

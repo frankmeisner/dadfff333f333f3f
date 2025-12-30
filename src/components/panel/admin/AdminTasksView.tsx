@@ -1312,7 +1312,7 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                       )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-foreground hover:bg-foreground/10">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -1327,7 +1327,7 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                             <AlertDialogAction
                               onClick={() => handleDeleteTask(task.id)}
-                              className="bg-destructive text-destructive-foreground"
+                              className="bg-foreground text-background hover:bg-foreground/90"
                             >
                               Löschen
                             </AlertDialogAction>
@@ -2145,7 +2145,7 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                                   <AlertDialogCancel>Abbrechen</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => handleDeleteTemplate(template.id)}
-                                    className="bg-destructive text-destructive-foreground"
+                                    className="bg-foreground text-background hover:bg-foreground/90"
                                   >
                                     Löschen
                                   </AlertDialogAction>
