@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download, Upload, Tag } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download, Upload, Tag, ChevronRight } from 'lucide-react';
 import { TagInput, TagBadge, stringToTags, tagsToString } from '@/components/panel/TagInput';
-import { TemplateCommandMenu } from '@/components/panel/TemplateCommandMenu';
+import { TemplateGallery } from '@/components/panel/TemplateGallery';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -78,6 +78,7 @@ export default function AdminTasksView() {
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [taskDocStatuses, setTaskDocStatuses] = useState<TaskDocStatus[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'templates' | 'form'>('templates');
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -697,36 +698,87 @@ export default function AdminTasksView() {
             <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Live</span>
           </div>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setDialogMode('templates');
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
               Neuer Auftrag
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Neuen Auftrag erstellen</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              {/* Template Selection - Elegant Command Menu */}
-              {templates.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm flex items-center gap-2 text-muted-foreground">
+          <DialogContent className={cn(
+            "max-h-[90vh] overflow-hidden flex flex-col",
+            dialogMode === 'templates' && templates.length > 0 ? "max-w-4xl" : "max-w-lg"
+          )}>
+            <DialogHeader className="pb-0">
+              <DialogTitle className="flex items-center gap-3">
+                {dialogMode === 'form' && templates.length > 0 ? (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDialogMode('templates')}
+                      className="h-8 w-8 p-0 -ml-2"
+                    >
+                      <ChevronRight className="h-4 w-4 rotate-180" />
+                    </Button>
+                    <span>Neuen Auftrag erstellen</span>
+                  </>
+                ) : templates.length > 0 ? (
+                  <span>Vorlage auswählen</span>
+                ) : (
+                  <span>Neuen Auftrag erstellen</span>
+                )}
+              </DialogTitle>
+              
+              {/* Tab Switch for Templates vs New */}
+              {templates.length > 0 && dialogMode === 'templates' && (
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    variant={dialogMode === 'templates' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setDialogMode('templates')}
+                    className="gap-2"
+                  >
                     <Bookmark className="h-4 w-4" />
-                    Aus Vorlage erstellen
-                  </Label>
-                  <TemplateCommandMenu
-                    templates={templates}
-                    onSelectTemplate={(template) => {
-                      handleLoadTemplate(template);
-                      toast({ title: 'Vorlage geladen', description: `"${template.title}" wurde geladen.` });
-                    }}
-                    onManageTemplates={() => setIsTemplateDialogOpen(true)}
-                  />
+                    Aus Vorlage
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDialogMode('form')}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Neu erstellen
+                  </Button>
                 </div>
               )}
-
+            </DialogHeader>
+            
+            {/* Template Gallery View */}
+            {dialogMode === 'templates' && templates.length > 0 ? (
+              <div className="flex-1 min-h-[500px] overflow-hidden pt-4">
+                <TemplateGallery
+                  templates={templates}
+                  onSelectTemplate={(template) => {
+                    handleLoadTemplate(template);
+                    setDialogMode('form');
+                  }}
+                  onManageTemplates={() => {
+                    setIsDialogOpen(false);
+                    setIsTemplateDialogOpen(true);
+                  }}
+                  onCreateNew={() => setDialogMode('form')}
+                />
+              </div>
+            ) : (
+              /* Form View */
+              <div className="space-y-4 overflow-y-auto flex-1 pt-4 pr-2 -mr-2">
               <div className="space-y-2">
                 <Label>Titel *</Label>
                 <Input value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} placeholder="Auftragstitel" />
@@ -851,7 +903,8 @@ export default function AdminTasksView() {
               </div>
 
               <Button onClick={handleCreateTask} className="w-full">Auftrag erstellen</Button>
-            </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>
