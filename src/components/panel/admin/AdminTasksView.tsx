@@ -92,6 +92,8 @@ export default function AdminTasksView() {
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateTag, setTemplateTag] = useState('');
   const [templateTagFilter, setTemplateTagFilter] = useState<string>('all');
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [templateSort, setTemplateSort] = useState<'alpha' | 'newest' | 'oldest'>('alpha');
   const [recentlyUpdatedNotes, setRecentlyUpdatedNotes] = useState<Set<string>>(new Set());
   const previousStepNotesRef = useRef<Record<string, Record<string, string>>>({});
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
@@ -1604,47 +1606,98 @@ export default function AdminTasksView() {
             </DialogTitle>
           </DialogHeader>
           
-          {/* Tag Filter */}
+          {/* Search, Filter & Sort */}
           {templates.length > 0 && (
-            <div className="flex items-center gap-2 pb-2 border-b">
-              <Label className="text-sm text-muted-foreground whitespace-nowrap">Tag:</Label>
-              <Select value={templateTagFilter} onValueChange={setTemplateTagFilter}>
-                <SelectTrigger className="h-8 flex-1">
-                  <SelectValue placeholder="Alle Tags" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle Tags</SelectItem>
-                  <SelectItem value="untagged">Ohne Tag</SelectItem>
-                  {[...new Set(templates.filter(t => t.tag).map(t => t.tag!))].sort().map(tag => (
-                    <SelectItem key={tag} value={tag}>{tag}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-3 pb-3 border-b">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={templateSearch}
+                  onChange={(e) => setTemplateSearch(e.target.value)}
+                  placeholder="Vorlage suchen..."
+                  className="pl-9 h-9"
+                />
+              </div>
+              
+              {/* Tag Filter & Sort */}
+              <div className="flex items-center gap-2">
+                <Select value={templateTagFilter} onValueChange={setTemplateTagFilter}>
+                  <SelectTrigger className="h-8 flex-1">
+                    <SelectValue placeholder="Alle Tags" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Tags</SelectItem>
+                    <SelectItem value="untagged">Ohne Tag</SelectItem>
+                    {[...new Set(templates.filter(t => t.tag).map(t => t.tag!))].sort().map(tag => (
+                      <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={templateSort} onValueChange={(v: 'alpha' | 'newest' | 'oldest') => setTemplateSort(v)}>
+                  <SelectTrigger className="h-8 w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="alpha">A-Z</SelectItem>
+                    <SelectItem value="newest">Neueste zuerst</SelectItem>
+                    <SelectItem value="oldest">Älteste zuerst</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
           
           <div className="space-y-3">
-            {templates.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Bookmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>Keine Vorlagen vorhanden.</p>
-                <p className="text-sm mt-1">Erstelle einen Auftrag und aktiviere "Als Vorlage speichern".</p>
-              </div>
-            ) : templates.filter(t => 
-                templateTagFilter === 'all' ? true : 
-                templateTagFilter === 'untagged' ? !t.tag : 
-                t.tag === templateTagFilter
-              ).length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Bookmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>Keine Vorlagen mit diesem Tag.</p>
-              </div>
-            ) : (
-              templates.filter(t => 
-                templateTagFilter === 'all' ? true : 
-                templateTagFilter === 'untagged' ? !t.tag : 
-                t.tag === templateTagFilter
-              ).map((template) => (
+            {(() => {
+              const filteredTemplates = templates
+                .filter(t => {
+                  // Tag filter
+                  const tagMatch = templateTagFilter === 'all' ? true : 
+                    templateTagFilter === 'untagged' ? !t.tag : 
+                    t.tag === templateTagFilter;
+                  
+                  // Search filter
+                  const searchLower = templateSearch.toLowerCase().trim();
+                  const searchMatch = !searchLower || 
+                    t.title.toLowerCase().includes(searchLower) ||
+                    (t.description?.toLowerCase().includes(searchLower) ?? false) ||
+                    (t.customer_name?.toLowerCase().includes(searchLower) ?? false) ||
+                    (t.tag?.toLowerCase().includes(searchLower) ?? false);
+                  
+                  return tagMatch && searchMatch;
+                })
+                .sort((a, b) => {
+                  if (templateSort === 'alpha') {
+                    return a.title.localeCompare(b.title, 'de');
+                  } else if (templateSort === 'newest') {
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                  } else {
+                    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                  }
+                });
+              
+              if (templates.length === 0) {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Bookmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>Keine Vorlagen vorhanden.</p>
+                    <p className="text-sm mt-1">Erstelle einen Auftrag und aktiviere "Als Vorlage speichern".</p>
+                  </div>
+                );
+              }
+              
+              if (filteredTemplates.length === 0) {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Bookmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>Keine Vorlagen gefunden.</p>
+                  </div>
+                );
+              }
+              
+              return filteredTemplates.map((template) => (
                 <div key={template.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -1723,8 +1776,8 @@ export default function AdminTasksView() {
                     </div>
                   </div>
                 </div>
-              ))
-            )}
+              ));
+            })()}
           </div>
           <div className="flex justify-end pt-4 border-t">
             <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
