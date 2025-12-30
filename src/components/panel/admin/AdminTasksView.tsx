@@ -1697,7 +1697,17 @@ export default function AdminTasksView() {
                 );
               }
               
-              return filteredTemplates.map((template) => (
+              return (
+                <>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground pb-2">
+                    <span>
+                      {filteredTemplates.length === templates.length 
+                        ? `${templates.length} Vorlage${templates.length !== 1 ? 'n' : ''}`
+                        : `${filteredTemplates.length} von ${templates.length} Vorlage${templates.length !== 1 ? 'n' : ''}`
+                      }
+                    </span>
+                  </div>
+                  {filteredTemplates.map((template) => (
                 <div key={template.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -1776,7 +1786,9 @@ export default function AdminTasksView() {
                     </div>
                   </div>
                 </div>
-              ));
+              ))}
+                </>
+              );
             })()}
           </div>
           <div className="flex justify-end pt-4 border-t">
