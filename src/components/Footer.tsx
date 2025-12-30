@@ -3,6 +3,7 @@ import { Mail, Phone, MapPin, Clock, Twitter, Linkedin, Send } from "lucide-reac
 import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { checkRateLimit, recordAttempt, formatRetryTime } from "@/lib/rate-limiter";
 import logo from "@/assets/logo-cropped.png";
 
 export const Footer = () => {
@@ -36,7 +37,21 @@ export const Footer = () => {
     e.preventDefault();
     if (!email.trim()) return;
     
+    // Rate limiting check
+    const rateLimitKey = 'newsletter_signup';
+    const { allowed, retryAfterMs } = checkRateLimit(rateLimitKey, 'newsletter');
+    
+    if (!allowed) {
+      toast({
+        title: "Zu viele Versuche",
+        description: `Bitte warten Sie ${formatRetryTime(retryAfterMs)} und versuchen Sie es erneut.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
+    recordAttempt(rateLimitKey);
     
     try {
       const { error } = await supabase
