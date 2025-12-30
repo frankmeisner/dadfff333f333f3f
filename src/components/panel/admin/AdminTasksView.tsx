@@ -97,6 +97,7 @@ export default function AdminTasksView() {
   const [recentlyUpdatedNotes, setRecentlyUpdatedNotes] = useState<Set<string>>(new Set());
   const previousStepNotesRef = useRef<Record<string, Record<string, string>>>({});
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<TaskTemplate | null>(null);
   const [editTemplateData, setEditTemplateData] = useState({
     title: '',
     description: '',
@@ -1870,6 +1871,15 @@ export default function AdminTasksView() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => setPreviewTemplate(template)}
+                        title="Vorschau anzeigen"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-8 w-8 p-0"
                         onClick={() => {
                           handleLoadTemplate(template);
@@ -2070,6 +2080,101 @@ export default function AdminTasksView() {
             <Button className="flex-1 gap-2" onClick={handleSaveTemplate}>
               <Save className="h-4 w-4" />
               Speichern
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Template Preview Dialog */}
+      <Dialog open={previewTemplate !== null} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Vorlagen-Vorschau
+            </DialogTitle>
+          </DialogHeader>
+          {previewTemplate && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold">{previewTemplate.title}</h3>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <Badge className={priorityColors[previewTemplate.priority]} variant="secondary">
+                    {previewTemplate.priority === 'low' ? 'Niedrig' : previewTemplate.priority === 'medium' ? 'Mittel' : previewTemplate.priority === 'high' ? 'Hoch' : 'Dringend'}
+                  </Badge>
+                  {previewTemplate.tag && (
+                    <Badge variant="outline" className="bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30">
+                      {previewTemplate.tag}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {previewTemplate.customer_name && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Kundenname</Label>
+                  <p className="mt-1 font-medium">{previewTemplate.customer_name}</p>
+                </div>
+              )}
+
+              {previewTemplate.description && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Beschreibung</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap">{previewTemplate.description}</p>
+                </div>
+              )}
+
+              {previewTemplate.special_compensation && (
+                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <Label className="text-xs text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">Sondervergütung</Label>
+                  <p className="mt-1 font-semibold text-emerald-700 dark:text-emerald-400">{previewTemplate.special_compensation}€</p>
+                </div>
+              )}
+
+              {(previewTemplate.test_email || previewTemplate.test_password) && (
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <Label className="text-xs text-blue-700 dark:text-blue-400 uppercase tracking-wide">Test-Zugangsdaten</Label>
+                  <div className="mt-2 space-y-1 text-sm">
+                    {previewTemplate.test_email && (
+                      <p><span className="text-muted-foreground">E-Mail:</span> {previewTemplate.test_email}</p>
+                    )}
+                    {previewTemplate.test_password && (
+                      <p><span className="text-muted-foreground">Passwort:</span> {previewTemplate.test_password}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {previewTemplate.notes && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notizen</Label>
+                  <p className="mt-1 text-sm whitespace-pre-wrap">{previewTemplate.notes}</p>
+                </div>
+              )}
+
+              <div className="text-xs text-muted-foreground pt-2 border-t">
+                Erstellt: {format(new Date(previewTemplate.created_at), 'dd.MM.yyyy HH:mm', { locale: de })}
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-4 border-t">
+            <Button variant="outline" className="flex-1" onClick={() => setPreviewTemplate(null)}>
+              Schließen
+            </Button>
+            <Button 
+              className="flex-1 gap-2" 
+              onClick={() => {
+                if (previewTemplate) {
+                  handleLoadTemplate(previewTemplate);
+                  setPreviewTemplate(null);
+                  setIsTemplateDialogOpen(false);
+                  setIsDialogOpen(true);
+                }
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Als Auftrag verwenden
             </Button>
           </div>
         </DialogContent>
