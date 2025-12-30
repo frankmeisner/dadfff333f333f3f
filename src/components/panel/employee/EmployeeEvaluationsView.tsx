@@ -231,14 +231,35 @@ export default function EmployeeEvaluationsView() {
       return;
     }
 
-    const { error } = await supabase.from('task_evaluations').insert({
-      task_id: newEvalTaskId,
-      user_id: user.id,
+    const evaluationData = {
       design_rating: parseInt(newEvalForm.design_rating),
       usability_rating: parseInt(newEvalForm.usability_rating),
       overall_rating: parseInt(newEvalForm.overall_rating),
       comment: newEvalForm.comment || null,
-    });
+      updated_at: new Date().toISOString(),
+    };
+
+    // Check if this task has a stale evaluation that needs to be updated
+    const currentTask = pendingTasks.find(t => t.id === newEvalTaskId);
+    let error;
+
+    if (currentTask?.hasStaleEvaluation) {
+      // Update existing stale evaluation
+      const result = await supabase
+        .from('task_evaluations')
+        .update(evaluationData)
+        .eq('task_id', newEvalTaskId)
+        .eq('user_id', user.id);
+      error = result.error;
+    } else {
+      // Insert new evaluation
+      const result = await supabase.from('task_evaluations').insert({
+        task_id: newEvalTaskId,
+        user_id: user.id,
+        ...evaluationData,
+      });
+      error = result.error;
+    }
 
     if (error) {
       toast({ title: 'Fehler', description: 'Bewertung konnte nicht gespeichert werden.', variant: 'destructive' });
@@ -259,7 +280,6 @@ export default function EmployeeEvaluationsView() {
         tabContext.setActiveTab("tasks");
       }
     }, 2000);
-    fetchPendingTasks();
   };
 
   const handleEdit = (ev: EvaluationWithTask) => {
