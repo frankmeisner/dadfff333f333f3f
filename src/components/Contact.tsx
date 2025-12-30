@@ -186,7 +186,7 @@ export const Contact = () => {
                 
                 <div className="space-y-4">
                   <a
-                    href="mailto:info@fritze-it.solutions"
+                    href="mailto:info@fritze-it-solutions.de"
                     className="flex items-start gap-3 group"
                   >
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -194,7 +194,7 @@ export const Contact = () => {
                     </div>
                     <div>
                       <p className="font-medium text-foreground text-sm">E-Mail</p>
-                      <p className="text-muted-foreground text-sm">info@fritze-it.solutions</p>
+                      <p className="text-muted-foreground text-sm">info@fritze-it-solutions.de</p>
                     </div>
                   </a>
 

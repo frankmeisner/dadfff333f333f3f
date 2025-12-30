@@ -64,7 +64,7 @@ const Datenschutz = () => {
 
               <h3 className="text-lg font-semibold mb-3">Kontaktmöglichkeiten</h3>
               <div className="text-muted-foreground">
-                <p>info@fritze-it.solutions</p>
+                <p>info@fritze-it-solutions.de</p>
                 <p>Willi-Eichler-Straße 26</p>
                 <p>37079 Göttingen</p>
               </div>
