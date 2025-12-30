@@ -50,6 +50,7 @@ interface TaskTemplate {
   id: string;
   title: string;
   description: string | null;
+  customer_name: string | null;
   priority: TaskPriority;
   special_compensation: number | null;
   test_email: string | null;
@@ -94,6 +95,7 @@ export default function AdminTasksView() {
   const [editTemplateData, setEditTemplateData] = useState({
     title: '',
     description: '',
+    customer_name: '',
     priority: 'medium' as TaskPriority,
     special_compensation: '',
     test_email: '',
@@ -299,6 +301,7 @@ export default function AdminTasksView() {
         await supabase.from('task_templates').insert({
           title: newTask.title.trim(),
           description: newTask.description?.trim() || null,
+          customer_name: newTask.customer_name?.trim() || null,
           priority: newTask.priority,
           special_compensation: newTask.special_compensation ? parseFloat(newTask.special_compensation) : null,
           test_email: newTask.test_email?.trim() || null,
@@ -320,7 +323,7 @@ export default function AdminTasksView() {
     setNewTask({
       title: template.title,
       description: template.description || '',
-      customer_name: '',
+      customer_name: template.customer_name || '',
       customer_phone: '',
       deadline: '',
       priority: template.priority,
@@ -345,6 +348,7 @@ export default function AdminTasksView() {
     setEditTemplateData({
       title: template.title,
       description: template.description || '',
+      customer_name: template.customer_name || '',
       priority: template.priority,
       special_compensation: template.special_compensation?.toString() || '',
       test_email: template.test_email || '',
@@ -366,6 +370,7 @@ export default function AdminTasksView() {
       .update({
         title: editTemplateData.title.trim(),
         description: editTemplateData.description.trim() || null,
+        customer_name: editTemplateData.customer_name.trim() || null,
         priority: editTemplateData.priority,
         special_compensation: editTemplateData.special_compensation ? parseFloat(editTemplateData.special_compensation) : null,
         test_email: editTemplateData.test_email.trim() || null,
@@ -1684,6 +1689,16 @@ export default function AdminTasksView() {
                 value={editTemplateData.title}
                 onChange={(e) => setEditTemplateData({ ...editTemplateData, title: e.target.value })}
                 placeholder="Auftragsvorlage Titel"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-template-customer-name">Kundenname</Label>
+              <Input
+                id="edit-template-customer-name"
+                value={editTemplateData.customer_name}
+                onChange={(e) => setEditTemplateData({ ...editTemplateData, customer_name: e.target.value })}
+                placeholder="Standard-Kundenname"
               />
             </div>
 
