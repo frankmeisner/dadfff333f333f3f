@@ -349,7 +349,7 @@ export default function AdminEmployeeDetailView({ employee, onBack }: AdminEmplo
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            className="text-foreground hover:text-foreground hover:bg-foreground/10"
                             onClick={() => handleRemoveTask(task.id)}
                             title="Auftrag entziehen"
                           >

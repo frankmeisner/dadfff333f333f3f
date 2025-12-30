@@ -215,7 +215,7 @@ export default function AdminVacationView() {
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1 text-destructive hover:text-destructive"
+                className="flex-1 text-foreground hover:text-foreground"
                 onClick={() => handleReview('rejected')}
               >
                 <XCircle className="h-4 w-4 mr-2" />
