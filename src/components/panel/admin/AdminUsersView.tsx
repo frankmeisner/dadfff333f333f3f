@@ -206,6 +206,10 @@ export default function AdminUsersView() {
 
   const employees = users.filter(u => u.role === 'employee');
   const admins = users.filter(u => u.role === 'admin');
+  
+  // The main Fritze admin account cannot be deleted
+  const PROTECTED_ADMIN_EMAIL = "admin@fritze-it.solutions";
+  const isProtectedAdmin = (email: string) => email === PROTECTED_ADMIN_EMAIL;
 
   return (
     <div className="space-y-6">
@@ -408,10 +412,27 @@ export default function AdminUsersView() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Badge className="bg-primary/20 text-primary">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Administrator
-                </Badge>
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-primary/20 text-primary">
+                    <Shield className="h-3 w-3 mr-1" />
+                    Administrator
+                  </Badge>
+                  {!isProtectedAdmin(user.email) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={(e) => handleDeleteUser(user.user_id, e)}
+                      disabled={deletingUserId === user.user_id}
+                    >
+                      {deletingUserId === user.user_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}

@@ -87,6 +87,21 @@ serve(async (req) => {
       });
     }
 
+    // Protect the main Fritze admin account from deletion
+    const PROTECTED_ADMIN_EMAIL = "admin@fritze-it.solutions";
+    const { data: targetProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("email")
+      .eq("user_id", user_id)
+      .single();
+
+    if (targetProfile?.email === PROTECTED_ADMIN_EMAIL) {
+      return new Response(JSON.stringify({ error: "Der Hauptadministrator kann nicht gelöscht werden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     console.log("Deleting user:", user_id);
 
     // Delete from profiles first (cascades to other tables via RLS)
