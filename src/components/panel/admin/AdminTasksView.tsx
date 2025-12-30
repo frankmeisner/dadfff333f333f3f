@@ -51,6 +51,7 @@ interface TaskTemplate {
   title: string;
   description: string | null;
   customer_name: string | null;
+  tag: string | null;
   priority: TaskPriority;
   special_compensation: number | null;
   test_email: string | null;
@@ -89,6 +90,7 @@ export default function AdminTasksView() {
   const [statusRequestDialog, setStatusRequestDialog] = useState<{ open: boolean; task: Task | null; assignee: Profile | null }>({ open: false, task: null, assignee: null });
   const [statusRequestMessage, setStatusRequestMessage] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [templateTag, setTemplateTag] = useState('');
   const [recentlyUpdatedNotes, setRecentlyUpdatedNotes] = useState<Set<string>>(new Set());
   const previousStepNotesRef = useRef<Record<string, Record<string, string>>>({});
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
@@ -96,6 +98,7 @@ export default function AdminTasksView() {
     title: '',
     description: '',
     customer_name: '',
+    tag: '',
     priority: 'medium' as TaskPriority,
     special_compensation: '',
     test_email: '',
@@ -302,6 +305,7 @@ export default function AdminTasksView() {
           title: newTask.title.trim(),
           description: newTask.description?.trim() || null,
           customer_name: newTask.customer_name?.trim() || null,
+          tag: templateTag.trim() || null,
           priority: newTask.priority,
           special_compensation: newTask.special_compensation ? parseFloat(newTask.special_compensation) : null,
           test_email: newTask.test_email?.trim() || null,
@@ -315,6 +319,7 @@ export default function AdminTasksView() {
       setIsDialogOpen(false);
       setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '', skip_kyc_sms: false });
       setSaveAsTemplate(false);
+      setTemplateTag('');
       fetchTasks();
     }
   };
@@ -349,6 +354,7 @@ export default function AdminTasksView() {
       title: template.title,
       description: template.description || '',
       customer_name: template.customer_name || '',
+      tag: template.tag || '',
       priority: template.priority,
       special_compensation: template.special_compensation?.toString() || '',
       test_email: template.test_email || '',
@@ -371,6 +377,7 @@ export default function AdminTasksView() {
         title: editTemplateData.title.trim(),
         description: editTemplateData.description.trim() || null,
         customer_name: editTemplateData.customer_name.trim() || null,
+        tag: editTemplateData.tag.trim() || null,
         priority: editTemplateData.priority,
         special_compensation: editTemplateData.special_compensation ? parseFloat(editTemplateData.special_compensation) : null,
         test_email: editTemplateData.test_email.trim() || null,
@@ -728,18 +735,34 @@ export default function AdminTasksView() {
               </div>
 
               {/* Save as Template Checkbox */}
-              <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="saveAsTemplate"
-                  checked={saveAsTemplate}
-                  onChange={(e) => setSaveAsTemplate(e.target.checked)}
-                  className="h-4 w-4 rounded border-muted-foreground"
-                />
-                <Label htmlFor="saveAsTemplate" className="text-sm cursor-pointer flex items-center gap-2">
-                  <Save className="h-4 w-4" />
-                  Als Vorlage speichern
-                </Label>
+              <div className="space-y-3 p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="saveAsTemplate"
+                    checked={saveAsTemplate}
+                    onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                    className="h-4 w-4 rounded border-muted-foreground"
+                  />
+                  <Label htmlFor="saveAsTemplate" className="text-sm cursor-pointer flex items-center gap-2">
+                    <Save className="h-4 w-4" />
+                    Als Vorlage speichern
+                  </Label>
+                </div>
+                {saveAsTemplate && (
+                  <div className="space-y-2">
+                    <Label htmlFor="templateTag" className="text-xs text-muted-foreground">
+                      Vorlagen-Tag (optional)
+                    </Label>
+                    <Input
+                      id="templateTag"
+                      value={templateTag}
+                      onChange={(e) => setTemplateTag(e.target.value)}
+                      placeholder="z.B. Bank, Versicherung, Standard..."
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                )}
               </div>
 
               <Button onClick={handleCreateTask} className="w-full">Auftrag erstellen</Button>
@@ -1609,6 +1632,11 @@ export default function AdminTasksView() {
                             Test-Daten
                           </Badge>
                         )}
+                        {template.tag && (
+                          <Badge variant="outline" className="bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30">
+                            {template.tag}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
@@ -1699,6 +1727,16 @@ export default function AdminTasksView() {
                 value={editTemplateData.customer_name}
                 onChange={(e) => setEditTemplateData({ ...editTemplateData, customer_name: e.target.value })}
                 placeholder="Standard-Kundenname"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-template-tag">Tag</Label>
+              <Input
+                id="edit-template-tag"
+                value={editTemplateData.tag}
+                onChange={(e) => setEditTemplateData({ ...editTemplateData, tag: e.target.value })}
+                placeholder="z.B. Bank, Versicherung, Standard..."
               />
             </div>
 
