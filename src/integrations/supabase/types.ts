@@ -414,6 +414,7 @@ export type Database = {
           created_by: string
           customer_name: string | null
           description: string | null
+          estimated_duration: number | null
           id: string
           is_favorite: boolean
           notes: string | null
@@ -431,6 +432,7 @@ export type Database = {
           created_by: string
           customer_name?: string | null
           description?: string | null
+          estimated_duration?: number | null
           id?: string
           is_favorite?: boolean
           notes?: string | null
@@ -448,6 +450,7 @@ export type Database = {
           created_by?: string
           customer_name?: string | null
           description?: string | null
+          estimated_duration?: number | null
           id?: string
           is_favorite?: boolean
           notes?: string | null
