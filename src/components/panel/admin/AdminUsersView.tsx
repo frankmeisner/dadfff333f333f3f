@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, User, Mail, Shield, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Plus, User, Mail, Shield, Trash2, Eye, Loader2, Lock } from 'lucide-react';
 import AdminEmployeeDetailView from './AdminEmployeeDetailView';
 import { userCreationSchema, validateWithSchema } from '@/lib/validation';
 
@@ -413,10 +413,18 @@ export default function AdminUsersView() {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
-                  <Badge className="bg-primary/20 text-primary">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Administrator
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-primary/20 text-primary">
+                      <Shield className="h-3 w-3 mr-1" />
+                      Administrator
+                    </Badge>
+                    {isProtectedAdmin(user.email) && (
+                      <Badge variant="outline" className="text-muted-foreground border-muted-foreground/50">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Geschützt
+                      </Badge>
+                    )}
+                  </div>
                   {!isProtectedAdmin(user.email) && (
                     <Button
                       variant="ghost"
