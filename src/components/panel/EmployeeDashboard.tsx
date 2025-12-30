@@ -166,11 +166,12 @@ export default function EmployeeDashboard() {
     };
 
     const fetchPendingEvaluations = async () => {
-      // Get assigned tasks
+      // Get assigned tasks that are still active (not returned/cancelled)
       const { data: assignments } = await supabase
         .from('task_assignments')
-        .select('task_id')
-        .eq('user_id', user.id);
+        .select('task_id, status')
+        .eq('user_id', user.id)
+        .not('status', 'eq', 'returned');
 
       if (!assignments || assignments.length === 0) {
         setPendingEvaluations(0);
