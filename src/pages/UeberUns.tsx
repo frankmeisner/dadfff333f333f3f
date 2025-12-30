@@ -121,7 +121,7 @@ const UeberUns = () => {
                   <Mail className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="font-medium text-foreground">E-Mail</p>
-                    <p className="text-muted-foreground text-sm">info@fritze-it.solutions</p>
+                    <p className="text-muted-foreground text-sm">info@fritze-it-solutions.de</p>
                     <p className="text-muted-foreground text-sm">bewerbung@fritze-it.solutions</p>
                   </div>
                 </div>

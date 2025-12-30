@@ -54,7 +54,7 @@ const Impressum = () => {
             <section>
               <h2 className="text-xl font-bold mb-4">Kontakt</h2>
               <p className="text-muted-foreground">
-                E-Mail: info@fritze-it.solutions
+                E-Mail: info@fritze-it-solutions.de
               </p>
             </section>
 
