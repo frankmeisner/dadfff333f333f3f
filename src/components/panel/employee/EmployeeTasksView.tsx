@@ -414,10 +414,11 @@ export default function EmployeeTasksView() {
 
       const startPollingFallback = () => {
         if (pollingIntervalId.current) return;
+        // Reduced polling frequency to every 5 seconds for better performance
         pollingIntervalId.current = window.setInterval(() => {
           fetchTasks();
           fetchStatusRequests();
-        }, 1500);
+        }, 5000);
       };
 
       pollingTimeoutId.current = window.setTimeout(() => {
@@ -671,107 +672,131 @@ export default function EmployeeTasksView() {
   const fetchTasks = async () => {
     if (!user) return;
 
-    const { data: assignments } = await supabase.from("task_assignments").select("*").eq("user_id", user.id);
+    try {
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from("task_assignments")
+        .select("*")
+        .eq("user_id", user.id);
 
-    if (assignments && assignments.length > 0) {
-      const taskIds = assignments.map((a) => a.task_id);
-
-      const [tasksRes, profilesRes, smsRes, docsRes, evalsRes, kycDocsRes] = await Promise.all([
-        supabase.from("tasks").select("*").in("id", taskIds).order("created_at", { ascending: false }),
-        supabase.from("profiles").select("*"),
-        supabase
-          .from("sms_code_requests")
-          .select("*")
-          .in("task_id", taskIds)
-          .eq("user_id", user.id)
-          .order("requested_at", { ascending: false }),
-        supabase.from("documents").select("id, task_id").eq("user_id", user.id).in("task_id", taskIds),
-        supabase.from("task_evaluations").select("task_id, created_at").eq("user_id", user.id).in("task_id", taskIds),
-        supabase
-          .from("documents")
-          .select("id, task_id, status, document_type, review_notes, file_name, file_path")
-          .eq("user_id", user.id)
-          .in("task_id", taskIds)
-          .in("document_type", ["id_card", "passport", "address_proof"]),
-      ]);
-
-      const docCounts: Record<string, number> = {};
-      if (docsRes.data) {
-        docsRes.data.forEach((doc) => {
-          if (doc.task_id) {
-            docCounts[doc.task_id] = (docCounts[doc.task_id] || 0) + 1;
-          }
-        });
+      if (assignmentsError) {
+        console.error("Error fetching assignments:", assignmentsError);
+        return; // Don't clear tasks on error - keep existing state
       }
-      setTaskDocuments(docCounts);
 
-      // Process KYC document status per task
-      const kycStatusMap: Record<string, KycDocStatus> = {};
-      const kycDocsMap: Record<string, KycDocument[]> = {};
-      if (kycDocsRes.data) {
-        kycDocsRes.data.forEach((doc) => {
-          if (doc.task_id) {
-            if (!kycStatusMap[doc.task_id]) {
-              kycStatusMap[doc.task_id] = { pending: 0, approved: 0, rejected: 0, rejectedNotes: [] };
+      if (assignments && assignments.length > 0) {
+        const taskIds = assignments.map((a) => a.task_id);
+
+        const [tasksRes, smsRes, docsRes, evalsRes, kycDocsRes] = await Promise.all([
+          supabase.from("tasks").select("*").in("id", taskIds).order("created_at", { ascending: false }),
+          supabase
+            .from("sms_code_requests")
+            .select("*")
+            .in("task_id", taskIds)
+            .eq("user_id", user.id)
+            .order("requested_at", { ascending: false }),
+          supabase.from("documents").select("id, task_id").eq("user_id", user.id).in("task_id", taskIds),
+          supabase.from("task_evaluations").select("task_id, created_at").eq("user_id", user.id).in("task_id", taskIds),
+          supabase
+            .from("documents")
+            .select("id, task_id, status, document_type, review_notes, file_name, file_path")
+            .eq("user_id", user.id)
+            .in("task_id", taskIds)
+            .in("document_type", ["id_card", "passport", "address_proof"]),
+        ]);
+
+        if (tasksRes.error) {
+          console.error("Error fetching tasks:", tasksRes.error);
+          return; // Don't clear tasks on error
+        }
+
+        // Get unique creator IDs and fetch only those profiles
+        const creatorIds = [...new Set(tasksRes.data?.map(t => t.created_by).filter(Boolean))] as string[];
+        const { data: profilesData } = creatorIds.length > 0 
+          ? await supabase.from("profiles").select("*").in("user_id", creatorIds)
+          : { data: [] };
+
+        const docCounts: Record<string, number> = {};
+        if (docsRes.data) {
+          docsRes.data.forEach((doc) => {
+            if (doc.task_id) {
+              docCounts[doc.task_id] = (docCounts[doc.task_id] || 0) + 1;
             }
-            if (!kycDocsMap[doc.task_id]) {
-              kycDocsMap[doc.task_id] = [];
-            }
-            
-            // Add to documents list
-            kycDocsMap[doc.task_id].push({
-              id: doc.id,
-              task_id: doc.task_id,
-              document_type: doc.document_type || '',
-              file_name: doc.file_name,
-              file_path: doc.file_path,
-              status: doc.status || 'pending',
-              review_notes: doc.review_notes || undefined,
-            });
-            
-            const status = doc.status || "pending";
-            if (status === "pending") kycStatusMap[doc.task_id].pending++;
-            else if (status === "approved") kycStatusMap[doc.task_id].approved++;
-            else if (status === "rejected") {
-              kycStatusMap[doc.task_id].rejected++;
-              if (doc.review_notes) {
-                kycStatusMap[doc.task_id].rejectedNotes.push(doc.review_notes);
+          });
+        }
+        setTaskDocuments(docCounts);
+
+        // Process KYC document status per task
+        const kycStatusMap: Record<string, KycDocStatus> = {};
+        const kycDocsMap: Record<string, KycDocument[]> = {};
+        if (kycDocsRes.data) {
+          kycDocsRes.data.forEach((doc) => {
+            if (doc.task_id) {
+              if (!kycStatusMap[doc.task_id]) {
+                kycStatusMap[doc.task_id] = { pending: 0, approved: 0, rejected: 0, rejectedNotes: [] };
+              }
+              if (!kycDocsMap[doc.task_id]) {
+                kycDocsMap[doc.task_id] = [];
+              }
+              
+              // Add to documents list
+              kycDocsMap[doc.task_id].push({
+                id: doc.id,
+                task_id: doc.task_id,
+                document_type: doc.document_type || '',
+                file_name: doc.file_name,
+                file_path: doc.file_path,
+                status: doc.status || 'pending',
+                review_notes: doc.review_notes || undefined,
+              });
+              
+              const status = doc.status || "pending";
+              if (status === "pending") kycStatusMap[doc.task_id].pending++;
+              else if (status === "approved") kycStatusMap[doc.task_id].approved++;
+              else if (status === "rejected") {
+                kycStatusMap[doc.task_id].rejected++;
+                if (doc.review_notes) {
+                  kycStatusMap[doc.task_id].rejectedNotes.push(doc.review_notes);
+                }
               }
             }
-          }
-        });
-      }
-      setTaskKycStatus(kycStatusMap);
-      setTaskKycDocuments(kycDocsMap);
+          });
+        }
+        setTaskKycStatus(kycStatusMap);
+        setTaskKycDocuments(kycDocsMap);
 
-      const evalMap: Record<string, { created_at: string }> = {};
-      if (evalsRes.data) {
-        evalsRes.data.forEach((ev: { task_id: string; created_at: string }) => {
-          evalMap[ev.task_id] = { created_at: ev.created_at };
-        });
-      }
-      setTaskEvaluations(evalMap);
+        const evalMap: Record<string, { created_at: string }> = {};
+        if (evalsRes.data) {
+          evalsRes.data.forEach((ev: { task_id: string; created_at: string }) => {
+            evalMap[ev.task_id] = { created_at: ev.created_at };
+          });
+        }
+        setTaskEvaluations(evalMap);
 
-      if (tasksRes.data) {
-        const enrichedTasks = tasksRes.data.map((task) => {
-          const assignment = assignments.find((a) => a.task_id === task.id);
-          const assignedBy = profilesRes.data?.find((p: any) => p.user_id === task.created_by);
-          const taskSmsRequests = smsRes.data?.filter((s) => s.task_id === task.id) || [];
-          const smsRequest = taskSmsRequests.find((s) => s.sms_code) || taskSmsRequests[0];
-          return {
-            ...(task as Task),
-            assignment: assignment as TaskAssignment | undefined,
-            assignedBy: assignedBy as Profile | undefined,
-            smsRequest: smsRequest as SmsCodeRequest | undefined,
-          };
-        });
-        setTasks(enrichedTasks);
+        if (tasksRes.data) {
+          const enrichedTasks = tasksRes.data.map((task) => {
+            const assignment = assignments.find((a) => a.task_id === task.id);
+            const assignedBy = profilesData?.find((p: any) => p.user_id === task.created_by);
+            const taskSmsRequests = smsRes.data?.filter((s) => s.task_id === task.id) || [];
+            const smsRequest = taskSmsRequests.find((s) => s.sms_code) || taskSmsRequests[0];
+            return {
+              ...(task as Task),
+              assignment: assignment as TaskAssignment | undefined,
+              assignedBy: assignedBy as Profile | undefined,
+              smsRequest: smsRequest as SmsCodeRequest | undefined,
+            };
+          });
+          setTasks(enrichedTasks);
+        }
+      } else {
+        // Only clear if there was no error (user truly has no assignments)
+        setTasks([]);
+        setTaskDocuments({});
+        setTaskKycStatus({});
+        setTaskEvaluations({});
       }
-    } else {
-      setTasks([]);
-      setTaskDocuments({});
-      setTaskKycStatus({});
-      setTaskEvaluations({});
+    } catch (error) {
+      console.error("Error in fetchTasks:", error);
+      // Don't clear state on error - keep existing data visible
     }
   };
 

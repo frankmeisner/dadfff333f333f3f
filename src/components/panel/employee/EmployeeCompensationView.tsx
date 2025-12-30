@@ -167,73 +167,91 @@ export default function EmployeeCompensationView() {
   const fetchCompensationData = async () => {
     if (!user) return;
 
-    // Get all assigned task IDs for this user
-    const { data: assignments } = await supabase
-      .from('task_assignments')
-      .select('task_id')
-      .eq('user_id', user.id);
+    try {
+      // Get all assigned task IDs for this user (excluding returned assignments)
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from('task_assignments')
+        .select('task_id, status')
+        .eq('user_id', user.id)
+        .neq('status', 'returned');
 
-    if (!assignments || assignments.length === 0) {
-      setTasks([]);
-      setMonthlyData([]);
-      return;
-    }
+      if (assignmentsError) {
+        console.error("Error fetching assignments:", assignmentsError);
+        return; // Don't clear on error
+      }
 
-    const taskIds = assignments.map(a => a.task_id);
+      if (!assignments || assignments.length === 0) {
+        setTasks([]);
+        setMonthlyData([]);
+        setTotalCompensation(0);
+        setPendingCompensation(0);
+        return;
+      }
 
-    // Fetch completed tasks with special compensation
-    const { data: completedTasks } = await supabase
-      .from('tasks')
-      .select('id, title, customer_name, special_compensation, status, reviewed_at, updated_at')
-      .in('id', taskIds)
-      .in('status', ['completed', 'pending_review'])
-      .not('special_compensation', 'is', null)
-      .gt('special_compensation', 0)
-      .order('updated_at', { ascending: false });
+      const taskIds = assignments.map(a => a.task_id);
 
-    if (completedTasks) {
-      setTasks(completedTasks);
-      
-      // Calculate totals
-      const approved = completedTasks.filter(t => t.status === 'completed');
-      const pending = completedTasks.filter(t => t.status === 'pending_review');
-      
-      setTotalCompensation(approved.reduce((sum, t) => sum + (t.special_compensation || 0), 0));
-      setPendingCompensation(pending.reduce((sum, t) => sum + (t.special_compensation || 0), 0));
+      // Fetch completed tasks with special compensation
+      const { data: completedTasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select('id, title, customer_name, special_compensation, status, reviewed_at, updated_at')
+        .in('id', taskIds)
+        .in('status', ['completed', 'pending_review'])
+        .not('special_compensation', 'is', null)
+        .gt('special_compensation', 0)
+        .order('updated_at', { ascending: false });
 
-      // Group by month
-      const grouped: Record<string, MonthlyData> = {};
-      
-      completedTasks.forEach(task => {
-        if (task.status !== 'completed') return; // Only count approved
+      if (tasksError) {
+        console.error("Error fetching tasks:", tasksError);
+        return; // Don't clear on error
+      }
+
+      if (completedTasks) {
+        setTasks(completedTasks);
         
-        const date = parseISO(task.reviewed_at || task.updated_at);
-        const monthKey = format(date, 'yyyy-MM');
-        const monthName = format(date, 'MMMM', { locale: de });
-        const year = date.getFullYear();
-        const monthIndex = date.getMonth();
+        // Calculate totals
+        const approved = completedTasks.filter(t => t.status === 'completed');
+        const pending = completedTasks.filter(t => t.status === 'pending_review');
         
-        if (!grouped[monthKey]) {
-          grouped[monthKey] = {
-            month: monthName,
-            year,
-            monthIndex,
-            tasks: [],
-            total: 0
-          };
-        }
+        setTotalCompensation(approved.reduce((sum, t) => sum + (t.special_compensation || 0), 0));
+        setPendingCompensation(pending.reduce((sum, t) => sum + (t.special_compensation || 0), 0));
+
+        // Group by month
+        const grouped: Record<string, MonthlyData> = {};
         
-        grouped[monthKey].tasks.push(task);
-        grouped[monthKey].total += task.special_compensation || 0;
-      });
+        completedTasks.forEach(task => {
+          if (task.status !== 'completed') return; // Only count approved
+          
+          const date = parseISO(task.reviewed_at || task.updated_at);
+          const monthKey = format(date, 'yyyy-MM');
+          const monthName = format(date, 'MMMM', { locale: de });
+          const year = date.getFullYear();
+          const monthIndex = date.getMonth();
+          
+          if (!grouped[monthKey]) {
+            grouped[monthKey] = {
+              month: monthName,
+              year,
+              monthIndex,
+              tasks: [],
+              total: 0
+            };
+          }
+          
+          grouped[monthKey].tasks.push(task);
+          grouped[monthKey].total += task.special_compensation || 0;
+        });
 
-      // Sort by date descending
-      const sortedMonths = Object.values(grouped).sort((a, b) => {
-        if (a.year !== b.year) return b.year - a.year;
-        return b.monthIndex - a.monthIndex;
-      });
+        // Sort by date descending
+        const sortedMonths = Object.values(grouped).sort((a, b) => {
+          if (a.year !== b.year) return b.year - a.year;
+          return b.monthIndex - a.monthIndex;
+        });
 
-      setMonthlyData(sortedMonths);
+        setMonthlyData(sortedMonths);
+      }
+    } catch (error) {
+      console.error("Error in fetchCompensationData:", error);
+      // Don't clear state on error - keep existing data visible
     }
   };
 
