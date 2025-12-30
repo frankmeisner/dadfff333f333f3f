@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download, Upload } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -402,6 +402,52 @@ export default function AdminTasksView() {
     URL.revokeObjectURL(url);
     
     toast({ title: 'Export erfolgreich', description: `${templates.length} Vorlage(n) exportiert.` });
+  };
+
+  const handleImportTemplates = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const text = await file.text();
+      const importedData = JSON.parse(text);
+      
+      if (!Array.isArray(importedData)) {
+        toast({ title: 'Fehler', description: 'Ungültiges Dateiformat. Erwartet wird ein JSON-Array.', variant: 'destructive' });
+        return;
+      }
+      
+      let importedCount = 0;
+      for (const template of importedData) {
+        if (!template.title) continue;
+        
+        const { error } = await supabase.from('task_templates').insert({
+          title: template.title,
+          description: template.description || null,
+          customer_name: template.customer_name || null,
+          tag: template.tag || null,
+          priority: template.priority || 'medium',
+          special_compensation: template.special_compensation || null,
+          test_email: template.test_email || null,
+          test_password: template.test_password || null,
+          notes: template.notes || null,
+          created_by: user?.id
+        });
+        
+        if (!error) importedCount++;
+      }
+      
+      fetchTemplates();
+      toast({ 
+        title: 'Import erfolgreich', 
+        description: `${importedCount} von ${importedData.length} Vorlage(n) importiert.` 
+      });
+    } catch (e) {
+      toast({ title: 'Fehler', description: 'Datei konnte nicht gelesen werden.', variant: 'destructive' });
+    }
+    
+    // Reset file input
+    event.target.value = '';
   };
 
   const handleEditTemplate = (template: TaskTemplate) => {
@@ -1658,17 +1704,35 @@ export default function AdminTasksView() {
                 <BookOpen className="h-5 w-5" />
                 Vorlagen verwalten
               </DialogTitle>
-              {templates.length > 0 && (
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleExportTemplates}
+                  onClick={() => document.getElementById('import-templates-input')?.click()}
                   className="h-8 gap-1"
                 >
-                  <Download className="h-4 w-4" />
-                  Export
+                  <Upload className="h-4 w-4" />
+                  Import
                 </Button>
-              )}
+                <input
+                  id="import-templates-input"
+                  type="file"
+                  accept=".json"
+                  onChange={handleImportTemplates}
+                  className="hidden"
+                />
+                {templates.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportTemplates}
+                    className="h-8 gap-1"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export
+                  </Button>
+                )}
+              </div>
             </div>
           </DialogHeader>
           
