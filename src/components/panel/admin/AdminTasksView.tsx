@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -371,6 +371,37 @@ export default function AdminTasksView() {
       fetchTemplates();
       toast({ title: 'Vorlage dupliziert', description: `"${template.title}" wurde kopiert.` });
     }
+  };
+
+  const handleExportTemplates = () => {
+    if (templates.length === 0) {
+      toast({ title: 'Keine Vorlagen', description: 'Es gibt keine Vorlagen zum Exportieren.', variant: 'destructive' });
+      return;
+    }
+    
+    const exportData = templates.map(t => ({
+      title: t.title,
+      description: t.description,
+      customer_name: t.customer_name,
+      tag: t.tag,
+      priority: t.priority,
+      special_compensation: t.special_compensation,
+      test_email: t.test_email,
+      test_password: t.test_password,
+      notes: t.notes
+    }));
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vorlagen-export-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({ title: 'Export erfolgreich', description: `${templates.length} Vorlage(n) exportiert.` });
   };
 
   const handleEditTemplate = (template: TaskTemplate) => {
@@ -1622,10 +1653,23 @@ export default function AdminTasksView() {
       <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Vorlagen verwalten
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Vorlagen verwalten
+              </DialogTitle>
+              {templates.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportTemplates}
+                  className="h-8 gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              )}
+            </div>
           </DialogHeader>
           
           {/* Search, Filter & Sort */}
