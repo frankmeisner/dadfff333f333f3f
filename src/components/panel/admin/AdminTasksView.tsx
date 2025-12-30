@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -90,6 +90,16 @@ export default function AdminTasksView() {
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [recentlyUpdatedNotes, setRecentlyUpdatedNotes] = useState<Set<string>>(new Set());
   const previousStepNotesRef = useRef<Record<string, Record<string, string>>>({});
+  const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
+  const [editTemplateData, setEditTemplateData] = useState({
+    title: '',
+    description: '',
+    priority: 'medium' as TaskPriority,
+    special_compensation: '',
+    test_email: '',
+    test_password: '',
+    notes: ''
+  });
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -328,6 +338,49 @@ export default function AdminTasksView() {
     await supabase.from('task_templates').delete().eq('id', templateId);
     fetchTemplates();
     toast({ title: 'Vorlage gelöscht' });
+  };
+
+  const handleEditTemplate = (template: TaskTemplate) => {
+    setEditingTemplate(template);
+    setEditTemplateData({
+      title: template.title,
+      description: template.description || '',
+      priority: template.priority,
+      special_compensation: template.special_compensation?.toString() || '',
+      test_email: template.test_email || '',
+      test_password: template.test_password || '',
+      notes: template.notes || ''
+    });
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!editingTemplate) return;
+    
+    if (!editTemplateData.title.trim()) {
+      toast({ title: 'Fehler', description: 'Titel ist erforderlich.', variant: 'destructive' });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('task_templates')
+      .update({
+        title: editTemplateData.title.trim(),
+        description: editTemplateData.description.trim() || null,
+        priority: editTemplateData.priority,
+        special_compensation: editTemplateData.special_compensation ? parseFloat(editTemplateData.special_compensation) : null,
+        test_email: editTemplateData.test_email.trim() || null,
+        test_password: editTemplateData.test_password || null,
+        notes: editTemplateData.notes.trim() || null
+      })
+      .eq('id', editingTemplate.id);
+
+    if (error) {
+      toast({ title: 'Fehler', description: 'Vorlage konnte nicht gespeichert werden.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Gespeichert', description: 'Vorlage wurde aktualisiert.' });
+      setEditingTemplate(null);
+      fetchTemplates();
+    }
   };
 
   const handleAssignTask = async () => {
@@ -1563,12 +1616,22 @@ export default function AdminTasksView() {
                           setIsTemplateDialogOpen(false);
                           setIsDialogOpen(true);
                         }}
+                        title="Als neuen Auftrag verwenden"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-primary hover:bg-primary/10"
+                        onClick={() => handleEditTemplate(template)}
+                        title="Vorlage bearbeiten"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" title="Vorlage löschen">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -1599,6 +1662,123 @@ export default function AdminTasksView() {
           <div className="flex justify-end pt-4 border-t">
             <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
               Schließen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Template Dialog */}
+      <Dialog open={editingTemplate !== null} onOpenChange={(open) => !open && setEditingTemplate(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Vorlage bearbeiten
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-template-title">Titel *</Label>
+              <Input
+                id="edit-template-title"
+                value={editTemplateData.title}
+                onChange={(e) => setEditTemplateData({ ...editTemplateData, title: e.target.value })}
+                placeholder="Auftragsvorlage Titel"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-template-description">Beschreibung</Label>
+              <Textarea
+                id="edit-template-description"
+                value={editTemplateData.description}
+                onChange={(e) => setEditTemplateData({ ...editTemplateData, description: e.target.value })}
+                placeholder="Beschreibung der Vorlage..."
+                className="min-h-[80px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Priorität</Label>
+                <Select 
+                  value={editTemplateData.priority} 
+                  onValueChange={(value: TaskPriority) => setEditTemplateData({ ...editTemplateData, priority: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Niedrig</SelectItem>
+                    <SelectItem value="medium">Mittel</SelectItem>
+                    <SelectItem value="high">Hoch</SelectItem>
+                    <SelectItem value="urgent">Dringend</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-template-compensation">Sondervergütung (€)</Label>
+                <Input
+                  id="edit-template-compensation"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editTemplateData.special_compensation}
+                  onChange={(e) => setEditTemplateData({ ...editTemplateData, special_compensation: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-3">
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                Test-Zugangsdaten
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-template-email">E-Mail</Label>
+                  <Input
+                    id="edit-template-email"
+                    type="email"
+                    value={editTemplateData.test_email}
+                    onChange={(e) => setEditTemplateData({ ...editTemplateData, test_email: e.target.value })}
+                    placeholder="test@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-template-password">Passwort</Label>
+                  <Input
+                    id="edit-template-password"
+                    type="text"
+                    value={editTemplateData.test_password}
+                    onChange={(e) => setEditTemplateData({ ...editTemplateData, test_password: e.target.value })}
+                    placeholder="********"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-template-notes">Notizen</Label>
+              <Textarea
+                id="edit-template-notes"
+                value={editTemplateData.notes}
+                onChange={(e) => setEditTemplateData({ ...editTemplateData, notes: e.target.value })}
+                placeholder="Zusätzliche Notizen..."
+                className="min-h-[60px]"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-4 border-t">
+            <Button variant="outline" className="flex-1" onClick={() => setEditingTemplate(null)}>
+              Abbrechen
+            </Button>
+            <Button className="flex-1 gap-2" onClick={handleSaveTemplate}>
+              <Save className="h-4 w-4" />
+              Speichern
             </Button>
           </div>
         </DialogContent>
