@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download, Upload } from 'lucide-react';
+import { Plus, Calendar, User, Phone, Euro, AlertCircle, Mail, Key, Activity, MessageCircle, Radio, CheckCircle, Clock, Trash2, ExternalLink, Globe, Eye, Video, FileText, Search, ArrowUpDown, CheckCircle2, XCircle, Save, BookOpen, Bookmark, CircleDot, StickyNote, Sparkles, Pencil, Copy, Download, Upload, Tag } from 'lucide-react';
+import { TagInput, TagBadge, stringToTags, tagsToString } from '@/components/panel/TagInput';
+import { TemplateCommandMenu } from '@/components/panel/TemplateCommandMenu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -90,7 +92,7 @@ export default function AdminTasksView() {
   const [statusRequestDialog, setStatusRequestDialog] = useState<{ open: boolean; task: Task | null; assignee: Profile | null }>({ open: false, task: null, assignee: null });
   const [statusRequestMessage, setStatusRequestMessage] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
-  const [templateTag, setTemplateTag] = useState('');
+  const [templateTags, setTemplateTags] = useState<string[]>([]);
   const [templateTagFilter, setTemplateTagFilter] = useState<string>('all');
   const [templateSearch, setTemplateSearch] = useState('');
   const [templateSort, setTemplateSort] = useState<'alpha' | 'newest' | 'oldest'>('alpha');
@@ -102,7 +104,7 @@ export default function AdminTasksView() {
     title: '',
     description: '',
     customer_name: '',
-    tag: '',
+    tags: [] as string[],
     priority: 'medium' as TaskPriority,
     special_compensation: '',
     test_email: '',
@@ -309,7 +311,7 @@ export default function AdminTasksView() {
           title: newTask.title.trim(),
           description: newTask.description?.trim() || null,
           customer_name: newTask.customer_name?.trim() || null,
-          tag: templateTag.trim() || null,
+          tag: tagsToString(templateTags) || null,
           priority: newTask.priority,
           special_compensation: newTask.special_compensation ? parseFloat(newTask.special_compensation) : null,
           test_email: newTask.test_email?.trim() || null,
@@ -323,7 +325,7 @@ export default function AdminTasksView() {
       setIsDialogOpen(false);
       setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '', skip_kyc_sms: false });
       setSaveAsTemplate(false);
-      setTemplateTag('');
+      setTemplateTags([]);
       fetchTasks();
     }
   };
@@ -457,7 +459,7 @@ export default function AdminTasksView() {
       title: template.title,
       description: template.description || '',
       customer_name: template.customer_name || '',
-      tag: template.tag || '',
+      tags: stringToTags(template.tag),
       priority: template.priority,
       special_compensation: template.special_compensation?.toString() || '',
       test_email: template.test_email || '',
@@ -480,7 +482,7 @@ export default function AdminTasksView() {
         title: editTemplateData.title.trim(),
         description: editTemplateData.description.trim() || null,
         customer_name: editTemplateData.customer_name.trim() || null,
-        tag: editTemplateData.tag.trim() || null,
+        tag: tagsToString(editTemplateData.tags) || null,
         priority: editTemplateData.priority,
         special_compensation: editTemplateData.special_compensation ? parseFloat(editTemplateData.special_compensation) : null,
         test_email: editTemplateData.test_email.trim() || null,
@@ -707,41 +709,21 @@ export default function AdminTasksView() {
               <DialogTitle>Neuen Auftrag erstellen</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              {/* Template Selection */}
+              {/* Template Selection - Elegant Command Menu */}
               {templates.length > 0 && (
-                <div className="p-3 bg-muted/50 rounded-lg border border-dashed">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      Vorlage laden
-                    </Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => setIsTemplateDialogOpen(true)}
-                    >
-                      Vorlagen verwalten
-                    </Button>
-                  </div>
-                  <Select onValueChange={(v) => {
-                    const template = templates.find(t => t.id === v);
-                    if (template) handleLoadTemplate(template);
-                  }}>
-                    <SelectTrigger className="bg-background">
-                      <SelectValue placeholder="Vorlage auswählen..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          <span className="flex items-center gap-2">
-                            <Bookmark className="h-3 w-3" />
-                            {template.title}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-2">
+                  <Label className="text-sm flex items-center gap-2 text-muted-foreground">
+                    <Bookmark className="h-4 w-4" />
+                    Aus Vorlage erstellen
+                  </Label>
+                  <TemplateCommandMenu
+                    templates={templates}
+                    onSelectTemplate={(template) => {
+                      handleLoadTemplate(template);
+                      toast({ title: 'Vorlage geladen', description: `"${template.title}" wurde geladen.` });
+                    }}
+                    onManageTemplates={() => setIsTemplateDialogOpen(true)}
+                  />
                 </div>
               )}
 
@@ -854,15 +836,15 @@ export default function AdminTasksView() {
                 </div>
                 {saveAsTemplate && (
                   <div className="space-y-2">
-                    <Label htmlFor="templateTag" className="text-xs text-muted-foreground">
-                      Vorlagen-Tag (optional)
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Tag className="h-3 w-3" />
+                      Vorlagen-Tags (optional)
                     </Label>
-                    <Input
-                      id="templateTag"
-                      value={templateTag}
-                      onChange={(e) => setTemplateTag(e.target.value)}
-                      placeholder="z.B. Bank, Versicherung, Standard..."
-                      className="h-8 text-sm"
+                    <TagInput
+                      tags={templateTags}
+                      onTagsChange={setTemplateTags}
+                      placeholder="Tag hinzufügen..."
+                      suggestions={[...new Set(templates.flatMap(t => stringToTags(t.tag)))]}
                     />
                   </div>
                 )}
@@ -1879,11 +1861,9 @@ export default function AdminTasksView() {
                                   Test-Daten
                                 </Badge>
                               )}
-                              {template.tag && (
-                                <Badge variant="outline" className="bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30 text-xs">
-                                  {template.tag}
-                                </Badge>
-                              )}
+                              {template.tag && stringToTags(template.tag).map((tag) => (
+                                <TagBadge key={tag} tag={tag} size="sm" />
+                              ))}
                             </div>
                           </div>
                           <div className="flex gap-1 flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
@@ -2000,12 +1980,15 @@ export default function AdminTasksView() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-template-tag">Tag</Label>
-              <Input
-                id="edit-template-tag"
-                value={editTemplateData.tag}
-                onChange={(e) => setEditTemplateData({ ...editTemplateData, tag: e.target.value })}
-                placeholder="z.B. Bank, Versicherung, Standard..."
+              <Label className="flex items-center gap-1.5">
+                <Tag className="h-3.5 w-3.5" />
+                Tags
+              </Label>
+              <TagInput
+                tags={editTemplateData.tags}
+                onTagsChange={(tags) => setEditTemplateData({ ...editTemplateData, tags })}
+                placeholder="Tag hinzufügen..."
+                suggestions={[...new Set(templates.flatMap(t => stringToTags(t.tag)))]}
               />
             </div>
 
@@ -2123,11 +2106,9 @@ export default function AdminTasksView() {
                   <Badge className={priorityColors[previewTemplate.priority]} variant="secondary">
                     {previewTemplate.priority === 'low' ? 'Niedrig' : previewTemplate.priority === 'medium' ? 'Mittel' : previewTemplate.priority === 'high' ? 'Hoch' : 'Dringend'}
                   </Badge>
-                  {previewTemplate.tag && (
-                    <Badge variant="outline" className="bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30">
-                      {previewTemplate.tag}
-                    </Badge>
-                  )}
+                  {previewTemplate.tag && stringToTags(previewTemplate.tag).map((tag) => (
+                    <TagBadge key={tag} tag={tag} />
+                  ))}
                 </div>
               </div>
 
