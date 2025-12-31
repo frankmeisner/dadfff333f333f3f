@@ -410,12 +410,14 @@ export type Database = {
       }
       task_templates: {
         Row: {
+          android_app_url: string | null
           created_at: string
           created_by: string
           customer_name: string | null
           description: string | null
           estimated_duration: number | null
           id: string
+          ios_app_url: string | null
           is_favorite: boolean
           notes: string | null
           priority: Database["public"]["Enums"]["task_priority"]
@@ -428,12 +430,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          android_app_url?: string | null
           created_at?: string
           created_by: string
           customer_name?: string | null
           description?: string | null
           estimated_duration?: number | null
           id?: string
+          ios_app_url?: string | null
           is_favorite?: boolean
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
@@ -446,12 +450,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          android_app_url?: string | null
           created_at?: string
           created_by?: string
           customer_name?: string | null
           description?: string | null
           estimated_duration?: number | null
           id?: string
+          ios_app_url?: string | null
           is_favorite?: boolean
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
@@ -467,6 +473,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          android_app_url: string | null
           created_at: string
           created_by: string
           customer_name: string
@@ -474,6 +481,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           id: string
+          ios_app_url: string | null
           notes: string | null
           priority: Database["public"]["Enums"]["task_priority"]
           review_notes: string | null
@@ -489,6 +497,7 @@ export type Database = {
           web_ident_url: string | null
         }
         Insert: {
+          android_app_url?: string | null
           created_at?: string
           created_by: string
           customer_name: string
@@ -496,6 +505,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          ios_app_url?: string | null
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           review_notes?: string | null
@@ -511,6 +521,7 @@ export type Database = {
           web_ident_url?: string | null
         }
         Update: {
+          android_app_url?: string | null
           created_at?: string
           created_by?: string
           customer_name?: string
@@ -518,6 +529,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          ios_app_url?: string | null
           notes?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
           review_notes?: string | null

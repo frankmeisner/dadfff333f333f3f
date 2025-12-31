@@ -71,7 +71,7 @@ export function DurationPicker({ value, onChange, className }: DurationPickerPro
             )}
           >
             <Clock className="mr-2 h-4 w-4 text-primary" />
-            {value ? formatDuration(value) : 'Geschätzte Dauer...'}
+            {value ? formatDuration(value) : 'Dauer...'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-72 p-0" align="start">
