@@ -104,7 +104,7 @@ export function DeadlineQuickPicker({ value, onChange, className }: DeadlineQuic
             )}
           >
             <Calendar className="mr-2 h-4 w-4 text-primary" />
-            {displayValue || 'Deadline wählen...'}
+            {displayValue || 'Deadline...'}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 p-0" align="start">

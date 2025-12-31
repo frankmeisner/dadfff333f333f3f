@@ -2033,6 +2033,34 @@ export default function EmployeeTasksView() {
                         </DialogDescription>
                       </DialogHeader>
 
+                      {/* Task Details Summary at Top */}
+                      <div className="rounded-xl border bg-gradient-to-br from-muted/30 to-muted/10 p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+                              <User className="h-5 w-5 text-primary-foreground" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">{selectedTask.customer_name}</p>
+                              <p className="text-xs text-muted-foreground">{selectedTask.title}</p>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline" className={statusConfig[selectedTask.status].color}>
+                              {statusConfig[selectedTask.status].label}
+                            </Badge>
+                            {selectedTask.special_compensation && selectedTask.special_compensation > 0 && (
+                              <Badge variant="outline" className="bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30">
+                                {selectedTask.special_compensation.toFixed(2)} €
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {selectedTask.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{selectedTask.description}</p>
+                        )}
+                      </div>
+
                       {/* Progress indicator */}
                       <div className="flex gap-1 mb-6">
                         {Array.from({ length: steps.length }, (_, i) => i + 1).map((step) => {
@@ -2747,7 +2775,46 @@ export default function EmployeeTasksView() {
                               </div>
                             )}
 
-                            {/* SMS Info Box removed - now shown only in Step 6 */}
+                            {/* App Download Links */}
+                            {((selectedTask as any).ios_app_url || (selectedTask as any).android_app_url) && (
+                              <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-violet-500/10 border border-cyan-500/20">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Video className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                                  <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-400 uppercase tracking-wide">
+                                    Videochat App herunterladen
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  Für den Videochat wird eine App benötigt. Lade sie dir jetzt herunter:
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                  {(selectedTask as any).ios_app_url && (
+                                    <Button
+                                      variant="outline"
+                                      className="h-14 gap-3 flex-col items-center justify-center bg-foreground text-background hover:bg-foreground/90 border-0"
+                                      onClick={() => window.open((selectedTask as any).ios_app_url, "_blank", "noopener,noreferrer")}
+                                    >
+                                      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                                      </svg>
+                                      <span className="text-xs font-medium">App Store</span>
+                                    </Button>
+                                  )}
+                                  {(selectedTask as any).android_app_url && (
+                                    <Button
+                                      variant="outline"
+                                      className="h-14 gap-3 flex-col items-center justify-center bg-foreground text-background hover:bg-foreground/90 border-0"
+                                      onClick={() => window.open((selectedTask as any).android_app_url, "_blank", "noopener,noreferrer")}
+                                    >
+                                      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.198l2.807 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.206 12l2.492-2.491zM5.864 2.658L16.8 8.99l-2.302 2.302-8.634-8.634z"/>
+                                      </svg>
+                                      <span className="text-xs font-medium">Play Store</span>
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

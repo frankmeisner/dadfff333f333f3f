@@ -139,7 +139,9 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
     test_password: '',
     web_ident_url: '',
     skip_kyc_sms: false,
-    estimated_duration: null as number | null
+    estimated_duration: null as number | null,
+    ios_app_url: '',
+    android_app_url: ''
   });
 
   // Track step_notes changes for highlighting
@@ -333,6 +335,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
     }
 
     const webIdentUrl = newTask.web_ident_url?.trim() || null;
+    const iosAppUrl = newTask.ios_app_url?.trim() || null;
+    const androidAppUrl = newTask.android_app_url?.trim() || null;
     
     const { error } = await supabase.from('tasks').insert({
       title: validation.data.title,
@@ -345,6 +349,8 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
       test_email: validation.data.test_email,
       test_password: validation.data.test_password,
       web_ident_url: webIdentUrl,
+      ios_app_url: iosAppUrl,
+      android_app_url: androidAppUrl,
       skip_kyc_sms: newTask.skip_kyc_sms,
       created_by: user?.id
     });
@@ -370,7 +376,7 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
       }
       toast({ title: 'Erfolg', description: 'Auftrag wurde erstellt.' });
       setIsDialogOpen(false);
-      setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '', skip_kyc_sms: false, estimated_duration: null });
+      setNewTask({ title: '', description: '', customer_name: '', customer_phone: '', deadline: '', priority: 'medium', special_compensation: '', test_email: '', test_password: '', web_ident_url: '', skip_kyc_sms: false, estimated_duration: null, ios_app_url: '', android_app_url: '' });
       setSaveAsTemplate(false);
       setTemplateTags([]);
       fetchTasks();
@@ -390,7 +396,9 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
       test_password: template.test_password || '',
       web_ident_url: '',
       skip_kyc_sms: false,
-      estimated_duration: template.estimated_duration || null
+      estimated_duration: template.estimated_duration || null,
+      ios_app_url: (template as any).ios_app_url || '',
+      android_app_url: (template as any).android_app_url || ''
     });
     setIsTemplateDialogOpen(false);
     toast({ title: 'Vorlage geladen', description: `"${template.title}" wurde geladen.` });
@@ -1003,23 +1011,54 @@ export default function AdminTasksView({ externalOpenDialog, onDialogOpened }: A
                   </div>
                 </div>
 
-                {/* Web Ident */}
+                {/* Web Ident & App Links */}
                 <div className="rounded-xl border bg-muted/20 overflow-hidden">
                   <div className="px-4 py-3 bg-muted/30 border-b">
                     <p className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
                       <Globe className="h-4 w-4" />
-                      Web-Ident
+                      Web-Ident & App-Links
                       <span className="text-xs opacity-60">(Optional)</span>
                     </p>
                   </div>
-                  <div className="p-4">
-                    <Input 
-                      type="url" 
-                      value={newTask.web_ident_url} 
-                      onChange={(e) => setNewTask({ ...newTask, web_ident_url: e.target.value })} 
-                      placeholder="https://webident.example.com/verify/..." 
-                      className="h-9 text-sm"
-                    />
+                  <div className="p-4 space-y-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Web-Ident URL</Label>
+                      <Input 
+                        type="url" 
+                        value={newTask.web_ident_url} 
+                        onChange={(e) => setNewTask({ ...newTask, web_ident_url: e.target.value })} 
+                        placeholder="https://webident.example.com/verify/..." 
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs flex items-center gap-1.5">
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                          iOS App
+                        </Label>
+                        <Input 
+                          type="url" 
+                          value={newTask.ios_app_url} 
+                          onChange={(e) => setNewTask({ ...newTask, ios_app_url: e.target.value })} 
+                          placeholder="https://apps.apple.com/..." 
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs flex items-center gap-1.5">
+                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 15.339l-.004-.009c-.017-.047-.037-.094-.059-.139l-.041-.088a.74.74 0 0 0-.049-.088l-.016-.031c-.018-.032-.037-.063-.058-.093l-.034-.052a1.12 1.12 0 0 0-.069-.089l-.03-.036a1.24 1.24 0 0 0-.077-.082l-.025-.024c-.03-.029-.06-.056-.092-.081l-.02-.018a1.36 1.36 0 0 0-.103-.074l-.019-.012c-.037-.023-.075-.044-.114-.063l-.02-.01c-.04-.019-.081-.036-.123-.05l-.022-.008a1.38 1.38 0 0 0-.129-.038l-.019-.004c-.045-.01-.09-.017-.137-.022l-.022-.002a1.67 1.67 0 0 0-.134-.006h-.018a1.5 1.5 0 0 0-.133.006l-.026.003a1.41 1.41 0 0 0-.133.022l-.022.005c-.044.01-.086.023-.128.038l-.024.009c-.042.015-.083.032-.122.051l-.021.01c-.04.02-.078.041-.115.064l-.019.012c-.037.025-.072.05-.105.077l-.016.013c-.034.027-.066.056-.096.086l-.021.02c-.03.029-.057.06-.083.092l-.025.03c-.026.032-.05.065-.073.099l-.025.039c-.023.033-.044.067-.064.102l-.021.038c-.02.035-.037.072-.054.109l-.015.037c-.017.038-.032.077-.046.116l-.012.035c-.014.041-.026.083-.036.126l-.006.029c-.01.044-.018.089-.024.135l-.003.026c-.006.048-.01.096-.011.145V15.33c0 .048.004.095.01.142l.003.029c.006.046.014.091.024.135l.006.028c.01.043.022.085.036.126l.012.036c.014.039.029.078.046.116l.015.036c.017.037.034.074.054.11l.021.037c.02.035.041.069.064.102l.025.039c.023.034.047.067.073.099l.025.03c.026.032.053.063.083.092l.021.02c.03.03.062.059.096.086l.016.013c.033.027.068.052.105.077l.019.012c.037.023.075.044.115.064l.021.01c.039.019.08.036.122.051l.024.009c.042.015.084.028.128.038l.022.005c.044.01.088.018.133.022l.026.003c.044.005.088.008.133.008h.018c.046 0 .091-.002.137-.008l.019-.002c.047-.005.092-.012.137-.022l.019-.004c.045-.01.088-.023.131-.039l.021-.007c.042-.014.082-.031.122-.05l.021-.011c.039-.019.077-.04.113-.063l.02-.013c.036-.024.07-.049.103-.076l.02-.017c.032-.026.063-.053.092-.082l.025-.024c.028-.028.055-.055.08-.084l.03-.036c.025-.03.048-.06.07-.091l.034-.053c.021-.032.04-.064.058-.098l.014-.026c.019-.035.036-.072.052-.109l.04-.099c.017-.044.032-.089.045-.135l.004-.009 1.463-4.654a.525.525 0 0 0-.5-.662h-2.118l.75-2.384a.525.525 0 0 0-.5-.662H14.36a.525.525 0 0 0-.5.36l-1.08 3.436a.525.525 0 0 0 .5.69h2.155l-1.412 4.488c.003.011.007.022.011.033.024.067.054.13.09.19.023.039.048.077.075.113.03.039.062.076.097.111.028.028.057.055.088.08.037.03.076.057.117.081.031.019.063.036.096.052.04.019.081.035.123.049.032.01.065.019.098.026.043.009.086.015.13.019.034.003.068.004.102.004h.012c.034 0 .068-.001.101-.004.044-.004.087-.01.13-.019.033-.007.066-.016.098-.026.042-.014.083-.03.123-.049.033-.016.065-.033.096-.052.041-.024.08-.051.117-.081.031-.025.06-.052.088-.08.035-.035.067-.072.097-.111.027-.036.052-.074.075-.113.036-.06.066-.123.09-.19l.011-.033z"/></svg>
+                          Android App
+                        </Label>
+                        <Input 
+                          type="url" 
+                          value={newTask.android_app_url} 
+                          onChange={(e) => setNewTask({ ...newTask, android_app_url: e.target.value })} 
+                          placeholder="https://play.google.com/..." 
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
